@@ -54,6 +54,14 @@ public class SupplierController {
         return ResponseEntity.ok(supplierService.update(supplier));
     }
 
+    // DELETE /api/suppliers/{id}
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        supplierService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // GET /api/suppliers/{id}/debts
     @GetMapping("/{id}/debts")
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")

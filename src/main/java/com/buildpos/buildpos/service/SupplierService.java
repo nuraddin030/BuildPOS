@@ -56,6 +56,12 @@ public class SupplierService {
         return supplierDebtRepository.getTotalDebtBySupplierId(supplierId);
     }
 
+    // O'chirish
+    @Transactional
+    public void delete(Long id) {
+        supplierRepository.deleteById(id);
+    }
+
     // To'lanmagan qarzlar (barcha yetkazuvchilar)
     public List<SupplierDebt> getAllUnpaidDebts() {
         return supplierDebtRepository.findByIsPaidFalse();
