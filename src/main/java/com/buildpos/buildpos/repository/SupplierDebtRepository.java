@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface SupplierDebtRepository extends JpaRepository<SupplierDebt, Long> {
 
+
     // Yetkazuvchining barcha qarzlari
     List<SupplierDebt> findBySupplierId(Long supplierId);
 

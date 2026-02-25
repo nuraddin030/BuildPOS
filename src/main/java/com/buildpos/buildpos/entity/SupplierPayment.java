@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "supplier_payments")
@@ -19,6 +20,7 @@ public class SupplierPayment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Supplier supplier;
 
     @Column(nullable = false)
@@ -36,6 +38,7 @@ public class SupplierPayment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "paid_by")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User paidBy;
 
     @Column(name = "created_at")
