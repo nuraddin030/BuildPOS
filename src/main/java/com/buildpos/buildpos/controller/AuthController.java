@@ -22,6 +22,11 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
+    @GetMapping("/hash")
+    public String hash() {
+        return new BCryptPasswordEncoder(12).encode("admin123");
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
@@ -42,6 +47,7 @@ public class AuthController {
                 user.getUsername(),
                 user.getRole().getName()
         );
+
 
         return ResponseEntity.ok(new LoginResponse(
                 token,

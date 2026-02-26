@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Ochiq endpointlar
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/v1/categories/**").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
