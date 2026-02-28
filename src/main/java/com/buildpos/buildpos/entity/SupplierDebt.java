@@ -1,14 +1,21 @@
 package com.buildpos.buildpos.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "supplier_debts")
+@EntityListeners(AuditingEntityListener.class)
 public class SupplierDebt {
 
     @Id
@@ -18,6 +25,11 @@ public class SupplierDebt {
     @ManyToOne
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
+
+    // Purchase bilan bog'liq (ixtiyoriy)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchase_id")
+    private Purchase purchase;
 
     @Column(nullable = false)
     private BigDecimal amount;
@@ -34,6 +46,7 @@ public class SupplierDebt {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "created_at")
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 }

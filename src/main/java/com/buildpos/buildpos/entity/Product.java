@@ -1,51 +1,93 @@
 package com.buildpos.buildpos.entity;
 
+import com.buildpos.buildpos.entity.enums.ProductStatus;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Data
 @Entity
 @Table(name = "products")
+@EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String name;
 
-    // Many-to-One: Ko'p mahsulot → 1 kategoriya
-    @ManyToOne
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(unique = true)
+    private String sku;            // ichki kod
+
+    private String imageUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(nullable = false, length = 20)
-    private String unit;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductStatus status = ProductStatus.ACTIVE;
 
-    @Column(unique = true, length = 50)
-    private String barcode;
+    @Column(precision = 18, scale = 3)
+    private BigDecimal minStock = BigDecimal.ZERO;  // umumiy min stock
 
-    @Column(name = "image_path", length = 500)
-    private String imagePath;
+    // Product units (dona, pochka, kg ...)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductUnit> productUnits = new ArrayList<>();
 
-    @Column(name = "sale_price", nullable = false)
-    private BigDecimal salePrice;
+    // Supplierlar
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductSupplier> productSuppliers = new ArrayList<>();
 
-    @Column(name = "min_price", nullable = false)
-    private BigDecimal minPrice;
+    // Soft delete
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
 
-    @Column(name = "min_stock")
-    private Integer minStock = 0;
+    private LocalDateTime deletedAt;
 
-    @Column(name = "is_active")
-    private Boolean isActive = true;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    private User deletedBy;
 
-    @Column(name = "created_at")
+    // Audit
+    @CreatedDate
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @CreatedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", updatable = false)
+    private User createdBy;
+
+    @LastModifiedBy
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private User updatedBy;
 }
