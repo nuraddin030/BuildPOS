@@ -1,6 +1,6 @@
 package com.buildpos.buildpos.dto.request;
 
-import com.buildpos.buildpos.entity.PaymentMethod;
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

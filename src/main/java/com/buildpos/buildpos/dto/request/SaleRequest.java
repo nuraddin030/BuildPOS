@@ -22,6 +22,8 @@ public class SaleRequest {
 
     private Long customerId;
 
+    private Long partnerId;
+
     @NotEmpty(message = "Kamida bitta mahsulot bo'lishi kerak")
     @Valid
     private List<SaleItemRequest> items;

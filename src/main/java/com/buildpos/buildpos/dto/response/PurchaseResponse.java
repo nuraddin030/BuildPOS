@@ -1,6 +1,6 @@
 package com.buildpos.buildpos.dto.response;
 
-import com.buildpos.buildpos.entity.PaymentMethod;
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import com.buildpos.buildpos.entity.enums.PurchaseStatus;
 import lombok.Builder;
 import lombok.Data;

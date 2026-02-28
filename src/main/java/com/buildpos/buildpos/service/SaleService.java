@@ -2,6 +2,8 @@ package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
+import com.buildpos.buildpos.entity.Partner;
+import com.buildpos.buildpos.repository.PartnerRepository;
 import com.buildpos.buildpos.entity.*;
 import com.buildpos.buildpos.entity.enums.DiscountType;
 import com.buildpos.buildpos.entity.enums.SaleStatus;
@@ -37,6 +39,7 @@ public class SaleService {
     private final WarehouseStockRepository warehouseStockRepository;
     private final StockMovementRepository stockMovementRepository;
     private final UserRepository userRepository;
+    private final PartnerRepository partnerRepository;
 
     // ─────────────────────────────────────────
     // SAVATCHA YARATISH
@@ -67,6 +70,16 @@ public class SaleService {
             Customer customer = customerRepository.findById(request.getCustomerId())
                     .orElseThrow(() -> new NotFoundException("Mijoz topilmadi"));
             sale.setCustomer(customer);
+        }
+
+        // Hamkor
+        if (request.getPartnerId() != null) {
+            Partner partner = partnerRepository.findById(request.getPartnerId())
+                    .orElseThrow(() -> new NotFoundException("Hamkor topilmadi"));
+            if (!partner.getIsActive()) {
+                throw new BadRequestException("Hamkor noaktiv: " + partner.getName());
+            }
+            sale.setPartner(partner);
         }
 
         sale = saleRepository.save(sale);
@@ -359,6 +372,9 @@ public class SaleService {
                 .customerId(sale.getCustomer() != null ? sale.getCustomer().getId() : null)
                 .customerName(sale.getCustomer() != null ? sale.getCustomer().getName() : null)
                 .customerPhone(sale.getCustomer() != null ? sale.getCustomer().getPhone() : null)
+                .partnerId(sale.getPartner() != null ? sale.getPartner().getId() : null)
+                .partnerName(sale.getPartner() != null ? sale.getPartner().getName() : null)
+                .partnerPhone(sale.getPartner() != null ? sale.getPartner().getPhone() : null)
                 .warehouseId(sale.getWarehouse().getId())
                 .warehouseName(sale.getWarehouse().getName())
                 .status(sale.getStatus())

@@ -1,6 +1,6 @@
 package com.buildpos.buildpos.entity;
 
-import com.buildpos.buildpos.entity.PaymentMethod;
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;

@@ -27,6 +27,10 @@ public class SaleResponse {
     private String customerName;
     private String customerPhone;
 
+    private Long partnerId;
+    private String partnerName;
+    private String partnerPhone;
+
     private Long warehouseId;
     private String warehouseName;
 
