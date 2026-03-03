@@ -23,4 +23,13 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStock, 
         WHERE ws.productUnit.id = :productUnitId
     """)
     BigDecimal getTotalStockByProductUnitId(@Param("productUnitId") Long productUnitId);
+
+    // Dashboard: kam zaxiradagi mahsulotlar soni
+    @Query("""
+        SELECT COUNT(DISTINCT ws.productUnit.id)
+        FROM WarehouseStock ws
+        WHERE ws.minStock IS NOT NULL
+          AND ws.quantity <= ws.minStock
+    """)
+    Long countLowStockItems();
 }

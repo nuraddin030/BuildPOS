@@ -17,22 +17,31 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsBySlugAndIsDeletedFalse(String slug);
     boolean existsBySkuAndIsDeletedFalse(String sku);
 
-    @Query("""
-        SELECT p FROM Product p
-        WHERE p.isDeleted = false
+    @Query(value = """
+        SELECT * FROM products p
+        WHERE p.is_deleted = false
           AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
                                OR LOWER(p.sku)  LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:categoryId IS NULL OR p.category.id = :categoryId)
-          AND (:status IS NULL OR p.status = :status)
-    """)
+          AND (:categoryId IS NULL OR p.category_id = :categoryId)
+          AND (CAST(:status AS VARCHAR) IS NULL OR p.status = :status)
+        ORDER BY p.created_at DESC
+    """,
+            countQuery = """
+        SELECT COUNT(*) FROM products p
+        WHERE p.is_deleted = false
+          AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                               OR LOWER(p.sku)  LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:categoryId IS NULL OR p.category_id = :categoryId)
+          AND (CAST(:status AS VARCHAR) IS NULL OR p.status = :status)
+    """,
+            nativeQuery = true)
     Page<Product> findAllFiltered(
             @Param("search") String search,
             @Param("categoryId") Long categoryId,
-            @Param("status") ProductStatus status,
+            @Param("status") String status,
             Pageable pageable
     );
 
-    // Low stock mahsulotlar — warehouse_stock.quantity <= warehouse_stock.min_stock
     @Query("""
         SELECT DISTINCT p FROM Product p
         JOIN p.productUnits pu

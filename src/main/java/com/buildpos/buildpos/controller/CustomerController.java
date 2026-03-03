@@ -2,7 +2,9 @@ package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.dto.request.CustomerDebtPaymentRequest;
 import com.buildpos.buildpos.dto.request.CustomerRequest;
+import com.buildpos.buildpos.dto.response.CustomerDebtResponse;
 import com.buildpos.buildpos.dto.response.CustomerResponse;
+import java.util.List;
 import com.buildpos.buildpos.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -72,5 +74,12 @@ public class CustomerController {
             @Valid @RequestBody CustomerDebtPaymentRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(customerService.payDebt(debtId, request, username));
+    }
+
+    @GetMapping("/{id}/debts")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "Mijozning qarz tarixi (barcha nasiyalar va to'lovlar)")
+    public ResponseEntity<List<CustomerDebtResponse>> getDebts(@PathVariable Long id) {
+        return ResponseEntity.ok(customerService.getDebts(id));
     }
 }

@@ -1,0 +1,58 @@
+:root {
+    --primary: #2563eb;
+    --bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --radius: 14px;
+    --shadow: 0 4px 25px rgba(0,0,0,0.05);
+    --transition: all 0.2s ease;
+}
+
+body {
+    background: var(--bg);
+}
+
+/* Card */
+.ui-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    transition: var(--transition);
+}
+
+.ui-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Button */
+.ui-btn {
+    border-radius: 10px;
+    padding: 8px 16px;
+    transition: var(--transition);
+}
+
+.ui-btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+}
+
+.ui-btn-primary:hover {
+    opacity: 0.9;
+}
+
+/* Sidebar hover */
+.sidebar .nav-link {
+    transition: var(--transition);
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255,255,255,0.08);
+    padding-left: 22px;
+}
+
+/* Active menu */
+.sidebar .nav-link.active {
+    background: rgba(255,255,255,0.15);
+    border-radius: 8px;
+}

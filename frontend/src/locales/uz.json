@@ -1,0 +1,143 @@
+{
+  "login": {
+    "title": "Tizimga kirish",
+    "name": "Qurilish mollari do'koni",
+    "username": "Foydalanuvchi nomi",
+    "password": "Parol",
+    "submit": "Kirish",
+    "error": "Login yoki parol noto'g'ri"
+  },
+  "nav": {
+    "dashboard": "Bosh sahifa",
+    "products": "Mahsulotlar",
+    "categories": "Kategoriyalar",
+    "warehouses": "Omborlar",
+    "suppliers": "Yetkazuvchilar",
+    "purchases": "Xaridlar",
+    "sales": "Sotuvlar",
+    "customers": "Mijozlar",
+    "employees": "Xodimlar",
+    "partners": "Hamkorlar",
+    "reports": "Hisobotlar",
+    "settings": "Sozlamalar",
+    "logout": "Chiqish"
+  },
+  "common": {
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "add": "Qo'shish",
+    "search": "Qidirish",
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi",
+    "success": "Muvaffaqiyatli saqlandi",
+    "confirm_delete": "O'chirishni tasdiqlaysizmi?",
+    "active": "Faol",
+    "inactive": "Noaktiv",
+    "actions": "Amallar",
+    "total": "Jami",
+    "status": "Holat",
+    "date": "Sana",
+    "notes": "Izoh",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "back": "Orqaga",
+    "close": "Yopish",
+    "filter": "Filtr",
+    "reset": "Tozalash",
+    "export": "Eksport",
+    "print": "Chop etish"
+  },
+  "dashboard": {
+    "title": "Bosh sahifa",
+    "today_sales": "Bugungi sotuv",
+    "today_amount": "Bugungi tushum",
+    "month_sales": "Oy davomida",
+    "customer_debt": "Mijoz qarzi",
+    "supplier_debt": "Yetkazuvchi qarzi",
+    "low_stock": "Kam zaxira",
+    "overdue_debts": "Muddati o'tgan",
+    "cash": "Naqd",
+    "card": "Karta",
+    "transfer": "O'tkazma",
+    "recent_sales": "So'nggi sotuvlar",
+    "weekly_chart": "Haftalik sotuv"
+  },
+  "products": {
+    "title": "Mahsulotlar",
+    "add": "Mahsulot qo'shish",
+    "name": "Nomi",
+    "category": "Kategoriya",
+    "barcode": "Shtrix kod",
+    "cost_price": "Tannarx",
+    "sale_price": "Sotuv narxi",
+    "min_price": "Minimal narx",
+    "stock": "Zaxira",
+    "unit": "O'lchov birligi",
+    "low_stock": "Kam zaxira",
+    "status": "Holat"
+  },
+  "sales": {
+    "title": "Sotuvlar",
+    "new": "Yangi sotuv",
+    "reference": "Raqam",
+    "customer": "Mijoz",
+    "seller": "Sotuvchi",
+    "total": "Jami",
+    "paid": "To'langan",
+    "debt": "Nasiya",
+    "change": "Qaytim",
+    "information": "Ma'lumot yo'q",
+    "status": {
+      "draft": "Qoralama",
+      "completed": "Yakunlangan",
+      "cancelled": "Bekor qilingan"
+    },
+    "payment": {
+      "cash": "Naqd",
+      "card": "Karta",
+      "transfer": "O'tkazma",
+      "debt": "Nasiya"
+    },
+    "due_date": "Nasiya muddati"
+  },
+  "customers": {
+    "title": "Mijozlar",
+    "add": "Mijoz qo'shish",
+    "name": "Ismi",
+    "phone": "Telefon",
+    "total_debt": "Umumiy qarz",
+    "debts": "Qarz tarixi",
+    "pay_debt": "Qarz to'lash"
+  },
+  "suppliers": {
+    "title": "Yetkazuvchilar",
+    "add": "Yetkazuvchi qo'shish",
+    "name": "Nomi",
+    "company": "Kompaniya",
+    "phone": "Telefon",
+    "total_debt": "Umumiy qarz",
+    "debts": "Qarz tarixi"
+  },
+  "purchases": {
+    "title": "Xaridlar",
+    "add": "Xarid qo'shish",
+    "supplier": "Yetkazuvchi",
+    "warehouse": "Ombor",
+    "status": {
+      "pending": "Kutilmoqda",
+      "received": "Qabul qilindi",
+      "partially_received": "Qisman qabul",
+      "cancelled": "Bekor qilingan"
+    }
+  },
+  "employees": {
+    "title": "Xodimlar",
+    "add": "Xodim qo'shish",
+    "name": "Ismi",
+    "username": "Login",
+    "role": "Lavozim",
+    "phone": "Telefon"
+  }
+}

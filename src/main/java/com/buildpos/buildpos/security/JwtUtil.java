@@ -4,8 +4,12 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import java.security.Key;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
@@ -15,6 +19,9 @@ public class JwtUtil {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+
+    // Logout qilingan tokenlar (server restart bo'lsa tozalanadi)
+    private final Set<String> blacklist = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private Key getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
@@ -41,14 +48,20 @@ public class JwtUtil {
         return getClaims(token).get("role", String.class);
     }
 
-    // Token tekshirish
+    // Token tekshirish (blacklist ham tekshiriladi)
     public boolean isValid(String token) {
         try {
+            if (blacklist.contains(token)) return false;
             getClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    // Tokenni blacklist ga qo'shish (logout)
+    public void invalidate(String token) {
+        blacklist.add(token);
     }
 
     private Claims getClaims(String token) {

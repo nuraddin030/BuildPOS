@@ -1,0 +1,372 @@
+/* ===== Layout Structure ===== */
+.sidebar {
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+
+    background:  #111827;
+    color: white;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+
+    display: flex;
+    flex-direction: column;
+    transition: 0.3s ease;
+
+    overflow-x: hidden;
+}
+.layout {
+    display: flex;
+}
+
+.main-content {
+    margin-left: 250px;
+    transition: 0.3s ease;
+    min-height: 100vh;
+}
+
+.sidebar.collapsed {
+    width: 80px;
+    min-width: 80px;
+}
+.sidebar.collapsed ~ .main-content {
+    margin-left: 80px;
+}
+.brand-text {
+    font-weight: 600;
+    font-size: 16px;
+}
+.collapse-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+}
+.collapse-btn:hover {
+    color: white;
+}
+
+/* ===== Sidebar Header ===== */
+.sidebar-header {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 10px;
+    position: relative;
+}
+
+.brand-icon {
+    font-size: 22px;
+}
+
+/* ===== Sidebar Links ===== */
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: 0.2s;
+    border-radius: 10px;
+    margin: 4px 10px;
+}
+
+.sidebar-link:hover {
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+/* Collapsed mode */
+.sidebar.collapsed .sidebar-link {
+    justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-text {
+    display: none;
+}
+
+.sidebar.collapsed .collapse-btn {
+    position: absolute;
+    right: 10px;
+}
+
+.sidebar-link.active {
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    color: white;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+.sidebar-icon {
+    font-size: 18px;
+    width: 22px;
+    text-align: center;
+}
+
+/* ===== Sidebar Footer ===== */
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.logout-btn {
+    width: 100%;
+    background: #ef4444;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+    transform: scale(1.03);
+}
+
+/* ===== Topbar ===== */
+.topbar {
+    height: 60px;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.topbar-title {
+    font-weight: 600;
+    color: #334155;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.lang-wrapper {
+    position: relative;
+}
+
+.lang-btn {
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: none;
+    background: #f1f5f9;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.lang-btn:hover {
+    background: #f1f5f9;
+}
+
+.user-box {
+    font-size: 14px;
+    color: #475569;
+}
+
+/* ===== Page Content ===== */
+.page-content {
+    padding: 25px;
+}
+/* ===== Premium Header ===== */
+
+/* ===== TOPBAR ===== */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    height: 70px;
+    margin: 15px 20px 0 20px;
+    padding: 0 25px;
+
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(15, 23, 42, 0.08);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.topbar-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #334155;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+/* ===== Language ===== */
+.language-switch {
+    position: relative;
+}
+
+.lang-selected {
+    padding: 6px 14px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.lang-selected:hover {
+    background: #e2e8f0;
+}
+
+.lang-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    width: 120px;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+.lang-dropdown div {
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.lang-dropdown div:hover {
+    background: #f1f5f9;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== User Box ===== */
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f5f9;
+    padding: 6px 14px;
+    border-radius: 20px;
+    transition: 0.2s;
+}
+
+.user-box:hover {
+    background: #e2e8f0;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    font-weight: 600;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.user-name {
+    font-size: 14px;
+    color: #334155;
+}
+.user-wrapper {
+    position: relative;
+}
+.user-avatar-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+.user-avatar-btn:hover {
+    transform: scale(1.05);
+}
+/* ===== DROPDOWN ===== */
+.user-dropdown {
+    position: absolute;
+    right: 0;
+    top: 55px;
+
+    width: 220px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+
+    padding: 10px 0;
+    z-index: 9999;
+
+    animation: fadeIn 0.15s ease-in-out;
+}
+.user-info {
+    padding: 10px 16px;
+}
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-role {
+    font-size: 12px;
+    color: #64748b;
+}
+.dropdown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.dropdown-item:hover {
+    background: #f1f5f9;
+}
+
+.dropdown-divider {
+    height: 1px;
+    margin: 6px 0;
+    background: #e2e8f0;
+}
+
+.logout {
+    color: #dc2626;
+}
+
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

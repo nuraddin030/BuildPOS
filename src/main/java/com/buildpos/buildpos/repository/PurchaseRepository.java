@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -34,4 +35,16 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
             @Param("to")          LocalDateTime to,
             Pageable pageable
     );
+
+    // Dashboard: yetkazuvchilarga jami qarz
+    @Query("""
+        SELECT COALESCE(SUM(p.totalAmount - p.paidAmount), 0)
+        FROM Purchase p
+        WHERE p.status IN (
+            com.buildpos.buildpos.entity.enums.PurchaseStatus.RECEIVED,
+            com.buildpos.buildpos.entity.enums.PurchaseStatus.PARTIALLY_RECEIVED
+        )
+          AND p.paidAmount < p.totalAmount
+    """)
+    BigDecimal sumTotalSupplierDebt();
 }

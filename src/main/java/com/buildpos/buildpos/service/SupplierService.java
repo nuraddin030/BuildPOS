@@ -1,69 +1,179 @@
 package com.buildpos.buildpos.service;
 
-import com.buildpos.buildpos.entity.*;
-import com.buildpos.buildpos.repository.*;
+import com.buildpos.buildpos.dto.request.SupplierRequest;
+import com.buildpos.buildpos.dto.response.SupplierDebtResponse;
+import com.buildpos.buildpos.dto.response.SupplierResponse;
+import com.buildpos.buildpos.entity.Supplier;
+import com.buildpos.buildpos.entity.SupplierDebt;
+import com.buildpos.buildpos.exception.NotFoundException;
+import com.buildpos.buildpos.repository.SupplierDebtRepository;
+import com.buildpos.buildpos.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
     private final SupplierDebtRepository supplierDebtRepository;
 
-    // Barcha faol yetkazuvchilar
-    public List<Supplier> getAll() {
-        return supplierRepository.findByIsActiveTrue();
+    // ─────────────────────────────────────────
+    // GET ALL (faol)
+    // ─────────────────────────────────────────
+    public List<SupplierResponse> getAll() {
+        return supplierRepository.findByIsActiveTrue()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    // Qidirish
-    public List<Supplier> search(String name) {
-        return supplierRepository.findByNameContainingIgnoreCase(name);
+    // ─────────────────────────────────────────
+    // QIDIRISH
+    // ─────────────────────────────────────────
+    public List<SupplierResponse> search(String name) {
+        return supplierRepository.findByNameContainingIgnoreCase(name)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    // ID bo'yicha
-    public Optional<Supplier> findById(Long id) {
-        return supplierRepository.findById(id);
+    // ─────────────────────────────────────────
+    // GET BY ID
+    // ─────────────────────────────────────────
+    public SupplierResponse getById(Long id) {
+        return toResponse(findById(id));
     }
 
-    // Yaratish
+    // ─────────────────────────────────────────
+    // YARATISH
+    // ─────────────────────────────────────────
     @Transactional
-    public Supplier create(Supplier supplier) {
-        supplier.setCreatedAt(java.time.LocalDateTime.now());
-        supplier.setUpdatedAt(java.time.LocalDateTime.now());
-        return supplierRepository.save(supplier);
+    public SupplierResponse create(SupplierRequest request) {
+        Supplier supplier = Supplier.builder()
+                .name(request.getName())
+                .company(request.getCompany())
+                .phone(request.getPhone())
+                .address(request.getAddress())
+                .bankAccount(request.getBankAccount())
+                .inn(request.getInn())
+                .notes(request.getNotes())
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        return toResponse(supplierRepository.save(supplier));
     }
 
-    // Yangilash
+    // ─────────────────────────────────────────
+    // YANGILASH
+    // ─────────────────────────────────────────
     @Transactional
-    public Supplier update(Supplier supplier) {
-        supplier.setUpdatedAt(java.time.LocalDateTime.now());
-        return supplierRepository.save(supplier);
+    public SupplierResponse update(Long id, SupplierRequest request) {
+        Supplier supplier = findById(id);
+        supplier.setName(request.getName());
+        supplier.setCompany(request.getCompany());
+        supplier.setPhone(request.getPhone());
+        supplier.setAddress(request.getAddress());
+        supplier.setBankAccount(request.getBankAccount());
+        supplier.setInn(request.getInn());
+        supplier.setNotes(request.getNotes());
+        supplier.setUpdatedAt(LocalDateTime.now());
+        return toResponse(supplierRepository.save(supplier));
     }
 
-    // Qarzlar
-    public List<SupplierDebt> getDebts(Long supplierId) {
-        return supplierDebtRepository.findBySupplierId(supplierId);
+    // ─────────────────────────────────────────
+    // O'CHIRISH (soft delete)
+    // ─────────────────────────────────────────
+    @Transactional
+    public void delete(Long id) {
+        Supplier supplier = findById(id);
+        supplier.setIsActive(false);
+        supplier.setUpdatedAt(LocalDateTime.now());
+        supplierRepository.save(supplier);
     }
 
-    // Jami qarz
+    // ─────────────────────────────────────────
+    // QARZ TARIXI
+    // ─────────────────────────────────────────
+    public List<SupplierDebtResponse> getDebts(Long supplierId) {
+        findById(supplierId); // mavjudligini tekshirish
+        return supplierDebtRepository.findBySupplierId(supplierId)
+                .stream()
+                .map(this::toDebtResponse)
+                .toList();
+    }
+
+    // ─────────────────────────────────────────
+    // JAMI QARZ
+    // ─────────────────────────────────────────
     public BigDecimal getTotalDebt(Long supplierId) {
+        findById(supplierId);
         return supplierDebtRepository.getTotalDebtBySupplierId(supplierId);
     }
 
-    // O'chirish
-    @Transactional
-    public void delete(Long id) {
-        supplierRepository.deleteById(id);
+    // ─────────────────────────────────────────
+    // TO'LANMAGAN QARZLAR (barcha yetkazuvchilar)
+    // ─────────────────────────────────────────
+    public List<SupplierDebtResponse> getAllUnpaidDebts() {
+        return supplierDebtRepository.findByIsPaidFalse()
+                .stream()
+                .map(this::toDebtResponse)
+                .toList();
     }
 
-    // To'lanmagan qarzlar (barcha yetkazuvchilar)
-    public List<SupplierDebt> getAllUnpaidDebts() {
-        return supplierDebtRepository.findByIsPaidFalse();
+    // ─────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────
+    private Supplier findById(Long id) {
+        return supplierRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Yetkazuvchi topilmadi: " + id));
+    }
+
+    private SupplierResponse toResponse(Supplier supplier) {
+        BigDecimal totalDebt = supplierDebtRepository
+                .getTotalDebtBySupplierId(supplier.getId());
+        return SupplierResponse.builder()
+                .id(supplier.getId())
+                .name(supplier.getName())
+                .company(supplier.getCompany())
+                .phone(supplier.getPhone())
+                .address(supplier.getAddress())
+                .bankAccount(supplier.getBankAccount())
+                .inn(supplier.getInn())
+                .notes(supplier.getNotes())
+                .isActive(supplier.getIsActive())
+                .totalDebt(totalDebt)
+                .createdAt(supplier.getCreatedAt())
+                .updatedAt(supplier.getUpdatedAt())
+                .build();
+    }
+
+    private SupplierDebtResponse toDebtResponse(SupplierDebt debt) {
+        BigDecimal remaining = debt.getAmount().subtract(debt.getPaidAmount());
+        boolean isOverdue = debt.getDueDate() != null
+                && !debt.getIsPaid()
+                && debt.getDueDate().isBefore(LocalDate.now());
+
+        return SupplierDebtResponse.builder()
+                .id(debt.getId())
+                .purchaseId(debt.getPurchase() != null ? debt.getPurchase().getId() : null)
+                .purchaseReferenceNo(debt.getPurchase() != null ? debt.getPurchase().getReferenceNo() : null)
+                .amount(debt.getAmount())
+                .paidAmount(debt.getPaidAmount())
+                .remainingAmount(remaining)
+                .dueDate(debt.getDueDate())
+                .isPaid(debt.getIsPaid())
+                .isOverdue(isOverdue)
+                .notes(debt.getNotes())
+                .createdAt(debt.getCreatedAt())
+                .build();
     }
 }

@@ -1,0 +1,12 @@
+import api from './api'
+
+export const getProducts = (params) => api.get('/api/v1/products', { params })
+export const getProductById = (id) => api.get(`/api/v1/products/${id}`)
+export const createProduct = (data) => api.post('/api/v1/products', data)
+export const updateProduct = (id, data) => api.put(`/api/v1/products/${id}`, data)
+export const deleteProduct = (id) => api.delete(`/api/v1/products/${id}`)
+export const toggleProductStatus = (id) => api.patch(`/api/v1/products/${id}/toggle-status`)
+export const getCategories = () => api.get('/api/v1/categories', { params: { size: 100 } })
+export const getUnits = () => api.get('/api/v1/units')
+export const getWarehouses = () => api.get('/api/v1/warehouses?size=100&active=true')
+export const adjustStock = (productUnitId, data) => api.post('/api/v1/products/stock/adjust', { productUnitId: Number(productUnitId), ...data })

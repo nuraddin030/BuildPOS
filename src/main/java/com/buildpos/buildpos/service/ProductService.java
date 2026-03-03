@@ -127,16 +127,64 @@ public class ProductService {
 
             productUnit = productUnitRepository.save(productUnit);
 
-            // Har bir ombor uchun stock yozuv yaratish (0 dan)
+            // Har bir ombor uchun stock yozuv yaratish
             List<Warehouse> warehouses = warehouseRepository.findAllByIsActiveTrue();
             for (Warehouse warehouse : warehouses) {
+                // Boshlang'ich zaxira faqat tanlangan omborga
+                BigDecimal qty = BigDecimal.ZERO;
+                if (unitReq.getInitialStock() != null
+                        && unitReq.getWarehouseId() != null
+                        && warehouse.getId().equals(unitReq.getWarehouseId())) {
+                    qty = unitReq.getInitialStock();
+                }
                 WarehouseStock stock = WarehouseStock.builder()
                         .warehouse(warehouse)
                         .productUnit(productUnit)
-                        .quantity(BigDecimal.ZERO)
+                        .quantity(qty)
                         .minStock(BigDecimal.ZERO)
                         .build();
                 warehouseStockRepository.save(stock);
+            }
+
+            // Agar warehouseId ko'rsatilgan ombor faol omborlar ro'yxatida bo'lmasa — alohida qo'shish
+            if (unitReq.getInitialStock() != null
+                    && unitReq.getInitialStock().compareTo(BigDecimal.ZERO) > 0
+                    && unitReq.getWarehouseId() != null) {
+                boolean warehouseFound = warehouses.stream()
+                        .anyMatch(w -> w.getId().equals(unitReq.getWarehouseId()));
+                if (!warehouseFound) {
+                    Warehouse warehouse = warehouseRepository.findById(unitReq.getWarehouseId())
+                            .orElseThrow(() -> new NotFoundException("Ombor topilmadi: " + unitReq.getWarehouseId()));
+                    WarehouseStock stock = WarehouseStock.builder()
+                            .warehouse(warehouse)
+                            .productUnit(productUnit)
+                            .quantity(unitReq.getInitialStock())
+                            .minStock(BigDecimal.ZERO)
+                            .build();
+                    warehouseStockRepository.save(stock);
+                }
+
+                // StockMovement yozuv
+                final ProductUnit finalProductUnit = productUnit;
+                Warehouse selectedWarehouse = warehouses.stream()
+                        .filter(w -> w.getId().equals(unitReq.getWarehouseId()))
+                        .findFirst()
+                        .orElse(null);
+                if (selectedWarehouse != null) {
+                    StockMovement movement = StockMovement.builder()
+                            .productUnit(finalProductUnit)
+                            .movementType(StockMovementType.ADJUSTMENT_IN)
+                            .toWarehouse(selectedWarehouse)
+                            .quantity(unitReq.getInitialStock())
+                            .unitPrice(unitReq.getCostPrice())
+                            .totalPrice(unitReq.getCostPrice() != null
+                                    ? unitReq.getCostPrice().multiply(unitReq.getInitialStock())
+                                    : null)
+                            .notes("Boshlang'ich zaxira")
+                            .referenceType("INITIAL_STOCK")
+                            .build();
+                    stockMovementRepository.save(movement);
+                }
             }
         }
 
@@ -181,7 +229,7 @@ public class ProductService {
     // ─────────────────────────────────────────
     public Page<ProductSummaryResponse> getAll(
             String search, Long categoryId, ProductStatus status, Pageable pageable) {
-        return productRepository.findAllFiltered(search, categoryId, status, pageable)
+        return productRepository.findAllFiltered(search, categoryId, status != null ? status.name() : null, pageable)
                 .map(productMapper::toSummaryResponse);
     }
 

@@ -1,0 +1,143 @@
+{
+  "login": {
+    "name": "Building Materials Store",
+    "title": "System Login",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Login",
+    "error": "Invalid username or password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "categories": "Categories",
+    "warehouses": "Warehouses",
+    "suppliers": "Suppliers",
+    "purchases": "Purchases",
+    "sales": "Sales",
+    "customers": "Customers",
+    "employees": "Employees",
+    "partners": "Partners",
+    "reports": "Reports",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Successfully saved",
+    "confirm_delete": "Are you sure you want to delete?",
+    "active": "Active",
+    "inactive": "Inactive",
+    "actions": "Actions",
+    "total": "Total",
+    "status": "Status",
+    "date": "Date",
+    "notes": "Notes",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "close": "Close",
+    "filter": "Filter",
+    "reset": "Reset",
+    "export": "Export",
+    "print": "Print"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "today_sales": "Today's Sales",
+    "today_amount": "Today's Revenue",
+    "month_sales": "Monthly Sales",
+    "customer_debt": "Customer Debt",
+    "supplier_debt": "Supplier Debt",
+    "low_stock": "Low Stock",
+    "overdue_debts": "Overdue",
+    "cash": "Cash",
+    "card": "Card",
+    "transfer": "Transfer",
+    "recent_sales": "Recent Sales",
+    "weekly_chart": "Weekly Sales"
+  },
+  "products": {
+    "title": "Products",
+    "add": "Add Product",
+    "name": "Name",
+    "category": "Category",
+    "barcode": "Barcode",
+    "cost_price": "Cost Price",
+    "sale_price": "Sale Price",
+    "min_price": "Minimum Price",
+    "stock": "Stock",
+    "unit": "Unit",
+    "low_stock": "Low Stock",
+    "status": "Status"
+  },
+  "sales": {
+    "title": "Sales",
+    "new": "New Sale",
+    "reference": "Reference",
+    "customer": "Customer",
+    "seller": "Seller",
+    "total": "Total",
+    "paid": "Paid",
+    "debt": "Debt",
+    "change": "Change",
+    "information": "No data",
+    "status": {
+      "draft": "Draft",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "payment": {
+      "cash": "Cash",
+      "card": "Card",
+      "transfer": "Transfer",
+      "debt": "On Credit"
+    },
+    "due_date": "Due Date"
+  },
+  "customers": {
+    "title": "Customers",
+    "add": "Add Customer",
+    "name": "Name",
+    "phone": "Phone",
+    "total_debt": "Total Debt",
+    "debts": "Debt History",
+    "pay_debt": "Pay Debt"
+  },
+  "suppliers": {
+    "title": "Suppliers",
+    "add": "Add Supplier",
+    "name": "Name",
+    "company": "Company",
+    "phone": "Phone",
+    "total_debt": "Total Debt",
+    "debts": "Debt History"
+  },
+  "purchases": {
+    "title": "Purchases",
+    "add": "Add Purchase",
+    "supplier": "Supplier",
+    "warehouse": "Warehouse",
+    "status": {
+      "pending": "Pending",
+      "received": "Received",
+      "partially_received": "Partially Received",
+      "cancelled": "Cancelled"
+    }
+  },
+  "employees": {
+    "title": "Employees",
+    "add": "Add Employee",
+    "name": "Name",
+    "username": "Username",
+    "role": "Role",
+    "phone": "Phone"
+  }
+}

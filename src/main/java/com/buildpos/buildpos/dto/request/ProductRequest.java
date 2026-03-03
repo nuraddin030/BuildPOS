@@ -53,6 +53,10 @@ public class ProductRequest {
         private BigDecimal minPrice;
 
         private List<PriceTierRequest> priceTiers;
+
+        // Boshlang'ich zaxira
+        private BigDecimal initialStock;
+        private Long warehouseId;
     }
 
     // ─────────────────────────────────────────

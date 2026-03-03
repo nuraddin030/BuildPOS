@@ -1,0 +1,143 @@
+{
+  "login": {
+    "name": "Қурилиш материаллари дўкони",
+    "title": "Тизимга кириш",
+    "username": "Фойдаланувчи номи",
+    "password": "Пароль",
+    "submit": "Кириш",
+    "error": "Нотўғри логин ёки пароль"
+  },
+  "nav": {
+    "dashboard": "Бош саҳифа",
+    "products": "Маҳсулотлар",
+    "categories": "Категориялар",
+    "warehouses": "Омборлар",
+    "suppliers": "Етказувчилар",
+    "purchases": "Харидлар",
+    "sales": "Сотувлар",
+    "customers": "Мижозлар",
+    "employees": "Ходимлар",
+    "partners": "Ҳамкорлар",
+    "reports": "Ҳисоботлар",
+    "settings": "Созламалар",
+    "logout": "Чиқиш"
+  },
+  "common": {
+    "save": "Сақлаш",
+    "cancel": "Бекор қилиш",
+    "delete": "Ўчириш",
+    "edit": "Таҳрирлаш",
+    "add": "Қўшиш",
+    "search": "Қидириш",
+    "loading": "Юкланмоқда...",
+    "error": "Хатолик юз берди",
+    "success": "Муваффақиятли сақланди",
+    "confirm_delete": "Ўчиришни тасдиқлайсизми?",
+    "active": "Фаол",
+    "inactive": "Нофаол",
+    "actions": "Амаллар",
+    "total": "Жами",
+    "status": "Ҳолат",
+    "date": "Сана",
+    "notes": "Изоҳ",
+    "yes": "Ҳа",
+    "no": "Йўқ",
+    "back": "Орқага",
+    "close": "Ёпиш",
+    "filter": "Фильтр",
+    "reset": "Тозалаш",
+    "export": "Экспорт",
+    "print": "Чоп этиш"
+  },
+  "dashboard": {
+    "title": "Бош саҳифа",
+    "today_sales": "Бугунги сотувлар",
+    "today_amount": "Бугунги тушум",
+    "month_sales": "Ойлик сотувлар",
+    "customer_debt": "Мижозлар қарзи",
+    "supplier_debt": "Етказувчилар қарзи",
+    "low_stock": "Кам қолдиқ",
+    "overdue_debts": "Муддати ўтган",
+    "cash": "Нақд",
+    "card": "Карта",
+    "transfer": "Ўтказма",
+    "recent_sales": "Сўнгги сотувлар",
+    "weekly_chart": "Ҳафталик сотув"
+  },
+  "products": {
+    "title": "Маҳсулотлар",
+    "add": "Маҳсулот қўшиш",
+    "name": "Номи",
+    "category": "Категория",
+    "barcode": "Штрих-код",
+    "cost_price": "Таннарх",
+    "sale_price": "Сотув нархи",
+    "min_price": "Энг кам нарх",
+    "stock": "Қолдиқ",
+    "unit": "Ўлчов бирлиги",
+    "low_stock": "Кам қолдиқ",
+    "status": "Ҳолат"
+  },
+  "sales": {
+    "title": "Сотувлар",
+    "new": "Янги сотув",
+    "reference": "Рақам",
+    "customer": "Мижоз",
+    "seller": "Сотувчи",
+    "total": "Жами",
+    "paid": "Тўланган",
+    "debt": "Қарз",
+    "change": "Қайтим",
+    "information": "Маълумот йўқ",
+    "status": {
+      "draft": "Қоралама",
+      "completed": "Якунланган",
+      "cancelled": "Бекор қилинган"
+    },
+    "payment": {
+      "cash": "Нақд",
+      "card": "Карта",
+      "transfer": "Ўтказма",
+      "debt": "Қарзга"
+    },
+    "due_date": "Тўлаш муддати"
+  },
+  "customers": {
+    "title": "Мижозлар",
+    "add": "Мижоз қўшиш",
+    "name": "Номи",
+    "phone": "Телефон",
+    "total_debt": "Жами қарз",
+    "debts": "Қарз тарихи",
+    "pay_debt": "Қарзни тўлаш"
+  },
+  "suppliers": {
+    "title": "Етказувчилар",
+    "add": "Етказувчи қўшиш",
+    "name": "Номи",
+    "company": "Компания",
+    "phone": "Телефон",
+    "total_debt": "Жами қарз",
+    "debts": "Қарз тарихи"
+  },
+  "purchases": {
+    "title": "Харидлар",
+    "add": "Харид қўшиш",
+    "supplier": "Етказувчи",
+    "warehouse": "Омбор",
+    "status": {
+      "pending": "Кутилмоқда",
+      "received": "Қабул қилинди",
+      "partially_received": "Қисман қабул қилинди",
+      "cancelled": "Бекор қилинди"
+    }
+  },
+  "employees": {
+    "title": "Ходимлар",
+    "add": "Ходим қўшиш",
+    "name": "Номи",
+    "username": "Логин",
+    "role": "Лавозим",
+    "phone": "Телефон"
+  }
+}

@@ -19,8 +19,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.buildpos.buildpos.dto.response.CustomerDebtResponse;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -143,11 +146,51 @@ public class CustomerService {
     }
 
     // ─────────────────────────────────────────
+    // QARZ TARIXI
+    // ─────────────────────────────────────────
+    public List<CustomerDebtResponse> getDebts(Long customerId) {
+        findById(customerId); // mavjudligini tekshirish
+        return customerDebtRepository.findAllByCustomerIdOrderByCreatedAtDesc(customerId)
+                .stream()
+                .map(this::toDebtResponse)
+                .toList();
+    }
+
+    // ─────────────────────────────────────────
     // PRIVATE
     // ─────────────────────────────────────────
     private Customer findById(Long id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Mijoz topilmadi: " + id));
+    }
+
+    private CustomerDebtResponse toDebtResponse(com.buildpos.buildpos.entity.CustomerDebt debt) {
+        BigDecimal remaining = debt.getAmount().subtract(debt.getPaidAmount());
+        boolean isOverdue = debt.getDueDate() != null
+                && !debt.getIsPaid()
+                && debt.getDueDate().isBefore(LocalDate.now());
+
+        return CustomerDebtResponse.builder()
+                .id(debt.getId())
+                .saleId(debt.getSale() != null ? debt.getSale().getId() : null)
+                .saleReferenceNo(debt.getSale() != null ? debt.getSale().getReferenceNo() : null)
+                .amount(debt.getAmount())
+                .paidAmount(debt.getPaidAmount())
+                .remainingAmount(remaining)
+                .dueDate(debt.getDueDate())
+                .isPaid(debt.getIsPaid())
+                .isOverdue(isOverdue)
+                .createdAt(debt.getCreatedAt())
+                .payments(debt.getPayments().stream().map(p ->
+                        CustomerDebtResponse.PaymentHistoryItem.builder()
+                                .id(p.getId())
+                                .amount(p.getAmount())
+                                .paymentMethod(p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null)
+                                .notes(p.getNotes())
+                                .paidAt(p.getPaidAt())
+                                .paidBy(p.getPaidBy() != null ? p.getPaidBy().getFullName() : null)
+                                .build()).toList())
+                .build();
     }
 
     private CustomerResponse toResponse(Customer customer) {

@@ -181,6 +181,7 @@ public class SaleService {
         BigDecimal totalPaid = BigDecimal.ZERO;
         BigDecimal debtAmount = BigDecimal.ZERO;
 
+        java.time.LocalDate debtDueDate = null;
         for (SaleRequest.SalePaymentRequest paymentReq : payments) {
             SalePayment payment = SalePayment.builder()
                     .sale(sale)
@@ -192,6 +193,7 @@ public class SaleService {
 
             if (paymentReq.getPaymentMethod() == PaymentMethod.DEBT) {
                 debtAmount = debtAmount.add(paymentReq.getAmount());
+                if (paymentReq.getDueDate() != null) debtDueDate = paymentReq.getDueDate();
             } else {
                 totalPaid = totalPaid.add(paymentReq.getAmount());
             }
@@ -248,6 +250,7 @@ public class SaleService {
                     .amount(debtAmount)
                     .paidAmount(BigDecimal.ZERO)
                     .isPaid(false)
+                    .dueDate(debtDueDate)
                     .build();
             customerDebtRepository.save(debt);
         }
@@ -359,6 +362,8 @@ public class SaleService {
         return saleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sotuv topilmadi: " + id));
     }
+
+    public SaleResponse toResponsePublic(Sale sale) { return toResponse(sale); }
 
     private SaleResponse toResponse(Sale sale) {
         return SaleResponse.builder()

@@ -1,7 +1,7 @@
 package com.buildpos.buildpos.dto.request;
 
-import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import com.buildpos.buildpos.entity.enums.DiscountType;
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 // ─────────────────────────────────────────────
@@ -48,15 +49,14 @@ public class SaleRequest {
         private Long productUnitId;
 
         @NotNull
-        private Long warehouseId;           // qaysi ombordan
+        private Long warehouseId;
 
         @NotNull
         @DecimalMin(value = "0.001")
         private BigDecimal quantity;
 
-        private BigDecimal salePrice;       // null bo'lsa — default sale_price ishlatiladi
+        private BigDecimal salePrice;
 
-        // Item chegirmasi (ixtiyoriy)
         private DiscountType discountType;
         private BigDecimal discountValue;
     }
@@ -73,6 +73,9 @@ public class SaleRequest {
         @NotNull
         @DecimalMin(value = "0.01")
         private BigDecimal amount;
+
+        // Faqat DEBT uchun — nasiya muddati
+        private LocalDate dueDate;
 
         private String notes;
     }

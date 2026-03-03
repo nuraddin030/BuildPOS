@@ -5,6 +5,9 @@ import com.buildpos.buildpos.dto.LoginResponse;
 import com.buildpos.buildpos.entity.User;
 import com.buildpos.buildpos.repository.UserRepository;
 import com.buildpos.buildpos.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -16,18 +19,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Autentifikatsiya")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
-    @GetMapping("/hash")
-    public String hash() {
-        return new BCryptPasswordEncoder(12).encode("admin123");
-    }
-
     @PostMapping("/login")
+    @Operation(summary = "Tizimga kirish")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
         // Username va parolni tekshirish
@@ -55,5 +55,15 @@ public class AuthController {
                 user.getRole().getName(),
                 user.getFullName()
         ));
+    }
+    @PostMapping("/logout")
+    @Operation(summary = "Tizimdan chiqish")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            jwtUtil.invalidate(token);
+        }
+        return ResponseEntity.noContent().build();
     }
 }

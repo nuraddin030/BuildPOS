@@ -46,7 +46,7 @@ public class ProductController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) ProductStatus status,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+            @PageableDefault(size = 20, sort = "created_at") Pageable pageable) {
         return ResponseEntity.ok(productService.getAll(search, categoryId, status, pageable));
     }
 
