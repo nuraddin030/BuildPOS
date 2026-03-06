@@ -5,6 +5,9 @@
     "username": "Username",
     "password": "Password",
     "submit": "Login",
+    "subtitle": "Enter your login and password to continue",
+    "username_placeholder": "Enter your login",
+    "password_placeholder": "Enter your password",
     "error": "Invalid username or password"
   },
   "nav": {
@@ -20,6 +23,7 @@
     "partners": "Partners",
     "reports": "Reports",
     "settings": "Settings",
+    "units": "Unit",
     "logout": "Logout"
   },
   "common": {

@@ -53,6 +53,19 @@ public class ProductUnit {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal minPrice = BigDecimal.ZERO;    // minimal sotuv narxi
 
+    // USD narxlar (ixtiyoriy)
+    @Column(precision = 18, scale = 2)
+    private BigDecimal costPriceUsd;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal salePriceUsd;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal minPriceUsd;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal exchangeRateAtSave;  // saqlash vaqtidagi kurs
+
     @Column(nullable = false)
     private Boolean isActive = true;
 

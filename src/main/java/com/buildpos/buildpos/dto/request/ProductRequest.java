@@ -57,6 +57,12 @@ public class ProductRequest {
         // Boshlang'ich zaxira
         private BigDecimal initialStock;
         private Long warehouseId;
+
+        // USD narxlar (ixtiyoriy)
+        private BigDecimal costPriceUsd;
+        private BigDecimal salePriceUsd;
+        private BigDecimal minPriceUsd;
+        private BigDecimal exchangeRateAtSave;
     }
 
     // ─────────────────────────────────────────

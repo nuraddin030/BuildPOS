@@ -5,6 +5,9 @@
     "username": "Foydalanuvchi nomi",
     "password": "Parol",
     "submit": "Kirish",
+    "subtitle": "Davom etish uchun login va parolingizni kiriting",
+    "username_placeholder": "Loginingizni kiriting",
+    "password_placeholder": "Parolingizni kiriting",
     "error": "Login yoki parol noto'g'ri"
   },
   "nav": {
@@ -20,6 +23,7 @@
     "partners": "Hamkorlar",
     "reports": "Hisobotlar",
     "settings": "Sozlamalar",
+    "units": "O'lchov birligi",
     "logout": "Chiqish"
   },
   "common": {

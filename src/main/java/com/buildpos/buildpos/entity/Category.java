@@ -79,10 +79,13 @@ public class Category {
     private LocalDateTime updatedAt;
 
     @CreatedBy
-    @Column(name = "created_by", updatable = false)
-    private Long createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", updatable = false)
+    private User createdBy;
+
 
     @LastModifiedBy
-    @Column(name = "updated_by")
-    private Long updatedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by")
+    private User updatedBy;
 }

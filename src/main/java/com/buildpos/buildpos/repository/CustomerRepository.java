@@ -18,12 +18,18 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Optional<Customer> findByPhone(String phone);
 
-    @Query("""
-        SELECT c FROM Customer c
-        WHERE (:search IS NULL
-            OR LOWER(c.name)  LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND c.isActive = true
-    """)
+    @Query(value = """
+    SELECT * FROM customers c
+    WHERE (:search IS NULL
+        OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(CAST(c.phone AS text)) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND c.is_active = true
+""", countQuery = """
+    SELECT COUNT(*) FROM customers c
+    WHERE (:search IS NULL
+        OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(CAST(c.phone AS text)) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND c.is_active = true
+""", nativeQuery = true)
     Page<Customer> findAllFiltered(@Param("search") String search, Pageable pageable);
 }

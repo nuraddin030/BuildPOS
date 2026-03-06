@@ -85,6 +85,7 @@ public class ProductService {
             product.setCategory(category);
         }
 
+
         product = productRepository.save(product);
 
         // Product units
@@ -98,6 +99,13 @@ public class ProductService {
                 throw new AlreadyExistsException("Bu barcode allaqachon mavjud: " + unitReq.getBarcode());
             }
 
+            if (unitReq.getSalePrice().compareTo(unitReq.getCostPrice()) < 0) {
+                throw new BadRequestException("Sotuv narxi tannarxdan kam bo'lmasligi kerak");
+            }
+            if (unitReq.getMinPrice().compareTo(unitReq.getCostPrice()) < 0) {
+                throw new BadRequestException("Minimal narx tannarxdan kam bo'lmasligi kerak");
+            }
+
             ProductUnit productUnit = ProductUnit.builder()
                     .product(product)
                     .unit(unit)
@@ -106,6 +114,10 @@ public class ProductService {
                     .costPrice(unitReq.getCostPrice())
                     .salePrice(unitReq.getSalePrice())
                     .minPrice(unitReq.getMinPrice())
+                    .costPriceUsd(unitReq.getCostPriceUsd())
+                    .salePriceUsd(unitReq.getSalePriceUsd())
+                    .minPriceUsd(unitReq.getMinPriceUsd())
+                    .exchangeRateAtSave(unitReq.getExchangeRateAtSave())
                     .isActive(true)
                     .build();
 

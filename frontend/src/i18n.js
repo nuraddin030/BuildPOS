@@ -5,7 +5,7 @@ import РУС from './locales/ru.json'
 import ЎЗБ from './locales/uz-cyrl.json'
 import ENG from './locales/en.json'
 
-const savedLang = localStorage.getItem('buildpos_lang') || 'uz'
+const savedLang = localStorage.getItem('buildpos_lang') || 'UZB'
 
 i18n
     .use(initReactI18next)
@@ -17,7 +17,7 @@ i18n
             ENG: { translation: ENG },
         },
         lng: savedLang,
-        fallbackLng: 'uz',
+        fallbackLng: 'UZB',
         interpolation: { escapeValue: false },
     })
 

@@ -5,6 +5,9 @@
     "username": "Имя пользователя",
     "password": "Пароль",
     "submit": "Войти",
+    "subtitle": "Введите логин и пароль для продолжения",
+    "username_placeholder": "Введите логин",
+    "password_placeholder": "Введите пароль",
     "error": "Неверный логин или пароль"
   },
   "nav": {
@@ -20,6 +23,7 @@
     "partners": "Партнёры",
     "reports": "Отчёты",
     "settings": "Настройки",
+    "units": "Единица измерения",
     "logout": "Выход"
   },
   "common": {
