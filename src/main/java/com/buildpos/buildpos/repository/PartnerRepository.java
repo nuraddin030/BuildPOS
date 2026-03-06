@@ -17,12 +17,18 @@ public interface PartnerRepository extends JpaRepository<Partner, Long> {
 
     Optional<Partner> findByPhone(String phone);
 
-    @Query("""
-        SELECT p FROM Partner p
+    @Query(value = """
+        SELECT * FROM partners p
         WHERE (:search IS NULL
             OR LOWER(p.name)  LIKE LOWER(CONCAT('%', :search, '%'))
-            OR LOWER(p.phone) LIKE LOWER(CONCAT('%', :search, '%')))
-    """)
+            OR LOWER(CAST(p.phone AS TEXT)) LIKE LOWER(CONCAT('%', :search, '%')))
+    """,countQuery = """
+        SELECT COUNT(*) FROM partners p
+        WHERE (:search IS NULL
+            OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))
+            OR LOWER(CAST(p.phone AS text)) LIKE LOWER(CONCAT('%', :search, '%')))
+    """, nativeQuery = true)
+
     Page<Partner> findAllFiltered(@Param("search") String search, Pageable pageable);
 
     // Statistika uchun querylar
