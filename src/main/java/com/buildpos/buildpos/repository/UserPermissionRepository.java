@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public interface UserPermissionRepository extends JpaRepository<UserPermission, Long> {
 
-    List<UserPermission> findAllByUserId(Long userId);
+    @Query("SELECT up FROM UserPermission up JOIN FETCH up.permission WHERE up.user.id = :userId")
+    List<UserPermission> findAllByUserId(@Param("userId") Long userId);
 
     Optional<UserPermission> findByUserIdAndPermissionId(Long userId, Long permissionId);
 
@@ -23,4 +24,9 @@ public interface UserPermissionRepository extends JpaRepository<UserPermission, 
         WHERE up.user.id = :userId
     """)
     List<String> findPermissionNamesByUserId(@Param("userId") Long userId);
+
+
+
+
+
 }

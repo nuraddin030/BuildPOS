@@ -16,6 +16,7 @@ public class EmployeeResponse {
     private String roleName;
     private Boolean isActive;
     private LocalDateTime createdAt;
+    private Long roleId;
 
     // Guruh bo'yicha permission ro'yxati
     private List<PermissionGroupResponse> permissionGroups;

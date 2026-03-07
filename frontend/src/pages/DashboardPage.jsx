@@ -6,6 +6,7 @@ import {
     BarChart3, Receipt, Inbox
 } from 'lucide-react'
 import api from '../api/api'
+import { useAuth } from '../context/AuthContext'
 import '../styles/ui.css'
 import '../styles/dashboard.css'
 
@@ -15,6 +16,8 @@ export default function DashboardPage() {
     const { t } = useTranslation()
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(true)
+
+    const { hasPermission } = useAuth()
 
     useEffect(() => {
         api.get('/api/v1/dashboard')

@@ -23,7 +23,7 @@ public class UnitController {
     private final UnitService unitService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('UNITS_CREATE')")
     @Operation(summary = "Yangi o'lchov birligi yaratish")
     public ResponseEntity<UnitResponse> create(@Valid @RequestBody UnitRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(unitService.create(request));
@@ -36,7 +36,7 @@ public class UnitController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('UNITS_VIEW')")
     @Operation(summary = "Barcha o'lchov birliklari (inactive ham)")
     public ResponseEntity<List<UnitResponse>> getAll() {
         return ResponseEntity.ok(unitService.getAll());
@@ -49,7 +49,7 @@ public class UnitController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('UNITS_EDIT')")
     @Operation(summary = "O'lchov birligini yangilash")
     public ResponseEntity<UnitResponse> update(
             @PathVariable Long id,
@@ -58,14 +58,14 @@ public class UnitController {
     }
 
     @PatchMapping("/{id}/toggle-status")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('UNITS_EDIT')")
     @Operation(summary = "Statusni o'zgartirish (active/inactive)")
     public ResponseEntity<UnitResponse> toggleStatus(@PathVariable Long id) {
         return ResponseEntity.ok(unitService.toggleStatus(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('UNITS_DELETE')")
     @Operation(summary = "O'lchov birligini o'chirish (mahsulotda ishlatilmasa)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         unitService.delete(id);

@@ -11,6 +11,7 @@ import {
     Unlock, Trash2, X, Upload, ImageIcon, ChevronLeft,
     ChevronRight, Zap, AlertCircle, Loader2, Minus, PackagePlus
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -69,6 +70,8 @@ export default function ProductsPage() {
     const [error, setError] = useState('')
     const [imagePreview, setImagePreview] = useState('')
     const [imageUploading, setImageUploading] = useState(false)
+
+    const { hasPermission } = useAuth()
 
     const load = useCallback(() => {
         setLoading(true)
@@ -265,10 +268,12 @@ export default function ProductsPage() {
                         <p className="page-subtitle">Barcha mahsulotlarni boshqaring</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={18} />
-                    <span>{t('products.add')}</span>
-                </button>
+                {hasPermission('PRODUCTS_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={18} />
+                        <span>{t('products.add')}</span>
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -365,19 +370,25 @@ export default function ProductsPage() {
                                     </td>
                                     <td className="th-center">
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" onClick={() => openEdit(p)} title="Tahrirlash">
-                                                <Pencil size={15} />
-                                            </button>
-                                            <button
-                                                className="act-btn act-lock"
-                                                onClick={() => handleToggle(p.id)}
-                                                title={p.status === 'ACTIVE' ? 'Noaktiv qilish' : 'Faollashtirish'}
-                                            >
-                                                {p.status === 'ACTIVE' ? <Lock size={15} /> : <Unlock size={15} />}
-                                            </button>
-                                            <button className="act-btn act-delete" onClick={() => handleDelete(p.id)} title="O'chirish">
-                                                <Trash2 size={15} />
-                                            </button>
+                                            {hasPermission('PRODUCTS_EDIT') && (
+                                                <button className="act-btn act-edit" onClick={() => openEdit(p)} title="Tahrirlash">
+                                                    <Pencil size={15} />
+                                                </button>
+                                            )}
+                                            {hasPermission('PRODUCTS_EDIT') && (
+                                                <button
+                                                    className="act-btn act-lock"
+                                                    onClick={() => handleToggle(p.id)}
+                                                    title={p.status === 'ACTIVE' ? 'Noaktiv qilish' : 'Faollashtirish'}
+                                                >
+                                                    {p.status === 'ACTIVE' ? <Lock size={15} /> : <Unlock size={15} />}
+                                                </button>
+                                            )}
+                                            {hasPermission('PRODUCTS_DELETE') && (
+                                                <button className="act-btn act-delete" onClick={() => handleDelete(p.id)} title="O'chirish">
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

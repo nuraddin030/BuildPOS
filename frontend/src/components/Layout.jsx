@@ -1,6 +1,6 @@
 import { NavLink, Routes, Route, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../context/AuthContext'
 import DashboardPage from '../pages/DashboardPage'
 import ProductsPage from '../pages/ProductsPage'
 import CategoriesPage from '../pages/CategoriesPage'
@@ -9,37 +9,66 @@ import WarehousesPage from '../pages/WarehousesPage'
 import CustomersPage from '../pages/CustomersPage.jsx'
 import SuppliersPage from '../pages/SuppliersPage'
 import PartnersPage from '../pages/PartnersPage'
+import EmployeesPage from '../pages/EmployeesPage'
 import { useState, useEffect, useRef } from 'react'
 import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil,
-    LogOut, User, Building2, X, Menu, Sun, Moon
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff
 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
 import '../styles/ProductsPage.css'
 import '../i18n.js'
 
+// permission: null => barcha foydalanuvchilar ko'radi (OWNER/ADMIN ham)
 const navItems = [
-    { path: '/',           key: 'dashboard',  icon: LayoutDashboard },
-    { path: '/sales',      key: 'sales',      icon: ShoppingCart },
-    { path: '/products',   key: 'products',   icon: Package },
-    { path: '/customers',  key: 'customers',  icon: Users },
-    { path: '/purchases',  key: 'purchases',  icon: Truck },
-    { path: '/suppliers',  key: 'suppliers',  icon: Factory },
-    { path: '/warehouses', key: 'warehouses', icon: Warehouse },
-    { path: '/categories', key: 'categories', icon: FolderTree },
-    { path: '/employees',  key: 'employees',  icon: UserCog },
-    { path: '/partners',   key: 'partners',   icon: Handshake },
-    { path: '/units',      key: 'units',      icon: Ruler },
+    { path: '/',           key: 'dashboard',  icon: LayoutDashboard, permission: 'DASHBOARD_VIEW' },
+    { path: '/sales',      key: 'sales',      icon: ShoppingCart,    permission: 'SALES_VIEW' },
+    { path: '/products',   key: 'products',   icon: Package,         permission: 'PRODUCTS_VIEW' },
+    { path: '/customers',  key: 'customers',  icon: Users,           permission: 'CUSTOMERS_VIEW' },
+    { path: '/purchases',  key: 'purchases',  icon: Truck,           permission: 'PURCHASES_VIEW' },
+    { path: '/suppliers',  key: 'suppliers',  icon: Factory,         permission: 'SUPPLIERS_VIEW' },
+    { path: '/warehouses', key: 'warehouses', icon: Warehouse,       permission: 'WAREHOUSES_VIEW' },
+    { path: '/categories', key: 'categories', icon: FolderTree,      permission: 'CATEGORIES_VIEW' },
+    { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
+    { path: '/partners',   key: 'partners',   icon: Handshake,       permission: 'PARTNERS_VIEW' },
+    { path: '/units',      key: 'units',      icon: Ruler,           permission: 'UNITS_VIEW' },
 ]
+
+// Ruxsat yo'q sahifa
+function AccessDenied() {
+    return (
+        <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', height: '60vh', gap: 12,
+            color: 'var(--text-muted)'
+        }}>
+            <ShieldOff size={52} strokeWidth={1} />
+            <h3 style={{ fontWeight: 700, fontSize: 20, margin: 0 }}>Ruxsat yo'q</h3>
+            <p style={{ fontSize: 14, margin: 0 }}>Bu sahifaga kirishga ruxsatingiz yo'q</p>
+        </div>
+    )
+}
+
+// Route ni permission bilan o'rash
+function ProtectedRoute({ permission, children }) {
+    const { hasPermission } = useAuth()
+    if (permission && !hasPermission(permission)) return <AccessDenied />
+    return children
+}
 
 export default function Layout() {
     const { t, i18n } = useTranslation()
-    const { user, logout } = useAuth()
+    const { user, logout, hasPermission } = useAuth()
     const navigate = useNavigate()
 
+    const [loggingOut, setLoggingOut] = useState(false)
+
     const handleLogout = async () => {
+        if (loggingOut) return
+        setLoggingOut(true)
         await logout()
         navigate('/login')
     }
@@ -78,7 +107,6 @@ export default function Layout() {
         }
     }, [darkMode])
 
-    // Mobilda sidebar ochilganda body scrollni to'xtatish
     useEffect(() => {
         if (mobileMenuOpen) {
             document.body.style.overflow = 'hidden'
@@ -88,12 +116,9 @@ export default function Layout() {
         return () => { document.body.style.overflow = '' }
     }, [mobileMenuOpen])
 
-    // Ekran kengligini kuzatish
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth > 1024) {
-                setMobileMenuOpen(false)
-            }
+            if (window.innerWidth > 1024) setMobileMenuOpen(false)
         }
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
@@ -145,9 +170,13 @@ export default function Layout() {
         setLangOpen(false)
     }
 
+    // Sidebar da faqat ruxsat berilgan itemlarni ko'rsatish
+    const visibleNavItems = navItems.filter(item =>
+        item.permission === null || hasPermission(item.permission)
+    )
+
     return (
         <div className="layout-wrapper">
-            {/* Mobile sidebar overlay */}
             {mobileMenuOpen && (
                 <div className="mobile-overlay" onClick={() => setMobileMenuOpen(false)} />
             )}
@@ -169,7 +198,7 @@ export default function Layout() {
                 </div>
 
                 <div className="sidebar-nav">
-                    {navItems.map((item) => {
+                    {visibleNavItems.map((item) => {
                         const Icon = item.icon
                         return (
                             <NavLink
@@ -181,13 +210,13 @@ export default function Layout() {
                                 }
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                <span className="sidebar-icon">
-                                    <Icon size={20} strokeWidth={1.8} />
-                                </span>
+                <span className="sidebar-icon">
+                    <Icon size={20} strokeWidth={1.8} />
+                </span>
                                 {sidebarOpen && (
                                     <span className="sidebar-text">
-                                        {t(`nav.${item.key}`)}
-                                    </span>
+                        {t(`nav.${item.key}`)}
+                    </span>
                                 )}
                             </NavLink>
                         )
@@ -211,7 +240,6 @@ export default function Layout() {
                     </div>
 
                     <div className="topbar-right">
-                        {/* Dark mode toggle */}
                         <button
                             className="theme-toggle-btn"
                             onClick={() => setDarkMode(!darkMode)}
@@ -224,7 +252,13 @@ export default function Layout() {
                         {/* Dollar kursi */}
                         <button
                             className="exchange-rate-widget"
-                            onClick={() => { setNewRate(exchangeRate || ''); setShowRateModal(true) }}
+                            onClick={() => {
+                                if (user?.role === 'OWNER' || user?.role === 'ADMIN') {
+                                    setNewRate(exchangeRate || '')
+                                    setShowRateModal(true)
+                                }
+                            }}
+                            style={{ cursor: user?.role === 'OWNER' || user?.role === 'ADMIN' ? 'pointer' : 'default' }}
                         >
                             <DollarSign size={15} className="rate-icon" />
                             <span className="rate-value">
@@ -242,7 +276,6 @@ export default function Layout() {
                                 <Globe size={15} />
                                 <span>{i18n.language.toUpperCase()}</span>
                             </button>
-
                             {langOpen && (
                                 <div className="lang-dropdown">
                                     {[
@@ -274,7 +307,6 @@ export default function Layout() {
                             >
                                 <User size={20} strokeWidth={2} />
                             </button>
-
                             {userOpen && (
                                 <div className="user-dropdown">
                                     <div className="dropdown-user-info">
@@ -285,16 +317,17 @@ export default function Layout() {
                                             <div className="dropdown-name">
                                                 {user?.fullName || user?.username}
                                             </div>
-                                            <div className="dropdown-role">Administrator</div>
+                                            <div className="dropdown-role">{user?.role}</div>
                                         </div>
                                     </div>
                                     <div className="dropdown-divider" />
                                     <button
                                         className="dropdown-item logout"
                                         onClick={handleLogout}
+                                        disabled={loggingOut}
                                     >
                                         <LogOut size={16} />
-                                        <span>Chiqish</span>
+                                        <span>{loggingOut ? 'Chiqilmoqda...' : 'Chiqish'}</span>
                                     </button>
                                 </div>
                             )}
@@ -305,15 +338,35 @@ export default function Layout() {
                 {/* Pages */}
                 <div className="page-content">
                     <Routes>
-                        <Route path="/" element={<DashboardPage />} />
-                        <Route path="/products" element={<ProductsPage />} />
-                        <Route path="/categories" element={<CategoriesPage />} />
-                        <Route path="/units" element={<UnitsPage />} />
-                        <Route path="/warehouses" element={<WarehousesPage />} />
-                        <Route path="/customers" element={<CustomersPage />} />
-                        <Route path="/suppliers" element={<SuppliersPage />} />
-                        <Route path="/partners" element={<PartnersPage />} />
-                        {/* Keyingi sahifalar shu yerga qo'shiladi */}
+                        <Route path="/" element={
+                            hasPermission('DASHBOARD_VIEW')
+                                ? <DashboardPage />
+                                : <Navigate to="/sales" replace />
+                        } />
+                        <Route path="/products" element={
+                            <ProtectedRoute permission="PRODUCTS_VIEW"><ProductsPage /></ProtectedRoute>
+                        } />
+                        <Route path="/categories" element={
+                            <ProtectedRoute permission="CATEGORIES_VIEW"><CategoriesPage /></ProtectedRoute>
+                        } />
+                        <Route path="/units" element={
+                            <ProtectedRoute permission="UNITS_VIEW"><UnitsPage /></ProtectedRoute>
+                        } />
+                        <Route path="/warehouses" element={
+                            <ProtectedRoute permission="WAREHOUSES_VIEW"><WarehousesPage /></ProtectedRoute>
+                        } />
+                        <Route path="/customers" element={
+                            <ProtectedRoute permission="CUSTOMERS_VIEW"><CustomersPage /></ProtectedRoute>
+                        } />
+                        <Route path="/suppliers" element={
+                            <ProtectedRoute permission="SUPPLIERS_VIEW"><SuppliersPage /></ProtectedRoute>
+                        } />
+                        <Route path="/partners" element={
+                            <ProtectedRoute permission="PARTNERS_VIEW"><PartnersPage /></ProtectedRoute>
+                        } />
+                        <Route path="/employees" element={
+                            <ProtectedRoute permission="EMPLOYEES_VIEW"><EmployeesPage /></ProtectedRoute>
+                        } />
                     </Routes>
                 </div>
             </div>
@@ -356,9 +409,7 @@ export default function Layout() {
                             )}
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setShowRateModal(false)}>
-                                Bekor
-                            </button>
+                            <button className="btn-cancel" onClick={() => setShowRateModal(false)}>Bekor</button>
                             <button className="btn-save" onClick={handleSaveRate} disabled={rateSaving}>
                                 {rateSaving ? 'Saqlanmoqda...' : 'Saqlash'}
                             </button>

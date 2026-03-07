@@ -7,6 +7,7 @@ import {
     getCategoryTree, createCategory, updateCategory,
     deleteCategory, toggleCategoryStatus
 } from '../api/categories'
+import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 
 const EMPTY_FORM = { name: '', description: '', parentId: '' }
@@ -74,6 +75,7 @@ export default function CategoriesPage() {
         setError('')
         setShowModal(true)
     }
+    const { hasPermission } = useAuth()
 
     const openEdit = (cat) => {
         setEditId(cat.id)
@@ -145,10 +147,12 @@ export default function CategoriesPage() {
                         <p className="page-subtitle">Mahsulot kategoriyalarini boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={() => openAdd()}>
-                    <Plus size={16} />
-                    Kategoriya qo'shish
-                </button>
+                {hasPermission('CATEGORIES_CREATE') && (
+                    <button className="btn-add" onClick={() => openAdd()}>
+                        <Plus size={16} />
+                        Kategoriya qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Table */}
@@ -212,22 +216,30 @@ export default function CategoriesPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(cat)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button
-                                                className={`act-btn act-lock`}
-                                                title={cat.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
-                                                onClick={() => handleToggle(cat.id)}
-                                            >
-                                                {cat.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
-                                            </button>
-                                            <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(cat.id)}>
-                                                <Trash2 size={14} />
-                                            </button>
-                                            <button className="act-btn act-edit" title="Pastki kategoriya qo'shish" onClick={() => openAdd(cat.id)}>
-                                                <FolderPlus size={14} />
-                                            </button>
+                                            {hasPermission('CATEGORIES_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(cat)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('CATEGORIES_EDIT') && (
+                                                <button
+                                                    className={`act-btn act-lock`}
+                                                    title={cat.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
+                                                    onClick={() => handleToggle(cat.id)}
+                                                >
+                                                    {cat.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                                </button>
+                                            )}
+                                            {hasPermission('CATEGORIES_DELETE') && (
+                                                <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(cat.id)}>
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('CATEGORIES_CREATE') && (
+                                                <button className="act-btn act-edit" title="Pastki kategoriya qo'shish" onClick={() => openAdd(cat.id)}>
+                                                    <FolderPlus size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

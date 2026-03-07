@@ -31,14 +31,14 @@ public class PurchaseController {
     private final PurchaseService purchaseService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_CREATE')")
     @Operation(summary = "Yangi xarid yaratish")
     public ResponseEntity<PurchaseResponse> create(@Valid @RequestBody PurchaseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(purchaseService.create(request));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_VIEW')")
     @Operation(summary = "Xaridlar ro'yxati (filter + pagination)")
     public ResponseEntity<Page<PurchaseSummaryResponse>> getAll(
             @RequestParam(required = false) Long supplierId,
@@ -55,19 +55,15 @@ public class PurchaseController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_VIEW')")
     @Operation(summary = "Xaridni ID bo'yicha olish")
     public ResponseEntity<PurchaseResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(purchaseService.getById(id));
     }
 
     @PostMapping("/{id}/receive")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
-    @Operation(summary = "Tovarni qabul qilish (stock ko'tariladi)",
-            description = """
-                   items bo'sh yuborsangiz — hammasi to'liq qabul qilinadi.
-                   items yuborsa — qisman qabul (har item uchun receivedQty ko'rsatiladi).
-               """)
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_RECEIVE')")
+    @Operation(summary = "Tovarni qabul qilish (stock ko'tariladi)")
     public ResponseEntity<PurchaseResponse> receive(
             @PathVariable Long id,
             @Valid @RequestBody(required = false) ReceivePurchaseRequest request) {
@@ -77,7 +73,7 @@ public class PurchaseController {
     }
 
     @PostMapping("/{id}/payments")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PURCHASES_PAY')")
     @Operation(summary = "Xaridga to'lov qo'shish")
     public ResponseEntity<PurchaseResponse> addPayment(
             @PathVariable Long id,
@@ -86,7 +82,7 @@ public class PurchaseController {
     }
 
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PURCHASES_DELETE')")
     @Operation(summary = "Xaridni bekor qilish (faqat PENDING holda)")
     public ResponseEntity<PurchaseResponse> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(purchaseService.cancel(id));

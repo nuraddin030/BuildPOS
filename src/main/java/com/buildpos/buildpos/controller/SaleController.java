@@ -30,18 +30,16 @@ public class SaleController {
     private final SaleService saleService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('SALES_CREATE')")
     @Operation(summary = "Yangi savatcha yaratish (DRAFT)")
     public ResponseEntity<SaleResponse> createDraft(@Valid @RequestBody SaleRequest request) {
-        System.out.println(">>> CONTROLLER HIT");
-        System.out.println(">>> AUTH: " + SecurityContextHolder.getContext().getAuthentication());
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(saleService.createDraft(request, username));
     }
 
     @PostMapping("/{id}/complete")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_CREATE')")
     @Operation(summary = "Savatchani yakunlash — kassir tasdiqlaydi, stock kamayadi")
     public ResponseEntity<SaleResponse> complete(
             @PathVariable Long id,
@@ -51,14 +49,14 @@ public class SaleController {
     }
 
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_CANCEL')")
     @Operation(summary = "Savatchani bekor qilish (faqat DRAFT)")
     public ResponseEntity<SaleResponse> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(saleService.cancel(id));
     }
 
     @GetMapping("/draft")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "Barcha ochiq savatchalar (kassir uchun)")
     public ResponseEntity<Page<SaleResponse>> getDraftSales(
             @PageableDefault(size = 20) Pageable pageable) {
@@ -66,7 +64,7 @@ public class SaleController {
     }
 
     @GetMapping("/my-drafts")
-    @PreAuthorize("hasAnyRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "O'z savatchalarim (sotuvchi uchun)")
     public ResponseEntity<Page<SaleResponse>> getMyDrafts(
             @PageableDefault(size = 20) Pageable pageable) {
@@ -75,7 +73,7 @@ public class SaleController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "Sotuv tarixi (filter + pagination)")
     public ResponseEntity<Page<SaleResponse>> getHistory(
             @RequestParam(required = false) Long sellerId,
@@ -92,7 +90,7 @@ public class SaleController {
     }
 
     @GetMapping("/my-history")
-    @PreAuthorize("hasAnyRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "O'z sotuv tarixi (sotuvchi uchun)")
     public ResponseEntity<Page<SaleResponse>> getMyHistory(
             @RequestParam(required = false) SaleStatus status,
@@ -108,7 +106,7 @@ public class SaleController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "Sotuv ID bo'yicha")
     public ResponseEntity<SaleResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(saleService.getById(id));

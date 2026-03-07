@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Warehouse, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, Star } from 'lucide-react'
 import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, toggleWarehouseStatus, setDefaultWarehouse } from '../api/warehouses'
 import '../styles/ProductsPage.css'
+import { useAuth } from '../context/AuthContext'
 
 const EMPTY_FORM = { name: '', address: '' }
 
@@ -29,6 +30,8 @@ export default function WarehousesPage() {
         w.name?.toLowerCase().includes(search.toLowerCase()) ||
         w.address?.toLowerCase().includes(search.toLowerCase())
     )
+
+    const { hasPermission } = useAuth()
 
     const openAdd = () => {
         setEditId(null); setForm(EMPTY_FORM); setError(''); setShowModal(true)
@@ -96,10 +99,12 @@ export default function WarehousesPage() {
                         <p className="page-subtitle">Ombor va filiallarni boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={16} />
-                    Ombor qo'shish
-                </button>
+                {hasPermission('WAREHOUSES_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={16} />
+                        Ombor qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -180,15 +185,19 @@ export default function WarehousesPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(w)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button className="act-btn act-lock"
-                                                    title={w.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
-                                                    onClick={() => handleToggle(w)}>
-                                                {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
-                                            </button>
-                                            {!w.isDefault && (
+                                            {hasPermission('WAREHOUSES_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(w)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('WAREHOUSES_EDIT') && (
+                                                <button className="act-btn act-lock"
+                                                        title={w.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
+                                                        onClick={() => handleToggle(w)}>
+                                                    {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                                </button>
+                                            )}
+                                            {!w.isDefault && hasPermission('WAREHOUSES_DELETE') && (
                                                 <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(w)}>
                                                     <Trash2 size={14} />
                                                 </button>

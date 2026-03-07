@@ -25,7 +25,7 @@ public class StockMovementController {
     private final StockMovementService stockMovementService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('STOCK_VIEW')")
     @Operation(summary = "Stock harakatlari tarixi (filter + pagination)",
             description = """
                    Filterlar (hammasi ixtiyoriy):

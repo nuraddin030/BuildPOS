@@ -24,35 +24,35 @@ public class SupplierController {
     private final SupplierService supplierService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_VIEW')")
     @Operation(summary = "Barcha faol yetkazuvchilar")
     public ResponseEntity<List<SupplierResponse>> getAll() {
         return ResponseEntity.ok(supplierService.getAll());
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_VIEW')")
     @Operation(summary = "Yetkazuvchini nom bo'yicha qidirish")
     public ResponseEntity<List<SupplierResponse>> search(@RequestParam String name) {
         return ResponseEntity.ok(supplierService.search(name));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_VIEW')")
     @Operation(summary = "Yetkazuvchini ID bo'yicha olish")
     public ResponseEntity<SupplierResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(supplierService.getById(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_CREATE')")
     @Operation(summary = "Yangi yetkazuvchi qo'shish")
     public ResponseEntity<SupplierResponse> create(@Valid @RequestBody SupplierRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_EDIT')")
     @Operation(summary = "Yetkazuvchi ma'lumotlarini yangilash")
     public ResponseEntity<SupplierResponse> update(
             @PathVariable Long id,
@@ -61,7 +61,7 @@ public class SupplierController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_DELETE')")
     @Operation(summary = "Yetkazuvchini o'chirish (soft delete)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         supplierService.delete(id);
@@ -69,14 +69,14 @@ public class SupplierController {
     }
 
     @GetMapping("/{id}/debts")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_VIEW')")
     @Operation(summary = "Yetkazuvchining qarz tarixi")
     public ResponseEntity<List<SupplierDebtResponse>> getDebts(@PathVariable Long id) {
         return ResponseEntity.ok(supplierService.getDebts(id));
     }
 
     @GetMapping("/{id}/total-debt")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('SUPPLIERS_VIEW')")
     @Operation(summary = "Yetkazuvchining jami qarzi")
     public ResponseEntity<?> getTotalDebt(@PathVariable Long id) {
         return ResponseEntity.ok(supplierService.getTotalDebt(id));

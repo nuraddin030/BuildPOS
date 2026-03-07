@@ -8,6 +8,7 @@ import {
     deleteSupplier, getSupplierDebts
 } from '../api/suppliers'
 import '../styles/ProductsPage.css'
+import { useAuth } from '../context/AuthContext'
 
 const EMPTY_FORM = {
     name: '', company: '', phone: '',
@@ -32,6 +33,8 @@ export default function SuppliersPage() {
     const [debtSupplier, setDebtSupplier] = useState(null)
     const [debts, setDebts] = useState([])
     const [debtLoading, setDebtLoading] = useState(false)
+
+    const { hasPermission } = useAuth()
 
     const load = useCallback(() => {
         setLoading(true)
@@ -116,10 +119,12 @@ export default function SuppliersPage() {
                         <p className="page-subtitle">Ta'minotchilar va qarzlarni boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={16} />
-                    Yetkazuvchi qo'shish
-                </button>
+                {hasPermission('SUPPLIERS_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={16} />
+                        Yetkazuvchi qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -191,17 +196,23 @@ export default function SuppliersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(s)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button className="act-btn"
-                                                    style={{ color: 'var(--info, #0891b2)' }}
-                                                    title="Qarzlar" onClick={() => openDebts(s)}>
-                                                <CreditCard size={14} />
-                                            </button>
-                                            <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(s)}>
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {hasPermission('SUPPLIERS_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(s)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('SUPPLIERS_DEBT_VIEW') && (
+                                                <button className="act-btn"
+                                                        style={{ color: 'var(--info, #0891b2)' }}
+                                                        title="Qarzlar" onClick={() => openDebts(s)}>
+                                                    <CreditCard size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('SUPPLIERS_DELETE') && (
+                                                <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(s)}>
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

@@ -6,6 +6,7 @@ import {
 import {
     getPartners, createPartner, updatePartner, togglePartnerStatus
 } from '../api/partners'
+import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 
 const EMPTY_FORM = { name: '', phone: '', notes: '' }
@@ -26,6 +27,8 @@ export default function PartnersPage() {
 
     const [statsPartner, setStatsPartner] = useState(null)
     const [statsLoading, setStatsLoading] = useState(false)
+
+    const { hasPermission } = useAuth()
 
     const load = useCallback(() => {
         setLoading(true)
@@ -103,10 +106,12 @@ export default function PartnersPage() {
                         <p className="page-subtitle">Hamkorlar va statistikani boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={16} />
-                    Hamkor qo'shish
-                </button>
+                {hasPermission('PARTNERS_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={16} />
+                        Hamkor qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -176,19 +181,23 @@ export default function PartnersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(p)}>
-                                                <Pencil size={14} />
-                                            </button>
+                                            {hasPermission('PARTNERS_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(p)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
                                             <button className="act-btn"
                                                     style={{ color: 'var(--info, #0891b2)' }}
                                                     title="Statistika" onClick={() => openStats(p)}>
                                                 <TrendingUp size={14} />
                                             </button>
-                                            <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
-                                                    title={p.isActive ? 'Bloklash' : 'Faollashtirish'}
-                                                    onClick={() => handleToggle(p)}>
-                                                {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
-                                            </button>
+                                            {hasPermission('PARTNERS_EDIT') && (
+                                                <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
+                                                        title={p.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                        onClick={() => handleToggle(p)}>
+                                                    {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

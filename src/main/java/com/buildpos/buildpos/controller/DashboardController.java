@@ -20,7 +20,7 @@ public class DashboardController {
 
     @GetMapping
     @Operation(summary = "Dashboard statistikasi")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('DASHBOARD_VIEW')")
     public DashboardResponse getDashboard() {
         return dashboardService.getDashboard();
     }

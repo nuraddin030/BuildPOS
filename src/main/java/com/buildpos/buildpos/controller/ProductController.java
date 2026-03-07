@@ -31,15 +31,12 @@ public class ProductController {
     // CREATE
     // ─────────────────────────────────────────
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PRODUCTS_CREATE')")
     @Operation(summary = "Yangi mahsulot yaratish")
     public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
-    // ─────────────────────────────────────────
-    // LIST (pagination + filter)
-    // ─────────────────────────────────────────
     @GetMapping
     @Operation(summary = "Mahsulotlar ro'yxati (pagination, filter, search)")
     public ResponseEntity<Page<ProductSummaryResponse>> getAll(
@@ -50,40 +47,28 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAll(search, categoryId, status, pageable));
     }
 
-    // ─────────────────────────────────────────
-    // LOW STOCK
-    // ─────────────────────────────────────────
     @GetMapping("/low-stock")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PRODUCTS_VIEW')")
     @Operation(summary = "Kam qolgan mahsulotlar")
     public ResponseEntity<Page<ProductSummaryResponse>> getLowStock(
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(productService.getLowStockProducts(pageable));
     }
 
-    // ─────────────────────────────────────────
-    // GET BY ID
-    // ─────────────────────────────────────────
     @GetMapping("/{id}")
     @Operation(summary = "Mahsulotni ID bo'yicha olish")
     public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getById(id));
     }
 
-    // ─────────────────────────────────────────
-    // GET BY BARCODE (POS skaner uchun)
-    // ─────────────────────────────────────────
     @GetMapping("/barcode/{barcode}")
     @Operation(summary = "Barcode bo'yicha mahsulot topish (POS skaner)")
     public ResponseEntity<ProductResponse> getByBarcode(@PathVariable String barcode) {
         return ResponseEntity.ok(productService.getByBarcode(barcode));
     }
 
-    // ─────────────────────────────────────────
-    // UPDATE
-    // ─────────────────────────────────────────
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PRODUCTS_EDIT')")
     @Operation(summary = "Mahsulotni yangilash")
     public ResponseEntity<ProductResponse> update(
             @PathVariable Long id,
@@ -91,43 +76,31 @@ public class ProductController {
         return ResponseEntity.ok(productService.update(id, request));
     }
 
-    // ─────────────────────────────────────────
-    // TOGGLE STATUS
-    // ─────────────────────────────────────────
     @PatchMapping("/{id}/toggle-status")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PRODUCTS_EDIT')")
     @Operation(summary = "Mahsulot statusini o'zgartirish (ACTIVE/INACTIVE)")
     public ResponseEntity<ProductResponse> toggleStatus(@PathVariable Long id) {
         return ResponseEntity.ok(productService.toggleStatus(id));
     }
 
-    // ─────────────────────────────────────────
-    // DELETE (soft)
-    // ─────────────────────────────────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PRODUCTS_DELETE')")
     @Operation(summary = "Mahsulotni o'chirish (soft delete)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ─────────────────────────────────────────
-    // STOCK ADJUSTMENT (qo'lda kirim/chiqim)
-    // ─────────────────────────────────────────
     @PostMapping("/stock/adjust")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('STOCK_ADJUST')")
     @Operation(summary = "Qo'lda stock kirim/chiqim (inventarizatsiya)")
     public ResponseEntity<Void> adjustStock(@Valid @RequestBody StockAdjustmentRequest request) {
         productService.adjustStock(request);
         return ResponseEntity.ok().build();
     }
 
-    // ─────────────────────────────────────────
-    // STOCK TRANSFER (omborlar orasida)
-    // ─────────────────────────────────────────
     @PostMapping("/stock/transfer")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('STOCK_TRANSFER')")
     @Operation(summary = "Omborlar orasida mahsulot ko'chirish")
     public ResponseEntity<Void> transferStock(@Valid @RequestBody StockTransferRequest request) {
         productService.transferStock(request);

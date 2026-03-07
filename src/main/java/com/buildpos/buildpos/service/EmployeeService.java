@@ -202,6 +202,7 @@ public class EmployeeService {
                 .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .permissionGroups(permissionGroups)
+                .roleId(user.getRole() != null ? user.getRole().getId() : null)
                 .build();
     }
 

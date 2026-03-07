@@ -24,14 +24,14 @@ public class PartnerController {
     private final PartnerService partnerService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PARTNERS_CREATE')")
     @Operation(summary = "Yangi hamkor qo'shish")
     public ResponseEntity<PartnerResponse> create(@Valid @RequestBody PartnerRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(partnerService.create(request));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PARTNERS_VIEW')")
     @Operation(summary = "Hamkorlar ro'yxati (ism yoki telefon bo'yicha qidirish)")
     public ResponseEntity<Page<PartnerResponse>> getAll(
             @RequestParam(required = false) String search,
@@ -40,21 +40,21 @@ public class PartnerController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PARTNERS_VIEW')")
     @Operation(summary = "Hamkorni ID bo'yicha olish (statistika bilan)")
     public ResponseEntity<PartnerResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(partnerService.getById(id));
     }
 
     @GetMapping("/phone/{phone}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('PARTNERS_VIEW')")
     @Operation(summary = "Hamkorni telefon bo'yicha qidirish (savatcha uchun)")
     public ResponseEntity<PartnerResponse> getByPhone(@PathVariable String phone) {
         return ResponseEntity.ok(partnerService.getByPhone(phone));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PARTNERS_EDIT')")
     @Operation(summary = "Hamkor ma'lumotlarini yangilash")
     public ResponseEntity<PartnerResponse> update(
             @PathVariable Long id,
@@ -63,7 +63,7 @@ public class PartnerController {
     }
 
     @PatchMapping("/{id}/toggle-status")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PARTNERS_EDIT')")
     @Operation(summary = "Hamkorni aktiv/noaktiv qilish")
     public ResponseEntity<PartnerResponse> toggleStatus(@PathVariable Long id) {
         return ResponseEntity.ok(partnerService.toggleStatus(id));

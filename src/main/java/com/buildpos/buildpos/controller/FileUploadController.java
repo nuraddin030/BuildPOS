@@ -20,7 +20,7 @@ public class FileUploadController {
     private final FileUploadService fileUploadService;
 
     @PostMapping("/image")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAnyAuthority('PRODUCTS_CREATE', 'PRODUCTS_EDIT')")
     @Operation(summary = "Rasm yuklash (avtomatik siqiladi va WebP ga o'giriladi)")
     public ResponseEntity<Map<String, String>> uploadImage(
             @RequestParam("file") MultipartFile file) {

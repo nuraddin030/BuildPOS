@@ -28,14 +28,14 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('CUSTOMERS_CREATE')")
     @Operation(summary = "Yangi mijoz qo'shish")
     public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerService.create(request));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('CUSTOMERS_VIEW')")
     @Operation(summary = "Mijozlar ro'yxati (ism yoki telefon bo'yicha qidirish)")
     public ResponseEntity<Page<CustomerResponse>> getAll(
             @RequestParam(required = false) String search,
@@ -44,21 +44,21 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('CUSTOMERS_VIEW')")
     @Operation(summary = "Mijozni ID bo'yicha olish")
     public ResponseEntity<CustomerResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.getById(id));
     }
 
     @GetMapping("/phone/{phone}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('CUSTOMERS_VIEW')")
     @Operation(summary = "Mijozni telefon bo'yicha qidirish")
     public ResponseEntity<CustomerResponse> getByPhone(@PathVariable String phone) {
         return ResponseEntity.ok(customerService.getByPhone(phone));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_EDIT')")
     @Operation(summary = "Mijoz ma'lumotlarini yangilash")
     public ResponseEntity<CustomerResponse> update(
             @PathVariable Long id,
@@ -67,7 +67,7 @@ public class CustomerController {
     }
 
     @PostMapping("/debts/{debtId}/pay")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('CUSTOMERS_DEBT_PAY')")
     @Operation(summary = "Nasiya to'lash")
     public ResponseEntity<CustomerResponse> payDebt(
             @PathVariable Long debtId,
@@ -77,7 +77,7 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}/debts")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_DEBT_VIEW')")
     @Operation(summary = "Mijozning qarz tarixi (barcha nasiyalar va to'lovlar)")
     public ResponseEntity<List<CustomerDebtResponse>> getDebts(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.getDebts(id));

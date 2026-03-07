@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ChevronDown, ChevronUp } from 'lucide-react'
 import { getCustomers, createCustomer, updateCustomer, getCustomerDebts, payCustomerDebt } from '../api/customers'
 import '../styles/ProductsPage.css'
+import { useAuth } from '../context/AuthContext'
 
 const EMPTY_FORM = { name: '', phone: '', notes: '' }
 const formatPhone = (v) => v.replace(/\D/g, '').slice(0, 12)
@@ -42,6 +43,8 @@ export default function CustomersPage() {
     const openAdd = () => {
         setEditId(null); setForm(EMPTY_FORM); setError(''); setShowModal(true)
     }
+
+    const { hasPermission } = useAuth()
 
     const openEdit = (c) => {
         setEditId(c.id)
@@ -106,10 +109,12 @@ export default function CustomersPage() {
                         <p className="page-subtitle">Mijozlar va nasiyalarni boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={16} />
-                    Mijoz qo'shish
-                </button>
+                {hasPermission('CUSTOMERS_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={16} />
+                        Mijoz qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -172,17 +177,21 @@ export default function CustomersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(c)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button
-                                                className="act-btn"
-                                                title="Nasiyalar"
-                                                style={{ color: 'var(--info, #0891b2)', borderColor: 'var(--border-color)' }}
-                                                onClick={() => openDebts(c)}
-                                            >
-                                                <CreditCard size={14} />
-                                            </button>
+                                            {hasPermission('CUSTOMERS_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(c)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('CUSTOMERS_DEBT_VIEW') && (
+                                                <button
+                                                    className="act-btn"
+                                                    title="Nasiyalar"
+                                                    style={{ color: 'var(--info, #0891b2)', borderColor: 'var(--border-color)' }}
+                                                    onClick={() => openDebts(c)}
+                                                >
+                                                    <CreditCard size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

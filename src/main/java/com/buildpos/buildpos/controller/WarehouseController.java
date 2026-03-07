@@ -23,7 +23,7 @@ public class WarehouseController {
     private final WarehouseService warehouseService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_CREATE')")
     @Operation(summary = "Yangi ombor yaratish")
     public ResponseEntity<WarehouseResponse> create(@Valid @RequestBody WarehouseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.create(request));
@@ -36,7 +36,7 @@ public class WarehouseController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_VIEW')")
     @Operation(summary = "Barcha omborlar (inactive ham)")
     public ResponseEntity<List<WarehouseResponse>> getAll() {
         return ResponseEntity.ok(warehouseService.getAll());
@@ -49,7 +49,7 @@ public class WarehouseController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_EDIT')")
     @Operation(summary = "Ombor ma'lumotlarini yangilash")
     public ResponseEntity<WarehouseResponse> update(
             @PathVariable Long id,
@@ -58,21 +58,21 @@ public class WarehouseController {
     }
 
     @PatchMapping("/{id}/set-default")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_EDIT')")
     @Operation(summary = "Ombor'ni default qilish")
     public ResponseEntity<WarehouseResponse> setDefault(@PathVariable Long id) {
         return ResponseEntity.ok(warehouseService.setDefault(id));
     }
 
     @PatchMapping("/{id}/toggle-status")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_EDIT')")
     @Operation(summary = "Statusni o'zgartirish (active/inactive)")
     public ResponseEntity<WarehouseResponse> toggleStatus(@PathVariable Long id) {
         return ResponseEntity.ok(warehouseService.toggleStatus(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('WAREHOUSES_DELETE')")
     @Operation(summary = "Ombor'ni o'chirish (ichida mahsulot bo'lmasa)")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         warehouseService.delete(id);

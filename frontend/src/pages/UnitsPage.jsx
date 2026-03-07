@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Ruler, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search } from 'lucide-react'
 import { getUnits, createUnit, updateUnit, deleteUnit, toggleUnitStatus } from '../api/units'
 import '../styles/ProductsPage.css'
+import { useAuth } from '../context/AuthContext'
 
 const EMPTY_FORM = { name: '', symbol: '' }
 
@@ -29,6 +30,8 @@ export default function UnitsPage() {
         u.name?.toLowerCase().includes(search.toLowerCase()) ||
         u.symbol?.toLowerCase().includes(search.toLowerCase())
     )
+
+    const { hasPermission } = useAuth()
 
     const openAdd = () => {
         setEditId(null); setForm(EMPTY_FORM); setError(''); setShowModal(true)
@@ -88,10 +91,12 @@ export default function UnitsPage() {
                         <p className="page-subtitle">Mahsulot o'lchov birliklarini boshqarish</p>
                     </div>
                 </div>
-                <button className="btn-add" onClick={openAdd}>
-                    <Plus size={16} />
-                    O'lchov qo'shish
-                </button>
+                {hasPermission('UNITS_CREATE') && (
+                    <button className="btn-add" onClick={openAdd}>
+                        <Plus size={16} />
+                        O'lchov qo'shish
+                    </button>
+                )}
             </div>
 
             {/* Filter */}
@@ -142,16 +147,22 @@ export default function UnitsPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(u)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button className="act-btn act-lock" title={u.isActive !== false ? 'Noaktiv' : 'Faollashtirish'}
-                                                    onClick={() => handleToggle(u.id)}>
-                                                {u.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
-                                            </button>
-                                            <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(u.id)}>
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {hasPermission('UNITS_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(u)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('UNITS_EDIT') && (
+                                                <button className="act-btn act-lock" title={u.isActive !== false ? 'Noaktiv' : 'Faollashtirish'}
+                                                        onClick={() => handleToggle(u.id)}>
+                                                    {u.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                                </button>
+                                            )}
+                                            {hasPermission('UNITS_DELETE') && (
+                                                <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(u.id)}>
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

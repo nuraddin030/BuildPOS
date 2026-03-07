@@ -21,21 +21,21 @@ public class SupplierPaymentController {
     private final SupplierPaymentService supplierPaymentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SUPPLIERS_DEBT_VIEW')")
     @Operation(summary = "Yetkazuvchiga qarz to'lash")
     public ResponseEntity<SupplierPayment> pay(@RequestBody SupplierPayment payment) {
         return ResponseEntity.ok(supplierPaymentService.pay(payment));
     }
 
     @GetMapping("/supplier/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SUPPLIERS_DEBT_VIEW')")
     @Operation(summary = "Yetkazuvchiga qilingan to'lovlar tarixi")
     public ResponseEntity<List<SupplierPayment>> getPayments(@PathVariable Long id) {
         return ResponseEntity.ok(supplierPaymentService.getPayments(id));
     }
 
     @GetMapping("/summary/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SUPPLIERS_DEBT_VIEW')")
     @Operation(summary = "Yetkazuvchi bo'yicha moliyaviy xulosa (jami qarz, to'langan, qoldiq)")
     public ResponseEntity<Map<String, Object>> getSummary(@PathVariable Long id) {
         return ResponseEntity.ok(supplierPaymentService.getSummary(id));

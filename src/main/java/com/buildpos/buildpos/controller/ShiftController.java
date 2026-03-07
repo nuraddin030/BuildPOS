@@ -26,7 +26,7 @@ public class ShiftController {
     private final ShiftService shiftService;
 
     @PostMapping("/open")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_SHIFT_OPEN')")
     @Operation(summary = "Smena ochish")
     public ResponseEntity<ShiftResponse> openShift(@Valid @RequestBody OpenShiftRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -35,7 +35,7 @@ public class ShiftController {
     }
 
     @PostMapping("/close")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_SHIFT_CLOSE')")
     @Operation(summary = "Smena yopish")
     public ResponseEntity<ShiftResponse> closeShift(@Valid @RequestBody CloseShiftRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -43,7 +43,7 @@ public class ShiftController {
     }
 
     @GetMapping("/current")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "Joriy ochiq smena")
     public ResponseEntity<ShiftResponse> getCurrentShift() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -51,14 +51,14 @@ public class ShiftController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "Barcha smenalar tarixi")
     public ResponseEntity<Page<ShiftResponse>> getAll(@PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(shiftService.getAll(pageable));
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_VIEW')")
     @Operation(summary = "O'z smenalarim tarixi")
     public ResponseEntity<Page<ShiftResponse>> getMyShifts(@PageableDefault(size = 20) Pageable pageable) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
