@@ -68,7 +68,23 @@ public class PurchaseService {
             ProductUnit productUnit = productUnitRepository.findById(itemReq.getProductUnitId())
                     .orElseThrow(() -> new NotFoundException("Product unit topilmadi: " + itemReq.getProductUnitId()));
 
-            BigDecimal itemTotal = itemReq.getUnitPrice().multiply(itemReq.getQuantity());
+            // USD bo'lsa kurs tekshirish
+            if ("USD".equals(itemReq.getCurrency()) && itemReq.getExchangeRate() == null) {
+                throw new BadRequestException("USD uchun kurs kiritilishi kerak");
+            }
+
+            BigDecimal exchangeRate = itemReq.getExchangeRate() != null
+                    ? itemReq.getExchangeRate()
+                    : BigDecimal.ONE;
+
+            String currency = itemReq.getCurrency() != null ? itemReq.getCurrency() : "UZS";
+
+            // UZS ga o'girish
+            BigDecimal unitPriceUzs = "USD".equals(currency)
+                    ? itemReq.getUnitPrice().multiply(exchangeRate)
+                    : itemReq.getUnitPrice();
+
+            BigDecimal itemTotal = unitPriceUzs.multiply(itemReq.getQuantity());
             total = total.add(itemTotal);
 
             PurchaseItem item = PurchaseItem.builder()
@@ -77,6 +93,9 @@ public class PurchaseService {
                     .quantity(itemReq.getQuantity())
                     .unitPrice(itemReq.getUnitPrice())
                     .totalPrice(itemTotal)
+                    .currency(currency)
+                    .exchangeRate(exchangeRate)
+                    .unitPriceUzs(unitPriceUzs)
                     .receivedQty(BigDecimal.ZERO)
                     .build();
 
@@ -102,7 +121,7 @@ public class PurchaseService {
     // ─────────────────────────────────────────
     public Page<PurchaseSummaryResponse> getAll(
             Long supplierId, Long warehouseId,
-            PurchaseStatus status,
+            String status,
             LocalDateTime from, LocalDateTime to,
             Pageable pageable) {
 
@@ -230,6 +249,11 @@ public class PurchaseService {
     // PRIVATE HELPERS
     // ─────────────────────────────────────────
     private void receiveItem(PurchaseItem item, BigDecimal qty, Warehouse warehouse) {
+        // UZS narxini olish
+        BigDecimal unitPriceUzs = item.getUnitPriceUzs() != null
+                ? item.getUnitPriceUzs()
+                : item.getUnitPrice();
+
         // Stock ko'tarish
         WarehouseStock stock = warehouseStockRepository
                 .findByWarehouseIdAndProductUnitId(warehouse.getId(), item.getProductUnit().getId())
@@ -243,14 +267,14 @@ public class PurchaseService {
         stock.setQuantity(stock.getQuantity().add(qty));
         warehouseStockRepository.save(stock);
 
-        // Stock movement yozish
+        // Stock movement yozish (UZS da)
         StockMovement movement = StockMovement.builder()
                 .productUnit(item.getProductUnit())
                 .movementType(StockMovementType.PURCHASE_IN)
                 .toWarehouse(warehouse)
                 .quantity(qty)
-                .unitPrice(item.getUnitPrice())
-                .totalPrice(item.getUnitPrice().multiply(qty))
+                .unitPrice(unitPriceUzs)
+                .totalPrice(unitPriceUzs.multiply(qty))
                 .referenceType("PURCHASE")
                 .referenceId(item.getPurchase().getId())
                 .build();
@@ -260,14 +284,13 @@ public class PurchaseService {
         item.setReceivedQty(item.getReceivedQty().add(qty));
         purchaseItemRepository.save(item);
 
-        // Product cost price yangilash (avg yoki oxirgi narx)
-        item.getProductUnit().setCostPrice(item.getUnitPrice());
+        // Product cost price UZS da yangilash
+        item.getProductUnit().setCostPrice(unitPriceUzs);
         productUnitRepository.save(item.getProductUnit());
     }
 
     private void updateSupplierDebt(Purchase purchase) {
         if (purchase.getDebtAmount().compareTo(BigDecimal.ZERO) > 0) {
-            // Supplier debt yozuv mavjudligini tekshirish
             supplierDebtRepository.findByPurchaseId(purchase.getId()).ifPresentOrElse(
                     debt -> {
                         debt.setAmount(purchase.getTotalAmount());
@@ -327,6 +350,9 @@ public class PurchaseService {
                         .quantity(item.getQuantity())
                         .unitPrice(item.getUnitPrice())
                         .totalPrice(item.getTotalPrice())
+                        .currency(item.getCurrency())
+                        .exchangeRate(item.getExchangeRate())
+                        .unitPriceUzs(item.getUnitPriceUzs())
                         .receivedQty(item.getReceivedQty())
                         .remainingQty(item.getQuantity().subtract(item.getReceivedQty()))
                         .build()).toList())

@@ -52,6 +52,9 @@ public class PurchaseResponse {
         private BigDecimal totalPrice;
         private BigDecimal receivedQty;
         private BigDecimal remainingQty;   // quantity - receivedQty
+        private String currency;
+        private BigDecimal exchangeRate;
+        private BigDecimal unitPriceUzs;
     }
 
     // ─────────────────────────────────────────

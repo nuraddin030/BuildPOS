@@ -43,7 +43,7 @@ public class PurchaseController {
     public ResponseEntity<Page<PurchaseSummaryResponse>> getAll(
             @RequestParam(required = false) Long supplierId,
             @RequestParam(required = false) Long warehouseId,
-            @RequestParam(required = false) PurchaseStatus status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false)

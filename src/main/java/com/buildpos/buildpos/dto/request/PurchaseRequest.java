@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -42,5 +43,10 @@ public class PurchaseRequest {
         @NotNull
         @DecimalMin(value = "0.0", message = "Narx manfiy bo'lmasligi kerak")
         private BigDecimal unitPrice;
+
+        @Pattern(regexp = "^(UZS|USD)$", message = "Valyuta UZS yoki USD bo'lishi kerak")
+        private String currency = "UZS";
+
+        private BigDecimal exchangeRate;  // USD bo'lsa kurs kiritiladi
     }
 }

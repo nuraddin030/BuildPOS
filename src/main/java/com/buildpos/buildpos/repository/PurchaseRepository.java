@@ -18,19 +18,26 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
     boolean existsByReferenceNo(String referenceNo);
 
-    @Query("""
-        SELECT p FROM Purchase p
-        WHERE (:supplierId  IS NULL OR p.supplier.id  = :supplierId)
-          AND (:warehouseId IS NULL OR p.warehouse.id = :warehouseId)
-          AND (:status      IS NULL OR p.status       = :status)
-          AND (:from        IS NULL OR p.createdAt   >= :from)
-          AND (:to          IS NULL OR p.createdAt   <= :to)
-        ORDER BY p.createdAt DESC
-    """)
+    @Query(value = """
+    SELECT * FROM purchases p
+    WHERE (:supplierId IS NULL OR p.supplier_id = CAST(:supplierId AS BIGINT))
+      AND (:warehouseId IS NULL OR p.warehouse_id = CAST(:warehouseId AS BIGINT))
+      AND (CAST(:status AS VARCHAR) IS NULL OR p.status = CAST(:status AS VARCHAR))
+      AND (CAST(:from AS TIMESTAMP) IS NULL OR p.created_at >= CAST(:from AS TIMESTAMP))
+      AND (CAST(:to AS TIMESTAMP) IS NULL OR p.created_at <= CAST(:to AS TIMESTAMP))
+    ORDER BY p.created_at DESC
+""", countQuery = """
+    SELECT COUNT(*) FROM purchases p
+    WHERE (:supplierId IS NULL OR p.supplier_id = CAST(:supplierId AS BIGINT))
+      AND (:warehouseId IS NULL OR p.warehouse_id = CAST(:warehouseId AS BIGINT))
+      AND (CAST(:status AS VARCHAR) IS NULL OR p.status = CAST(:status AS VARCHAR))
+      AND (CAST(:from AS TIMESTAMP) IS NULL OR p.created_at >= CAST(:from AS TIMESTAMP))
+      AND (CAST(:to AS TIMESTAMP) IS NULL OR p.created_at <= CAST(:to AS TIMESTAMP))
+""", nativeQuery = true)
     Page<Purchase> findAllFiltered(
             @Param("supplierId")  Long supplierId,
             @Param("warehouseId") Long warehouseId,
-            @Param("status")      PurchaseStatus status,
+            @Param("status")      String status,
             @Param("from")        LocalDateTime from,
             @Param("to")          LocalDateTime to,
             Pageable pageable

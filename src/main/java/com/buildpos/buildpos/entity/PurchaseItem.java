@@ -42,6 +42,17 @@ public class PurchaseItem {
     @Column(nullable = false, precision = 18, scale = 3)
     private BigDecimal receivedQty = BigDecimal.ZERO;   // qisman qabul uchun
 
+    @Column(nullable = false, length = 3)
+    @Builder.Default
+    private String currency = "UZS";
+
+    @Column(nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal unitPriceUzs; // currency * exchangeRate
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
