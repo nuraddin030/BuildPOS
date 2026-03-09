@@ -6,7 +6,7 @@ import {
     DollarSign, Save, Building2
 } from 'lucide-react'
 import { createPurchase} from '../api/purchases'
-import { getProducts, getWarehouses, getExchangeRate } from '../api/products'
+import {getProducts, getWarehouses, getExchangeRate, getProductById} from '../api/products'
 import { getSuppliers, createSupplier } from '../api/suppliers'
 import '../styles/ProductsPage.css'
 
@@ -25,7 +25,12 @@ const EMPTY_ITEM = {
     minPrice: '',
     updatePrices: false,
 }
-
+const fmtPrice = (val) => {
+    if (val === '' || val === null || val === undefined) return ''
+    const num = String(val).replace(/[^\d]/g, '')
+    if (!num) return ''
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
 const EMPTY_SUPPLIER = { name: '', phone: '', inn: '', address: '' }
 
 export default function PurchaseNewPage() {
@@ -73,25 +78,27 @@ export default function PurchaseNewPage() {
         searchTimeouts.current[idx] = setTimeout(async () => {
             setProductSearching(p => ({ ...p, [idx]: true }))
             try {
-                const res = await getProducts({ search: val, size: 10 })
+                const res = await getProducts({ search: val, size: 10, sort: 'name,asc' })
                 setProductResults(p => ({ ...p, [idx]: res.data.content || [] }))
             } catch {}
             finally { setProductSearching(p => ({ ...p, [idx]: false })) }
         }, 350)
     }
 
-    const selectProduct = (idx, product) => {
-        // ProductUnit ni olish — birinchi unit
-        const unit = product.units?.[0]
-        if (!unit) return
-        setItems(prev => prev.map((item, i) => i === idx ? {
-            ...item,
-            productUnitId: unit.id,
-            productName: product.name,
-            unitSymbol: unit.unitSymbol || unit.symbol || '',
-            salePrice: unit.salePrice || '',
-            minPrice: unit.minPrice || '',
-        } : item))
+    const selectProduct = async (idx, product) => {
+        try {
+            const res = await getProductById(product.id)
+            const fullProduct = res.data
+            const unit = fullProduct.units?.[0] || fullProduct.productUnits?.[0]
+            setItems(prev => prev.map((item, i) => i === idx ? {
+                ...item,
+                productUnitId: unit?.id,
+                productName: fullProduct.name,
+                unitSymbol: unit?.unitSymbol || unit?.symbol || fullProduct.defaultUnitSymbol || '',
+                salePrice: unit?.salePrice || fullProduct.defaultSalePrice || '',
+                minPrice: unit?.minPrice || '',
+            } : item))
+        } catch {}
         setProductSearch(p => ({ ...p, [idx]: '' }))
         setProductResults(p => ({ ...p, [idx]: [] }))
     }
@@ -113,7 +120,7 @@ export default function PurchaseNewPage() {
         if (!item.unitPrice) return 0
         const price = Number(item.unitPrice)
         if (item.currency === 'USD') {
-            const rate = Number(item.exchangeRate) || exchangeRate
+            const rate = Number(item.exchangeRate) || Number(exchangeRate)
             return price * rate
         }
         return price
@@ -253,9 +260,10 @@ export default function PurchaseNewPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <input
                                 className="form-input"
-                                type="number"
-                                value={exchangeRate}
-                                onChange={e => setExchangeRate(Number(e.target.value))}
+                                type="text"
+                                inputMode="numeric"
+                                value={fmtPrice(exchangeRate)}
+                                onChange={e => setExchangeRate(e.target.value.replace(/\s/g, ''))}
                                 style={{ flex: 1 }}
                             />
                             <span style={{ fontSize: 13, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>UZS</span>
@@ -340,7 +348,9 @@ export default function PurchaseNewPage() {
                                                     {productResults[idx].map(p => (
                                                         <div key={p.id}
                                                              style={{ padding: '8px 14px', cursor: 'pointer', fontSize: 13 }}
-                                                             onMouseDown={() => selectProduct(idx, p)}
+                                                             onMouseDown={(e) => {
+                                                                 e.preventDefault()
+                                                                 selectProduct(idx, p)}}
                                                              className="dropdown-hover"
                                                         >
                                                             <div style={{ fontWeight: 600 }}>{p.name}</div>
@@ -369,10 +379,11 @@ export default function PurchaseNewPage() {
                                     </label>
                                     <input
                                         className="form-input"
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
                                         min="0"
-                                        value={item.quantity}
-                                        onChange={e => updateItem(idx, 'quantity', e.target.value)}
+                                        value={fmtPrice(item.unitPrice)}
+                                        onChange={e => updateItem(idx, 'unitPrice', e.target.value.replace(/\s/g, ''))}
                                         placeholder="0"
                                     />
                                 </div>
@@ -382,10 +393,11 @@ export default function PurchaseNewPage() {
                                     </label>
                                     <input
                                         className="form-input"
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
                                         min="0"
-                                        value={item.unitPrice}
-                                        onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
+                                        value={fmtPrice(item.unitPrice)}
+                                        onChange={e => updateItem(idx, 'unitPrice', e.target.value.replace(/\s/g, ''))}
                                         placeholder="0"
                                     />
                                 </div>
@@ -428,10 +440,11 @@ export default function PurchaseNewPage() {
                                     </label>
                                     <input
                                         className="form-input"
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
                                         min="0"
-                                        value={item.salePrice}
-                                        onChange={e => updateItem(idx, 'salePrice', e.target.value)}
+                                        value={fmtPrice(item.unitPrice)}
+                                        onChange={e => updateItem(idx, 'unitPrice', e.target.value.replace(/\s/g, ''))}
                                         placeholder="0"
                                     />
                                 </div>
@@ -441,10 +454,11 @@ export default function PurchaseNewPage() {
                                     </label>
                                     <input
                                         className="form-input"
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
                                         min="0"
-                                        value={item.minPrice}
-                                        onChange={e => updateItem(idx, 'minPrice', e.target.value)}
+                                        value={fmtPrice(item.unitPrice)}
+                                        onChange={e => updateItem(idx, 'unitPrice', e.target.value.replace(/\s/g, ''))}
                                         placeholder="0"
                                     />
                                 </div>

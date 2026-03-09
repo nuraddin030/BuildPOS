@@ -25,5 +25,7 @@ public class ReceivePurchaseRequest {
         @NotNull
         @DecimalMin(value = "0.001")
         private BigDecimal receivedQty;
+
+        private BigDecimal unitPrice; // null bo'lsa — o'zgarmaydi
     }
 }

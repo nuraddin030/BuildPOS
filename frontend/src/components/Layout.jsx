@@ -12,6 +12,7 @@ import PartnersPage from '../pages/PartnersPage'
 import EmployeesPage from '../pages/EmployeesPage'
 import PurchasesPage from '../pages/PurchasesPage'
 import PurchaseNewPage from '../pages/PurchaseNewPage'
+import PurchaseDetailPage from '../pages/PurchaseDetailPage'
 import { useState, useEffect, useRef } from 'react'
 import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck,
@@ -37,7 +38,6 @@ const navItems = [
     { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
     { path: '/partners',   key: 'partners',   icon: Handshake,       permission: 'PARTNERS_VIEW' },
     { path: '/units',      key: 'units',      icon: Ruler,           permission: 'UNITS_VIEW' },
-    // { path: '/purchases', key: 'purchases', icon: ShoppingCart, permission: 'PURCHASES_VIEW' },
 ]
 
 // Ruxsat yo'q sahifa
@@ -375,6 +375,9 @@ export default function Layout() {
                         } />
                         <Route path="/purchases/new" element={
                             <ProtectedRoute permission="PURCHASES_CREATE"><PurchaseNewPage /></ProtectedRoute>
+                        } />
+                        <Route path="/purchases/:id" element={
+                            <ProtectedRoute permission="PURCHASES_VIEW"><PurchaseDetailPage /></ProtectedRoute>
                         } />
                     </Routes>
                 </div>

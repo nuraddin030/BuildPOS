@@ -97,17 +97,21 @@ export default function PurchasesPage() {
                         onChange={e => setFilterSearch(e.target.value)}
                     />
                 </div>
-                <select
-                    className="filter-select"
-                    value={filterStatus}
-                    onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
-                >
-                    <option value="">Barcha statuslar</option>
-                    <option value="PENDING">Kutilmoqda</option>
-                    <option value="PARTIALLY_RECEIVED">Qisman qabul</option>
-                    <option value="RECEIVED">Qabul qilindi</option>
-                    <option value="CANCELLED">Bekor qilindi</option>
-                </select>
+                <div className="filter-select-wrap">
+                    <Filter size={14} className="filter-select-icon" />
+                    <select
+                        className="filter-select"
+                        value={filterStatus}
+                        onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
+                    >
+                        <option value="">Barcha statuslar</option>
+                        <option value="PENDING">Kutilmoqda</option>
+                        <option value="PARTIALLY_RECEIVED">Qisman qabul</option>
+                        <option value="RECEIVED">Qabul qilindi</option>
+                        <option value="CANCELLED">Bekor qilindi</option>
+                    </select>
+                </div>
+
             </div>
 
             {/* Table */}

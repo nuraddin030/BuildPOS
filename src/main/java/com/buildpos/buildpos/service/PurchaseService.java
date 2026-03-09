@@ -151,7 +151,7 @@ public class PurchaseService {
             for (PurchaseItem item : items) {
                 BigDecimal remaining = item.getQuantity().subtract(item.getReceivedQty());
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                    receiveItem(item, remaining, purchase.getWarehouse());
+                    receiveItem(item, remaining, purchase.getWarehouse(), null);
                 }
             }
             purchase.setStatus(PurchaseStatus.RECEIVED);
@@ -171,7 +171,7 @@ public class PurchaseService {
                     );
                 }
 
-                receiveItem(item, receiveReq.getReceivedQty(), purchase.getWarehouse());
+                receiveItem(item, receiveReq.getReceivedQty(), purchase.getWarehouse(), receiveReq.getUnitPrice());
             }
 
             // Status yangilash
@@ -248,11 +248,22 @@ public class PurchaseService {
     // ─────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────
-    private void receiveItem(PurchaseItem item, BigDecimal qty, Warehouse warehouse) {
-        // UZS narxini olish
+    private void receiveItem(PurchaseItem item, BigDecimal qty, Warehouse warehouse, BigDecimal newUnitPrice) {
+        // Narx o'zgargan bo'lsa yangilash
+        if (newUnitPrice != null) {
+            item.setUnitPrice(newUnitPrice);
+            BigDecimal newUzs = "USD".equals(item.getCurrency())
+                    ? newUnitPrice.multiply(item.getExchangeRate())
+                    : newUnitPrice;
+            item.setUnitPriceUzs(newUzs);
+            item.setTotalPrice(newUzs.multiply(item.getQuantity()));
+        }
+
+       // UZS narxini olish
         BigDecimal unitPriceUzs = item.getUnitPriceUzs() != null
                 ? item.getUnitPriceUzs()
                 : item.getUnitPrice();
+
 
         // Stock ko'tarish
         WarehouseStock stock = warehouseStockRepository
