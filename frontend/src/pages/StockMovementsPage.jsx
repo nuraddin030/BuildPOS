@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
+import "../styles/dashboard.css"
 
 // ─── Harakat turlari ───────────────────────────────────────────────────────
 const MOVEMENT_TYPES = [
