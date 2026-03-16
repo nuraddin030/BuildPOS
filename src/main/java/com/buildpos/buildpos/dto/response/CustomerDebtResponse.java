@@ -13,6 +13,13 @@ import java.util.List;
 public class CustomerDebtResponse {
 
     private Long id;
+
+    // Mijoz ma'lumotlari
+    private Long customerId;
+    private String customerName;
+    private String customerPhone;
+
+    // Sotuv ma'lumotlari
     private Long saleId;
     private String saleReferenceNo;
 

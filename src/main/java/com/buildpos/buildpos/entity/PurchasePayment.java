@@ -34,6 +34,11 @@ public class PurchasePayment {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
 
+    // ✅ Yangi: qaysi valyutada to'langan (UZS yoki USD)
+    @Column(name = "currency", length = 3, nullable = false)
+    @Builder.Default
+    private String currency = "UZS";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentMethod paymentMethod = PaymentMethod.CASH;

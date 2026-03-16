@@ -26,6 +26,11 @@ public class ReceivePurchaseRequest {
         @DecimalMin(value = "0.001")
         private BigDecimal receivedQty;
 
-        private BigDecimal unitPrice; // null bo'lsa — o'zgarmaydi
+        private BigDecimal unitPrice;    // null bo'lsa — o'zgarmaydi
+
+        // Sotuv va minimal narx — har doim UZS da
+        private Boolean updatePrices = false;
+        private BigDecimal salePrice;
+        private BigDecimal minPrice;
     }
 }

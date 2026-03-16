@@ -1,3 +1,8 @@
+/* ============================================================
+   BuildPOS — Products Page Styles
+   Import tartibi: variables.css → common.css → ProductsPage.css
+   ============================================================ */
+
 /* ===========================
    PRODUCTS PAGE
    =========================== */
@@ -5,10 +10,8 @@
     animation: fadeIn 0.3s ease;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+to   { opacity: 1; transform: translateY(0); }
+
 
 /* ---- Header ---- */
 .products-header {
@@ -84,6 +87,35 @@
 
 .btn-add:active {
     transform: translateY(0);
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 14px;
+    background: #fff;
+    color: var(--pos-text-secondary);
+    border: 1.5px solid var(--pos-border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-outline:hover {
+    border-color: var(--pos-primary);
+    color: var(--pos-primary);
+    background: var(--pos-primary-light);
+}
+
+.btn-outline.active {
+    background: var(--pos-primary);
+    color: #fff;
+    border-color: var(--pos-primary);
 }
 
 /* ---- Filter Bar ---- */
@@ -194,6 +226,8 @@
     overflow: hidden;
 }
 
+
+
 .table-loading,
 .table-empty {
     display: flex;
@@ -210,17 +244,6 @@
     margin: 0;
 }
 
-.table-responsive {
-    overflow-x: auto;
-}
-
-.spin {
-    animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
 
 /* ---- Table ---- */
 .ptable {
@@ -273,11 +296,6 @@
     font-size: 13px;
 }
 
-.cell-name {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
 .product-thumb {
     width: 38px;
     height: 38px;
@@ -296,11 +314,6 @@
     align-items: center;
     justify-content: center;
     color: var(--text-muted, #94a3b8);
-}
-
-.cell-muted {
-    color: var(--text-muted, #94a3b8);
-    font-size: 13px;
 }
 
 .cell-barcode {
@@ -456,18 +469,6 @@
 /* ===========================
    MODAL
    =========================== */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 1000;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 40px 16px;
-    overflow-y: auto;
-}
 
 /* Products modal - specifik class bilan, layout.css ni override qiladi */
 .modal-box.products-modal {
@@ -908,47 +909,9 @@
 }
 
 /* ---- Footer buttons ---- */
-.btn-cancel {
-    height: 40px;
-    padding: 0 20px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm, 8px);
-    background: var(--surface);
-    color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.btn-cancel:hover {
-    background: var(--surface-hover, #f1f5f9);
-    color: var(--text-primary);
-}
-
-.btn-save {
-    height: 40px;
-    padding: 0 24px;
-    border: none;
-    border-radius: var(--radius-sm, 8px);
-    background: var(--primary);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.15s ease;
-}
 
 .btn-save:hover:not(:disabled) {
     background: var(--primary-hover);
-}
-
-.btn-save:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 /* ===========================
@@ -1012,10 +975,7 @@
         gap: 0;
     }
 
-    .modal-overlay {
-        padding: 16px;
-        align-items: flex-start;
-    }
+
 
     .products-modal .modal-header {
         padding: 22px 24px 14px;
@@ -1072,3 +1032,36 @@
         padding: 12px;
     }
 }
+
+/* ===========================
+   POS — CASHIER PAGE
+   =========================== */
+
+/* Topbar */
+
+/* Main layout */
+
+/* Left — Cart */
+
+/* Right panel */
+
+/* Modals */
+
+/* Receipt */
+
+/* Animations */
+
+to   { opacity: 1; transform: translateX(0); }
+
+/* ===========================
+   POS — MOBILE TAB BAR (< 768px)
+   =========================== */
+
+@media (max-width: 768px) {
+
+}
+
+@media (max-width: 480px) {
+}
+
+/* Cart item — yangi dizayn */

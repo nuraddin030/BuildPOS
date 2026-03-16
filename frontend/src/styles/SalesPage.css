@@ -1,0 +1,366 @@
+/* ============================================================
+   BuildPOS — SalesPage Styles
+   Import: variables.css → common.css → ProductsPage.css → SalesPage.css
+   ============================================================ */
+
+/* ── Statistika kartochkalari ─────────────────────────────────── */
+.sales-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-card-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-card-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ── Tezkor sana tugmalari ────────────────────────────────────── */
+.quick-date-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+/* ── Sale detail modal ────────────────────────────────────────── */
+.sale-detail-modal {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sale-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    padding: 14px;
+    background: var(--surface-secondary);
+    border-radius: 12px;
+}
+
+.sale-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sale-meta-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.sale-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.sale-section {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.sale-section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 10px 14px;
+    background: var(--surface-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ── To'lov breakdown ─────────────────────────────────────────── */
+.sale-payment-breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.sale-totals {
+    padding: 14px;
+    background: var(--surface-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sale-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.sale-total-main {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+}
+
+.sale-payments {
+    padding: 14px;
+    background: var(--surface-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sale-payment-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.sale-debt-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 8px;
+    font-size: 12px;
+    color: #b45309;
+    margin-top: 4px;
+}
+
+/* ── Qaytarish modal ──────────────────────────────────────────── */
+.return-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    gap: 8px;
+}
+
+.return-item:hover {
+    border-color: #7c3aed;
+    background: rgba(124, 58, 237, 0.04);
+}
+
+.return-item-active {
+    border-color: #7c3aed;
+    background: rgba(124, 58, 237, 0.06);
+}
+
+/* ── Pagination (page-btn) ────────────────────────────────────── */
+.page-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 0 8px;
+}
+
+/* ── Chek raqami hover ────────────────────────────────────────── */
+.cell-barcode {
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.cell-barcode:hover {
+    color: var(--primary);
+}
+
+/* ── Jadval qator ranglari (status bo'yicha) ──────────────────── */
+.ptable tbody tr.row-cancelled {
+    background: rgba(220, 38, 38, 0.04);
+}
+.ptable tbody tr.row-cancelled:hover {
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.ptable tbody tr.row-returned {
+    background: rgba(124, 58, 237, 0.04);
+}
+.ptable tbody tr.row-returned:hover {
+    background: rgba(124, 58, 237, 0.08);
+}
+
+.ptable tbody tr.row-draft,
+.ptable tbody tr.row-hold {
+    background: rgba(100, 116, 139, 0.04);
+}
+.ptable tbody tr.row-draft:hover,
+.ptable tbody tr.row-hold:hover {
+    background: rgba(100, 116, 139, 0.08);
+}
+.spin {
+    animation: spin 0.8s linear infinite;
+}
+
+/* ── Detail modal padding ─────────────────────────────────────── */
+.sale-detail-modal .modal-header {
+    padding: 24px 28px 20px;
+}
+
+.sale-detail-modal .modal-body {
+    padding: 0 28px 24px;
+}
+
+.sale-detail-modal .modal-footer {
+    padding: 16px 28px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .sales-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .sales-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sale-payment-breakdown {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-date-bar {
+        gap: 6px;
+    }
+
+    .quick-date-bar .btn-outline {
+        flex: 1;
+        justify-content: center;
+    }
+    .sale-detail-modal .modal-header {
+        padding: 18px 20px 14px;
+    }
+
+    .sale-detail-modal .modal-body {
+        padding: 0 20px 20px;
+    }
+
+    .sale-detail-modal .modal-footer {
+        padding: 14px 20px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sales-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .stat-card-value {
+        font-size: 13px;
+    }
+
+    .sale-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .sale-detail-modal .modal-header {
+        padding: 14px 16px 12px;
+    }
+
+    .sale-detail-modal .modal-body {
+        padding: 0 16px 16px;
+    }
+
+    .sale-detail-modal .modal-footer {
+        padding: 12px 16px;
+    }
+}

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/stock-movements")
@@ -26,27 +28,27 @@ public class StockMovementController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('STOCK_VIEW')")
-    @Operation(summary = "Stock harakatlari tarixi (filter + pagination)",
-            description = """
-                   Filterlar (hammasi ixtiyoriy):
-                   - productUnitId — mahsulot unit ID
-                   - warehouseId   — ombor ID (from yoki to)
-                   - movementType  — PURCHASE_IN, SALE_OUT, ADJUSTMENT_IN, ADJUSTMENT_OUT, TRANSFER_IN, TRANSFER_OUT, RETURN_IN
-                   - from          — boshlanish sana (yyyy-MM-dd'T'HH:mm:ss)
-                   - to            — tugash sana (yyyy-MM-dd'T'HH:mm:ss)
-               """)
+    @Operation(summary = "Stock harakatlari tarixi (filter + pagination)")
     public ResponseEntity<Page<StockMovementResponse>> getAll(
             @RequestParam(required = false) Long productUnitId,
             @RequestParam(required = false) Long warehouseId,
             @RequestParam(required = false) StockMovementType movementType,
+            @RequestParam(required = false) String productName,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "moved_at", direction = Sort.Direction.DESC) Pageable pageable) {
 
         return ResponseEntity.ok(
-                stockMovementService.getAll(productUnitId, warehouseId, movementType, from, to, pageable)
+                stockMovementService.getAll(productUnitId, warehouseId, movementType, from, to, productName, pageable)
         );
+    }
+
+    @GetMapping("/counts")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('STOCK_VIEW')")
+    @Operation(summary = "Har bir harakat turi bo'yicha jami son")
+    public ResponseEntity<Map<String, Long>> getCounts() {
+        return ResponseEntity.ok(stockMovementService.getCounts());
     }
 }

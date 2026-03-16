@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import com.buildpos.buildpos.util.StockCalculator;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -105,6 +106,10 @@ public class ProductService {
             if (unitReq.getMinPrice().compareTo(unitReq.getCostPrice()) < 0) {
                 throw new BadRequestException("Minimal narx tannarxdan kam bo'lmasligi kerak");
             }
+            if (unitReq.getMinPrice().compareTo(unitReq.getSalePrice()) > 0) {
+                throw new BadRequestException("Minimal narx sotuv narxidan katta bo'lmasligi kerak");
+            }
+
 
             ProductUnit productUnit = ProductUnit.builder()
                     .product(product)
@@ -352,12 +357,12 @@ public class ProductService {
                         .build());
 
         if (request.getMovementType() == StockMovementType.ADJUSTMENT_IN) {
-            stock.setQuantity(stock.getQuantity().add(request.getQuantity()));
+            stock.setQuantity(StockCalculator.add(stock.getQuantity(), request.getQuantity()));
         } else if (request.getMovementType() == StockMovementType.ADJUSTMENT_OUT) {
-            if (stock.getQuantity().compareTo(request.getQuantity()) < 0) {
+            if (!StockCalculator.isEnough(stock.getQuantity(), request.getQuantity())) {
                 throw new BadRequestException("Omborda yetarli mahsulot yo'q");
             }
-            stock.setQuantity(stock.getQuantity().subtract(request.getQuantity()));
+            stock.setQuantity(StockCalculator.subtract(stock.getQuantity(), request.getQuantity()));
         } else {
             throw new BadRequestException("Noto'g'ri harakat turi");
         }
@@ -410,7 +415,7 @@ public class ProductService {
             throw new BadRequestException("Manba omborda yetarli mahsulot yo'q");
         }
 
-        fromStock.setQuantity(fromStock.getQuantity().subtract(request.getQuantity()));
+        fromStock.setQuantity(StockCalculator.subtract(fromStock.getQuantity(), request.getQuantity()));
         warehouseStockRepository.save(fromStock);
 
         // Maqsad omborgа qo'shish
@@ -423,7 +428,7 @@ public class ProductService {
                         .minStock(BigDecimal.ZERO)
                         .build());
 
-        toStock.setQuantity(toStock.getQuantity().add(request.getQuantity()));
+        toStock.setQuantity(StockCalculator.add(toStock.getQuantity(), request.getQuantity()));
         warehouseStockRepository.save(toStock);
 
         // Transfer movementlari (chiqim + kirim)

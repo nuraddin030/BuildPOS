@@ -1,6 +1,7 @@
 package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.request.SupplierRequest;
+import com.buildpos.buildpos.dto.response.GroupedDebtResponse;
 import com.buildpos.buildpos.dto.response.SupplierDebtResponse;
 import com.buildpos.buildpos.dto.response.SupplierResponse;
 import com.buildpos.buildpos.entity.Supplier;
@@ -9,6 +10,8 @@ import com.buildpos.buildpos.exception.NotFoundException;
 import com.buildpos.buildpos.repository.SupplierDebtRepository;
 import com.buildpos.buildpos.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -130,6 +134,59 @@ public class SupplierService {
     }
 
     // ─────────────────────────────────────────
+    // TREE VIEW — yetkazuvchi bo'yicha guruhlangan ochiq qarzlar
+    // ─────────────────────────────────────────
+    public List<GroupedDebtResponse> getGroupedDebts(String search) {
+        List<SupplierDebt> debts = supplierDebtRepository
+                .findAllOpenForTree(search == null || search.isBlank() ? null : search);
+
+        Map<Long, List<SupplierDebt>> grouped = new java.util.LinkedHashMap<>();
+        for (SupplierDebt debt : debts) {
+            grouped.computeIfAbsent(debt.getSupplier().getId(), k -> new java.util.ArrayList<>()).add(debt);
+        }
+
+        LocalDate today = LocalDate.now();
+        return grouped.entrySet().stream().map(entry -> {
+            List<SupplierDebt> supplierDebts = entry.getValue();
+            SupplierDebt first = supplierDebts.get(0);
+
+            BigDecimal totalDebt      = supplierDebts.stream().map(SupplierDebt::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalRemaining = supplierDebts.stream().map(d -> d.getAmount().subtract(d.getPaidAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+            long overdueCount = supplierDebts.stream().filter(d -> d.getDueDate() != null && d.getDueDate().isBefore(today)).count();
+
+            return GroupedDebtResponse.builder()
+                    .entityId(first.getSupplier().getId())
+                    .entityName(first.getSupplier().getName())
+                    .entityPhone(first.getSupplier().getPhone())
+                    .totalDebt(totalDebt)
+                    .totalRemaining(totalRemaining)
+                    .openCount(supplierDebts.size())
+                    .overdueCount((int) overdueCount)
+                    .supplierDebts(supplierDebts.stream().map(this::toDebtResponse).toList())
+                    .build();
+        }).toList();
+    }
+
+    // ─────────────────────────────────────────
+    // BARCHA QARZLAR — DebtsPage uchun (filter + pagination)
+    // ─────────────────────────────────────────
+    public Page<SupplierDebtResponse> getAllDebts(String search, Boolean isPaid,
+                                                  Boolean isOverdue, LocalDateTime from,
+                                                  LocalDateTime to, Pageable pageable) {
+        return supplierDebtRepository.findAllFiltered(search, isPaid, isOverdue, from, to, pageable)
+                .map(this::toDebtResponse);
+    }
+
+    public Map<String, Object> getDebtStats() {
+        LocalDate today = LocalDate.now();
+        return Map.of(
+                "totalRemaining", supplierDebtRepository.sumAllRemaining(),
+                "openCount",      supplierDebtRepository.countAllOpen(),
+                "overdueCount",   supplierDebtRepository.countAllOverdue(today)
+        );
+    }
+
+    // ─────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────
     private Supplier findById(Long id) {
@@ -164,6 +221,9 @@ public class SupplierService {
 
         return SupplierDebtResponse.builder()
                 .id(debt.getId())
+                .supplierId(debt.getSupplier() != null ? debt.getSupplier().getId() : null)
+                .supplierName(debt.getSupplier() != null ? debt.getSupplier().getName() : null)
+                .supplierPhone(debt.getSupplier() != null ? debt.getSupplier().getPhone() : null)
                 .purchaseId(debt.getPurchase() != null ? debt.getPurchase().getId() : null)
                 .purchaseReferenceNo(debt.getPurchase() != null ? debt.getPurchase().getReferenceNo() : null)
                 .amount(debt.getAmount())

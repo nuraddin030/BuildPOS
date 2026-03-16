@@ -48,9 +48,12 @@ public class ProductResponse {
         private String unitSymbol;
         private Boolean isDefault;
         private String barcode;
-        private BigDecimal costPrice;
-        private BigDecimal salePrice;
-        private BigDecimal minPrice;
+        private BigDecimal costPrice;       // UZS da (hisoblangan)
+        private BigDecimal salePrice;       // UZS da
+        private BigDecimal minPrice;        // UZS da
+        // ✅ USD narxlar — frontend edit uchun
+        private BigDecimal costPriceUsd;    // null bo'lsa — UZS da kiritilgan
+        private BigDecimal exchangeRateAtSave; // saqlash vaqtidagi kurs
         private Boolean isActive;
         private List<PriceTierResponse> priceTiers;
         private List<WarehouseStockResponse> warehouseStocks;

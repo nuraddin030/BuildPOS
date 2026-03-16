@@ -1,3 +1,8 @@
+/* ============================================================
+   BuildPOS — Dashboard Page Styles
+   Import tartibi: variables.css → common.css → dashboard.css
+   ============================================================ */
+
 /* ===========================
    DASHBOARD PAGE
    =========================== */
@@ -52,10 +57,6 @@
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
 }
 
 .dash-error {
@@ -321,10 +322,6 @@
 /* ===========================
    RECENT SALES TABLE
    =========================== */
-.table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
 
 .dash-table {
     width: 100%;
@@ -362,15 +359,6 @@
     vertical-align: middle;
 }
 
-.cell-muted {
-    color: var(--text-muted, #94a3b8);
-    font-size: 13px;
-}
-
-.cell-name {
-    font-weight: 500;
-}
-
 .text-end {
     text-align: right;
 }
@@ -389,11 +377,6 @@
 }
 
 /* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 48px 16px !important;
-    color: var(--text-muted, #94a3b8);
-}
 
 .empty-icon {
     color: var(--text-muted, #cbd5e1);

@@ -58,54 +58,39 @@ public class PurchaseService {
                 .totalAmount(BigDecimal.ZERO)
                 .paidAmount(BigDecimal.ZERO)
                 .debtAmount(BigDecimal.ZERO)
+                .totalUsd(BigDecimal.ZERO)
+                .totalUzs(BigDecimal.ZERO)
+                .paidUsd(BigDecimal.ZERO)
+                .paidUzs(BigDecimal.ZERO)
+                .debtUsd(BigDecimal.ZERO)
+                .debtUzs(BigDecimal.ZERO)
                 .build();
 
         purchase = purchaseRepository.save(purchase);
 
-        // Items qo'shish va jami hisoblash
-        BigDecimal total = BigDecimal.ZERO;
         for (PurchaseRequest.PurchaseItemRequest itemReq : request.getItems()) {
-            ProductUnit productUnit = productUnitRepository.findById(itemReq.getProductUnitId())
-                    .orElseThrow(() -> new NotFoundException("Product unit topilmadi: " + itemReq.getProductUnitId()));
-
-            // USD bo'lsa kurs tekshirish
-            if ("USD".equals(itemReq.getCurrency()) && itemReq.getExchangeRate() == null) {
-                throw new BadRequestException("USD uchun kurs kiritilishi kerak");
-            }
-
-            BigDecimal exchangeRate = itemReq.getExchangeRate() != null
-                    ? itemReq.getExchangeRate()
-                    : BigDecimal.ONE;
-
-            String currency = itemReq.getCurrency() != null ? itemReq.getCurrency() : "UZS";
-
-            // UZS ga o'girish
-            BigDecimal unitPriceUzs = "USD".equals(currency)
-                    ? itemReq.getUnitPrice().multiply(exchangeRate)
-                    : itemReq.getUnitPrice();
-
-            BigDecimal itemTotal = unitPriceUzs.multiply(itemReq.getQuantity());
-            total = total.add(itemTotal);
-
-            PurchaseItem item = PurchaseItem.builder()
-                    .purchase(purchase)
-                    .productUnit(productUnit)
-                    .quantity(itemReq.getQuantity())
-                    .unitPrice(itemReq.getUnitPrice())
-                    .totalPrice(itemTotal)
-                    .currency(currency)
-                    .exchangeRate(exchangeRate)
-                    .unitPriceUzs(unitPriceUzs)
-                    .receivedQty(BigDecimal.ZERO)
-                    .build();
-
-            purchaseItemRepository.save(item);
+            buildAndSaveItem(purchase, itemReq);
         }
 
-        purchase.setTotalAmount(total);
-        purchase.setDebtAmount(total);
+        recalculateTotals(purchase);
         purchaseRepository.save(purchase);
 
+        return toResponse(purchase);
+    }
+
+    // ─────────────────────────────────────────
+    // ADD ITEM (faqat PENDING)
+    // ─────────────────────────────────────────
+    @Transactional
+    public PurchaseResponse addItem(Long purchaseId, PurchaseRequest.PurchaseItemRequest itemReq) {
+        Purchase purchase = findById(purchaseId);
+        if (purchase.getStatus() != PurchaseStatus.PENDING) {
+            throw new BadRequestException("Faqat PENDING statusdagi xaridga mahsulot qo'shish mumkin");
+        }
+        buildAndSaveItem(purchase, itemReq);
+        recalculateTotals(purchase);
+        purchaseRepository.save(purchase);
+        updateSupplierDebt(purchase);
         return toResponse(purchase);
     }
 
@@ -151,7 +136,7 @@ public class PurchaseService {
             for (PurchaseItem item : items) {
                 BigDecimal remaining = item.getQuantity().subtract(item.getReceivedQty());
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                    receiveItem(item, remaining, purchase.getWarehouse(), null);
+                    receiveItem(item, remaining, purchase.getWarehouse(), null, null, null, false);
                 }
             }
             purchase.setStatus(PurchaseStatus.RECEIVED);
@@ -171,7 +156,11 @@ public class PurchaseService {
                     );
                 }
 
-                receiveItem(item, receiveReq.getReceivedQty(), purchase.getWarehouse(), receiveReq.getUnitPrice());
+                receiveItem(item, receiveReq.getReceivedQty(), purchase.getWarehouse(),
+                        receiveReq.getUnitPrice(),
+                        receiveReq.getSalePrice(),
+                        receiveReq.getMinPrice(),
+                        Boolean.TRUE.equals(receiveReq.getUpdatePrices()));
             }
 
             // Status yangilash
@@ -184,14 +173,12 @@ public class PurchaseService {
             }
         }
 
-        // Supplier debt yangilash
         updateSupplierDebt(purchase);
-
         return toResponse(purchaseRepository.save(purchase));
     }
 
     // ─────────────────────────────────────────
-    // ADD PAYMENT (to'lov qo'shish)
+    // ADD PAYMENT (to'lov qo'shish) — multi-currency
     // ─────────────────────────────────────────
     @Transactional
     public PurchaseResponse addPayment(Long id, PurchasePaymentRequest request) {
@@ -201,16 +188,28 @@ public class PurchaseService {
             throw new BadRequestException("Bekor qilingan xaridga to'lov qo'shib bo'lmaydi");
         }
 
-        if (request.getAmount().compareTo(purchase.getDebtAmount()) > 0) {
-            throw new BadRequestException(
-                    "To'lov summasi qarzdan oshib ketdi. Maksimal: " + purchase.getDebtAmount()
-            );
+        String currency = request.getCurrency() != null ? request.getCurrency() : "UZS";
+
+        // Valyutaga qarab qarz tekshirish
+        if ("USD".equals(currency)) {
+            if (request.getAmount().compareTo(purchase.getDebtUsd()) > 0) {
+                throw new BadRequestException(
+                        "To'lov summasi USD qarzdan oshib ketdi. Maksimal: " + purchase.getDebtUsd() + " USD"
+                );
+            }
+        } else {
+            if (request.getAmount().compareTo(purchase.getDebtUzs()) > 0) {
+                throw new BadRequestException(
+                        "To'lov summasi UZS qarzdan oshib ketdi. Maksimal: " + purchase.getDebtUzs() + " UZS"
+                );
+            }
         }
 
         PurchasePayment payment = PurchasePayment.builder()
                 .purchase(purchase)
                 .supplier(purchase.getSupplier())
                 .amount(request.getAmount())
+                .currency(currency)
                 .paymentMethod(request.getPaymentMethod())
                 .note(request.getNote())
                 .paidAt(request.getPaidAt() != null ? request.getPaidAt() : LocalDateTime.now())
@@ -218,13 +217,20 @@ public class PurchaseService {
 
         purchasePaymentRepository.save(payment);
 
-        // Purchase summasini yangilash
-        BigDecimal newPaid = purchase.getPaidAmount().add(request.getAmount());
-        purchase.setPaidAmount(newPaid);
-        purchase.setDebtAmount(purchase.getTotalAmount().subtract(newPaid));
-        purchaseRepository.save(purchase);
+        // Valyutaga qarab paidUsd/paidUzs yangilash
+        if ("USD".equals(currency)) {
+            purchase.setPaidUsd(purchase.getPaidUsd().add(request.getAmount()));
+            purchase.setDebtUsd(purchase.getTotalUsd().subtract(purchase.getPaidUsd()));
+        } else {
+            purchase.setPaidUzs(purchase.getPaidUzs().add(request.getAmount()));
+            purchase.setDebtUzs(purchase.getTotalUzs().subtract(purchase.getPaidUzs()));
+        }
 
-        // Supplier debt yangilash
+        // Legacy fields sync (UZS qism uchun)
+        purchase.setPaidAmount(purchase.getPaidUzs());
+        purchase.setDebtAmount(purchase.getDebtUzs());
+
+        purchaseRepository.save(purchase);
         updateSupplierDebt(purchase);
 
         return toResponse(purchase);
@@ -248,7 +254,85 @@ public class PurchaseService {
     // ─────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────
-    private void receiveItem(PurchaseItem item, BigDecimal qty, Warehouse warehouse, BigDecimal newUnitPrice) {
+
+    /**
+     * PurchaseItemRequest dan PurchaseItem yaratib saqlaydi.
+     * create() va addItem() ikkisi ham shu methoddan foydalanadi.
+     */
+    private void buildAndSaveItem(Purchase purchase, PurchaseRequest.PurchaseItemRequest itemReq) {
+        ProductUnit productUnit = productUnitRepository.findById(itemReq.getProductUnitId())
+                .orElseThrow(() -> new NotFoundException("Product unit topilmadi: " + itemReq.getProductUnitId()));
+
+        if ("USD".equals(itemReq.getCurrency()) && itemReq.getExchangeRate() == null) {
+            throw new BadRequestException("USD uchun kurs kiritilishi kerak");
+        }
+
+        BigDecimal exchangeRate = itemReq.getExchangeRate() != null
+                ? itemReq.getExchangeRate()
+                : BigDecimal.ONE;
+
+        String currency = itemReq.getCurrency() != null ? itemReq.getCurrency() : "UZS";
+
+        BigDecimal unitPriceUzs = "USD".equals(currency)
+                ? itemReq.getUnitPrice().multiply(exchangeRate)
+                : itemReq.getUnitPrice();
+
+        BigDecimal itemTotal = unitPriceUzs.multiply(itemReq.getQuantity());
+
+        PurchaseItem item = PurchaseItem.builder()
+                .purchase(purchase)
+                .productUnit(productUnit)
+                .quantity(itemReq.getQuantity())
+                .unitPrice(itemReq.getUnitPrice())
+                .totalPrice(itemTotal)
+                .currency(currency)
+                .exchangeRate(exchangeRate)
+                .unitPriceUzs(unitPriceUzs)
+                .receivedQty(BigDecimal.ZERO)
+                .build();
+
+        purchaseItemRepository.save(item);
+
+        // updatePrices=true bo'lsa narxlarni darhol yangilash
+        if (Boolean.TRUE.equals(itemReq.getUpdatePrices())) {
+            updateProductUnitPrices(productUnit, unitPriceUzs,
+                    itemReq.getSalePrice(), itemReq.getMinPrice());
+        }
+    }
+
+    /**
+     * Barcha itemlardan totalUsd / totalUzs ni qayta hisoblaydi.
+     * USD itemlar — USD da saqlanadi (kurs ishlatilmaydi).
+     * UZS itemlar — UZS da saqlanadi.
+     */
+    private void recalculateTotals(Purchase purchase) {
+        List<PurchaseItem> items = purchaseItemRepository.findAllByPurchaseId(purchase.getId());
+
+        BigDecimal totalUsd = BigDecimal.ZERO;
+        BigDecimal totalUzs = BigDecimal.ZERO;
+
+        for (PurchaseItem item : items) {
+            if ("USD".equals(item.getCurrency())) {
+                // unitPrice bu yerda USD da
+                totalUsd = totalUsd.add(item.getUnitPrice().multiply(item.getQuantity()));
+            } else {
+                totalUzs = totalUzs.add(item.getTotalPrice());
+            }
+        }
+
+        purchase.setTotalUsd(totalUsd);
+        purchase.setTotalUzs(totalUzs);
+        purchase.setDebtUsd(totalUsd.subtract(purchase.getPaidUsd()));
+        purchase.setDebtUzs(totalUzs.subtract(purchase.getPaidUzs()));
+
+        // Legacy: UZS qism uchun
+        purchase.setTotalAmount(totalUzs);
+        purchase.setDebtAmount(totalUzs.subtract(purchase.getPaidUzs()));
+    }
+
+    private void receiveItem(PurchaseItem item, BigDecimal qty, Warehouse warehouse,
+                             BigDecimal newUnitPrice, BigDecimal newSalePrice,
+                             BigDecimal newMinPrice, boolean updatePrices) {
         // Narx o'zgargan bo'lsa yangilash
         if (newUnitPrice != null) {
             item.setUnitPrice(newUnitPrice);
@@ -259,11 +343,10 @@ public class PurchaseService {
             item.setTotalPrice(newUzs.multiply(item.getQuantity()));
         }
 
-       // UZS narxini olish
+        // UZS narxini olish
         BigDecimal unitPriceUzs = item.getUnitPriceUzs() != null
                 ? item.getUnitPriceUzs()
                 : item.getUnitPrice();
-
 
         // Stock ko'tarish
         WarehouseStock stock = warehouseStockRepository
@@ -295,23 +378,42 @@ public class PurchaseService {
         item.setReceivedQty(item.getReceivedQty().add(qty));
         purchaseItemRepository.save(item);
 
-        // Product cost price UZS da yangilash
-        item.getProductUnit().setCostPrice(unitPriceUzs);
-        productUnitRepository.save(item.getProductUnit());
+        // Narxlarni yangilash
+        updateProductUnitPrices(item.getProductUnit(), unitPriceUzs,
+                updatePrices ? newSalePrice : null,
+                updatePrices ? newMinPrice : null);
+    }
+
+    private void updateProductUnitPrices(ProductUnit productUnit, BigDecimal costPrice,
+                                         BigDecimal salePrice, BigDecimal minPrice) {
+        if (costPrice != null) {
+            productUnit.setCostPrice(costPrice);
+        }
+        if (salePrice != null && salePrice.compareTo(BigDecimal.ZERO) > 0) {
+            productUnit.setSalePrice(salePrice);
+        }
+        if (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) > 0) {
+            productUnit.setMinPrice(minPrice);
+        }
+        productUnitRepository.save(productUnit);
     }
 
     private void updateSupplierDebt(Purchase purchase) {
-        if (purchase.getDebtAmount().compareTo(BigDecimal.ZERO) > 0) {
-            supplierDebtRepository.findByPurchaseId(purchase.getId()).ifPresentOrElse(
-                    debt -> {
-                        debt.setAmount(purchase.getTotalAmount());
-                        debt.setPaidAmount(purchase.getPaidAmount());
-                        debt.setIsPaid(purchase.getDebtAmount().compareTo(BigDecimal.ZERO) == 0);
-                        supplierDebtRepository.save(debt);
-                    },
-                    () -> {
+        boolean hasDebt = purchase.getDebtUsd().compareTo(BigDecimal.ZERO) > 0
+                || purchase.getDebtUzs().compareTo(BigDecimal.ZERO) > 0;
+
+        supplierDebtRepository.findByPurchaseId(purchase.getId()).ifPresentOrElse(
+                debt -> {
+                    debt.setAmount(purchase.getTotalAmount());
+                    debt.setPaidAmount(purchase.getPaidAmount());
+                    debt.setIsPaid(!hasDebt);
+                    supplierDebtRepository.save(debt);
+                },
+                () -> {
+                    if (hasDebt) {
                         SupplierDebt debt = SupplierDebt.builder()
                                 .supplier(purchase.getSupplier())
+                                .purchase(purchase)
                                 .amount(purchase.getTotalAmount())
                                 .paidAmount(purchase.getPaidAmount())
                                 .isPaid(false)
@@ -319,8 +421,8 @@ public class PurchaseService {
                                 .build();
                         supplierDebtRepository.save(debt);
                     }
-            );
-        }
+                }
+        );
     }
 
     private String generateReferenceNo() {
@@ -349,6 +451,12 @@ public class PurchaseService {
                 .totalAmount(purchase.getTotalAmount())
                 .paidAmount(purchase.getPaidAmount())
                 .debtAmount(purchase.getDebtAmount())
+                .totalUsd(purchase.getTotalUsd())
+                .totalUzs(purchase.getTotalUzs())
+                .paidUsd(purchase.getPaidUsd())
+                .paidUzs(purchase.getPaidUzs())
+                .debtUsd(purchase.getDebtUsd())
+                .debtUzs(purchase.getDebtUzs())
                 .notes(purchase.getNotes())
                 .expectedAt(purchase.getExpectedAt())
                 .receivedAt(purchase.getReceivedAt())
@@ -370,7 +478,8 @@ public class PurchaseService {
                 .payments(payments.stream().map(p -> PurchaseResponse.PurchasePaymentResponse.builder()
                         .id(p.getId())
                         .amount(p.getAmount())
-                        .paymentMethod(p.getPaymentMethod())
+                        .currency(p.getCurrency())
+                        .paymentMethod(p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null)
                         .note(p.getNote())
                         .paidAt(p.getPaidAt())
                         .paidBy(p.getPaidBy() != null ? p.getPaidBy().getUsername() : null)
@@ -390,6 +499,10 @@ public class PurchaseService {
                 .totalAmount(purchase.getTotalAmount())
                 .paidAmount(purchase.getPaidAmount())
                 .debtAmount(purchase.getDebtAmount())
+                .totalUsd(purchase.getTotalUsd())
+                .totalUzs(purchase.getTotalUzs())
+                .debtUsd(purchase.getDebtUsd())
+                .debtUzs(purchase.getDebtUzs())
                 .itemCount(purchase.getItems().size())
                 .expectedAt(purchase.getExpectedAt())
                 .receivedAt(purchase.getReceivedAt())

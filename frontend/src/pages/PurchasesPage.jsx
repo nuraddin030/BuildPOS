@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
     ShoppingCart, Plus, Search, Filter, Eye, CheckCircle,
     XCircle, Loader2, Truck, Calendar, DollarSign, Package,
-    ChevronLeft, ChevronRight, AlertCircle
+    ChevronLeft, ChevronRight, AlertCircle, FileDown
 } from 'lucide-react'
 import { getPurchases, cancelPurchase } from '../api/purchases'
 import { useAuth } from '../context/AuthContext'
+import { exportToCSV, exportToPDF, fmtNum, fmtDate as fmtDateExport } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -20,6 +21,7 @@ const STATUS_MAP = {
 
 export default function PurchasesPage() {
     const navigate = useNavigate()
+    const location = useLocation()
     const { hasPermission } = useAuth()
 
     const [purchases, setPurchases] = useState([])
@@ -31,11 +33,19 @@ export default function PurchasesPage() {
     const [filterStatus, setFilterStatus] = useState('')
     const [filterSearch, setFilterSearch] = useState('')
 
+    // URL dan supplierId o'qish (DebtsPage dan o'tganda)
+    const urlSupplierId = new URLSearchParams(location.search).get('supplierId')
+    const [filterSupplierId] = useState(urlSupplierId || '')
+    const [supplierFilterLabel] = useState(
+        urlSupplierId ? `Yetkazuvchi #${urlSupplierId} bo'yicha` : ''
+    )
+
     const load = useCallback(() => {
         setLoading(true)
         getPurchases({
             page, size,
-            status: filterStatus || undefined,
+            status:     filterStatus     || undefined,
+            supplierId: filterSupplierId || undefined,
         })
             .then(res => {
                 setPurchases(res.data.content || [])
@@ -43,9 +53,50 @@ export default function PurchasesPage() {
             })
             .catch(console.error)
             .finally(() => setLoading(false))
-    }, [page, size, filterStatus])
+    }, [page, size, filterStatus, filterSupplierId])
 
     useEffect(() => { load() }, [load])
+
+    const [exportLoading, setExportLoading] = useState(false)
+
+    const handleExport = async (format = 'csv') => {
+        setExportLoading(true)
+        try {
+            const res = await getPurchases({ page: 0, size: 1000, status: filterStatus || undefined, supplierId: filterSupplierId || undefined })
+            const rows = res.data.content || []
+
+            const headers = ['#', 'Raqam', 'Yetkazuvchi', 'Ombor', 'Tovarlar', 'Jami', "To'langan", 'Qarz', 'Status', 'Sana']
+            const data = rows.map((p, i) => [
+                i + 1,
+                p.referenceNo || '',
+                p.supplierName || '',
+                p.warehouseName || '',
+                p.itemCount + ' ta',
+                fmtNum(p.totalAmount) + ' UZS',
+                fmtNum(p.paidUzs || p.paidAmount || 0) + ' UZS',
+                fmtNum(p.debtUzs || 0) + ' UZS',
+                STATUS_MAP[p.status]?.label || p.status,
+                p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—'
+            ])
+
+            const filename = 'xaridlar'
+            if (format === 'pdf') {
+                await exportToPDF({
+                    filename, title: 'Xaridlar hisoboti', headers, rows: data,
+                    summary: [
+                        { label: 'Jami xaridlar', value: rows.length + ' ta' },
+                        { label: 'Jami summa', value: fmtNum(rows.reduce((s, p) => s + Number(p.totalAmount || 0), 0)) + ' UZS' },
+                    ]
+                })
+            } else {
+                exportToCSV(filename, headers, data)
+            }
+        } catch (e) {
+            alert('Export xatosi')
+        } finally {
+            setExportLoading(false)
+        }
+    }
 
     const handleCancel = async (id) => {
         if (!confirm('Bu xaridni bekor qilishni tasdiqlaysizmi?')) return
@@ -79,12 +130,41 @@ export default function PurchasesPage() {
                         <p className="page-subtitle">Partiyalar boshqaruvi</p>
                     </div>
                 </div>
-                {hasPermission('PURCHASES_CREATE') && (
-                    <button className="btn-add" onClick={() => navigate('/purchases/new')}>
-                        <Plus size={16} /> Yangi xarid
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {hasPermission('PURCHASES_CREATE') && (
+                        <button className="btn-add" onClick={() => navigate('/purchases/new')}>
+                            <Plus size={16} /> Yangi xarid
+                        </button>
+                    )}
+                    <button className="btn-reset" onClick={() => handleExport('csv')} disabled={exportLoading}
+                            style={{ color: '#16a34a', borderColor: '#16a34a' }}>
+                        {exportLoading ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />} Excel
                     </button>
-                )}
+                    <button className="btn-reset" onClick={() => handleExport('pdf')} disabled={exportLoading}
+                            style={{ color: '#dc2626', borderColor: '#dc2626' }}>
+                        <FileDown size={14} /> PDF
+                    </button>
+                </div>
             </div>
+
+            {/* Yetkazuvchi filter belgisi */}
+            {filterSupplierId && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 14px', marginBottom: 12,
+                    background: 'var(--primary-light)', borderRadius: 8,
+                    fontSize: 13, color: 'var(--primary)', fontWeight: 600
+                }}>
+                    <Truck size={14} />
+                    Yetkazuvchi bo'yicha filter qo'llanilgan
+                    <button style={{
+                        marginLeft: 'auto', background: 'none', border: 'none',
+                        cursor: 'pointer', color: 'var(--primary)', display: 'flex'
+                    }} onClick={() => navigate('/purchases')}>
+                        ✕ Tozalash
+                    </button>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="filter-bar">
@@ -167,19 +247,35 @@ export default function PurchasesPage() {
                                                 }}>{p.itemCount} ta</span>
                                         </td>
                                         <td className="th-right">
-                                            <span style={{ fontWeight: 600 }}>{fmt(p.totalAmount)}</span>
+                                            {Number(p.totalUsd) > 0 && (
+                                                <div style={{ fontWeight: 600, color: '#3b82f6' }}>{fmt(p.totalUsd)} USD</div>
+                                            )}
+                                            {Number(p.totalUzs) > 0 && (
+                                                <div style={{ fontWeight: 600 }}>{fmt(p.totalUzs)} UZS</div>
+                                            )}
+                                            {!Number(p.totalUsd) && !Number(p.totalUzs) && (
+                                                <span style={{ fontWeight: 600 }}>{fmt(p.totalAmount)} UZS</span>
+                                            )}
                                         </td>
                                         <td className="th-right">
-                                                <span style={{ color: 'var(--success)', fontWeight: 600 }}>
-                                                    {fmt(p.paidAmount)}
-                                                </span>
+                                            {Number(p.paidUsd) > 0 && (
+                                                <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUsd)} USD</div>
+                                            )}
+                                            {Number(p.paidUzs) > 0 && (
+                                                <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUzs)} UZS</div>
+                                            )}
+                                            {!Number(p.paidUsd) && !Number(p.paidUzs) && (
+                                                <span style={{ color: 'var(--success)' }}>—</span>
+                                            )}
                                         </td>
                                         <td className="th-right">
-                                            {Number(p.debtAmount) > 0 ? (
-                                                <span style={{ color: 'var(--danger)', fontWeight: 600 }}>
-                                                        {fmt(p.debtAmount)}
-                                                    </span>
-                                            ) : (
+                                            {Number(p.debtUsd) > 0 && (
+                                                <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUsd)} USD</div>
+                                            )}
+                                            {Number(p.debtUzs) > 0 && (
+                                                <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUzs)} UZS</div>
+                                            )}
+                                            {!Number(p.debtUsd) && !Number(p.debtUzs) && (
                                                 <span style={{ color: 'var(--success)' }}>—</span>
                                             )}
                                         </td>
@@ -192,7 +288,7 @@ export default function PurchasesPage() {
                                         </td>
                                         <td className="th-center">
                                                 <span className="cell-muted" style={{ fontSize: 12 }}>
-                                                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString('uz-UZ') : '—'}
+                                                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—'}
                                                 </span>
                                         </td>
                                         <td>

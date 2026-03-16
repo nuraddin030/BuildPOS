@@ -43,14 +43,43 @@ public class Purchase {
     @Column(nullable = false)
     private PurchaseStatus status = PurchaseStatus.PENDING;
 
+    // ── Legacy (UZS qism, backward compat) ──
     @Column(nullable = false, precision = 18, scale = 2)
+    @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(nullable = false, precision = 18, scale = 2)
+    @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;
 
     @Column(nullable = false, precision = 18, scale = 2)
+    @Builder.Default
     private BigDecimal debtAmount = BigDecimal.ZERO;
+
+    // ── Multi-currency: USD va UZS alohida ──
+    @Column(name = "total_usd", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal totalUsd = BigDecimal.ZERO;
+
+    @Column(name = "total_uzs", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal totalUzs = BigDecimal.ZERO;
+
+    @Column(name = "paid_usd", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal paidUsd = BigDecimal.ZERO;
+
+    @Column(name = "paid_uzs", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal paidUzs = BigDecimal.ZERO;
+
+    @Column(name = "debt_usd", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal debtUsd = BigDecimal.ZERO;
+
+    @Column(name = "debt_uzs", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal debtUzs = BigDecimal.ZERO;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

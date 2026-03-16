@@ -280,7 +280,7 @@ export default function PartnersPage() {
                                         { label: 'Nasiya sotuvlar', value: statsPartner.debtSaleCount ? `${statsPartner.debtSaleCount} ta` : '—', color: statsPartner.debtSaleCount > 0 ? 'var(--danger)' : undefined },
                                         { label: 'Olib kelgan mijozlar', value: statsPartner.totalCustomerCount ? `${statsPartner.totalCustomerCount} ta` : '—' },
                                         { label: 'Eng yaxshi oy', value: statsPartner.bestMonth || '—' },
-                                        { label: 'Oxirgi sotuv', value: statsPartner.lastSaleAt ? new Date(statsPartner.lastSaleAt).toLocaleDateString('uz-UZ') : '—' },
+                                        { label: 'Oxirgi sotuv', value: statsPartner.lastSaleAt ? new Date(statsPartner.lastSaleAt).toLocaleDateString('ru-RU') : '—' },
                                     ].map((item, i) => (
                                         <div key={i} style={{
                                             background: 'var(--surface-2, var(--surface))',

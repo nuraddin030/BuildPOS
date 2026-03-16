@@ -42,21 +42,28 @@ public class Shift {
     private BigDecimal closingCash;                     // smena yopilganda haqiqiy naqd
 
     // Smena hisoboti (yopilganda to'ldiriladi)
-    @Column(precision = 18, scale = 2)
+    @Builder.Default
+    @Column(nullable = false, precision = 18, scale = 2, columnDefinition = "NUMERIC(18,2) DEFAULT 0")
     private BigDecimal totalSales = BigDecimal.ZERO;
 
-    @Column(precision = 18, scale = 2)
+    @Builder.Default
+    @Column(nullable = false, precision = 18, scale = 2, columnDefinition = "NUMERIC(18,2) DEFAULT 0")
     private BigDecimal totalCash = BigDecimal.ZERO;
 
-    @Column(precision = 18, scale = 2)
+    @Builder.Default
+    @Column(nullable = false, precision = 18, scale = 2, columnDefinition = "NUMERIC(18,2) DEFAULT 0")
     private BigDecimal totalCard = BigDecimal.ZERO;
 
-    @Column(precision = 18, scale = 2)
+    @Builder.Default
+    @Column(nullable = false, precision = 18, scale = 2, columnDefinition = "NUMERIC(18,2) DEFAULT 0")
     private BigDecimal totalTransfer = BigDecimal.ZERO;
 
-    @Column(precision = 18, scale = 2)
+    @Builder.Default
+    @Column(nullable = false, precision = 18, scale = 2, columnDefinition = "NUMERIC(18,2) DEFAULT 0")
     private BigDecimal totalDebt = BigDecimal.ZERO;
 
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "INTEGER DEFAULT 0")
     private Integer saleCount = 0;
 
     @Column(nullable = false)

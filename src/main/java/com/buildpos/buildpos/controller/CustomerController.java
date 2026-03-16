@@ -4,7 +4,12 @@ import com.buildpos.buildpos.dto.request.CustomerDebtPaymentRequest;
 import com.buildpos.buildpos.dto.request.CustomerRequest;
 import com.buildpos.buildpos.dto.response.CustomerDebtResponse;
 import com.buildpos.buildpos.dto.response.CustomerResponse;
+import com.buildpos.buildpos.dto.response.GroupedDebtResponse;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import com.buildpos.buildpos.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -81,5 +87,57 @@ public class CustomerController {
     @Operation(summary = "Mijozning qarz tarixi (barcha nasiyalar va to'lovlar)")
     public ResponseEntity<List<CustomerDebtResponse>> getDebts(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.getDebts(id));
+    }
+
+    // ── NasiyalarPage uchun ──────────────────────────────────────
+
+    @GetMapping("/debts")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_DEBT_VIEW')")
+    @Operation(summary = "Barcha mijoz qarzlari (filter + pagination)")
+    public ResponseEntity<Page<CustomerDebtResponse>> getAllDebts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean isPaid,
+            @RequestParam(required = false) Boolean isOverdue,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(
+                customerService.getAllDebts(search, isPaid, isOverdue, from, to, pageable));
+    }
+
+    @GetMapping("/debts/stats")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_DEBT_VIEW')")
+    @Operation(summary = "Mijoz qarzlari statistikasi (jami, ochiq, muddati o'tgan)")
+    public ResponseEntity<Map<String, Object>> getDebtStats() {
+        return ResponseEntity.ok(customerService.getDebtStats());
+    }
+
+    @GetMapping("/{id}/check-debt-limit")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('CUSTOMERS_VIEW')")
+    @Operation(summary = "Mijozning qarz limitini tekshirish (CashierPage uchun)")
+    public ResponseEntity<Map<String, Object>> checkDebtLimit(
+            @PathVariable Long id,
+            @RequestParam BigDecimal amount) {
+        return ResponseEntity.ok(customerService.checkDebtLimit(id, amount));
+    }
+
+    @PatchMapping("/debts/{debtId}/extend")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_DEBT_PAY') or hasAuthority('CUSTOMERS_DEBT_VIEW')")
+    @Operation(summary = "Qarz muddatini uzaytirish")
+    public ResponseEntity<CustomerDebtResponse> extendDebt(
+            @PathVariable Long debtId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate newDueDate,
+            @RequestParam(required = false) String notes) {
+        return ResponseEntity.ok(customerService.extendDebt(debtId, newDueDate, notes));
+    }
+
+    @GetMapping("/debts/grouped")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('CUSTOMERS_DEBT_VIEW')")
+    @Operation(summary = "Ochiq qarzlar — mijoz bo'yicha guruhlangan (tree view uchun)")
+    public ResponseEntity<List<GroupedDebtResponse>> getGroupedDebts(
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(customerService.getGroupedDebts(search));
     }
 }

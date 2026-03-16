@@ -23,32 +23,108 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Page<Sale> findAllBySellerIdAndStatusOrderByCreatedAtDesc(
             Long sellerId, SaleStatus status, Pageable pageable);
 
-    @Query("""
-        SELECT s FROM Sale s
-        WHERE (:sellerId   IS NULL OR s.seller.id   = :sellerId)
-          AND (:customerId IS NULL OR s.customer.id = :customerId)
-          AND (:status     IS NULL OR s.status      = :status)
-          AND (:from       IS NULL OR s.createdAt  >= :from)
-          AND (:to         IS NULL OR s.createdAt  <= :to)
-        ORDER BY s.createdAt DESC
-    """)
+    // ─────────────────────────────────────────────────────────────────
+    // SOTUV TARIXI FILTER — native SQL (PostgreSQL enum muammo fix)
+    // ─────────────────────────────────────────────────────────────────
+    @Query(value = """
+    SELECT s.* FROM sales s
+    WHERE (CAST(:sellerId AS BIGINT)   IS NULL OR s.seller_id   = CAST(:sellerId AS BIGINT))
+      AND (CAST(:customerId AS BIGINT) IS NULL OR s.customer_id = CAST(:customerId AS BIGINT))
+      AND (CAST(:status AS VARCHAR)    IS NULL OR s.status      = CAST(:status AS VARCHAR))
+      AND (CAST(:from AS TIMESTAMP)    IS NULL OR s.created_at >= CAST(:from AS TIMESTAMP))
+      AND (CAST(:to AS TIMESTAMP)      IS NULL OR s.created_at <= CAST(:to AS TIMESTAMP))
+    ORDER BY s.created_at DESC
+""", nativeQuery = true,
+            countQuery = """
+    SELECT COUNT(*) FROM sales s
+    WHERE (CAST(:sellerId AS BIGINT)   IS NULL OR s.seller_id   = CAST(:sellerId AS BIGINT))
+      AND (CAST(:customerId AS BIGINT) IS NULL OR s.customer_id = CAST(:customerId AS BIGINT))
+      AND (CAST(:status AS VARCHAR)    IS NULL OR s.status      = CAST(:status AS VARCHAR))
+      AND (CAST(:from AS TIMESTAMP)    IS NULL OR s.created_at >= CAST(:from AS TIMESTAMP))
+      AND (CAST(:to AS TIMESTAMP)      IS NULL OR s.created_at <= CAST(:to AS TIMESTAMP))
+""")
     Page<Sale> findAllFiltered(
             @Param("sellerId")   Long sellerId,
             @Param("customerId") Long customerId,
-            @Param("status")     SaleStatus status,
+            @Param("status")     String status,
             @Param("from")       LocalDateTime from,
             @Param("to")         LocalDateTime to,
             Pageable pageable
     );
 
+    // DRAFT + HOLD — barcha ochiq savatchalar (admin uchun)
+    @Query(value = """
+        SELECT s.* FROM sales s
+        WHERE s.status IN (:statuses)
+        ORDER BY s.created_at DESC
+    """, nativeQuery = true,
+            countQuery = """
+        SELECT COUNT(*) FROM sales s
+        WHERE s.status IN (:statuses)
+    """)
+    Page<Sale> findAllByStatusInOrderByCreatedAtDesc(
+            @Param("statuses") List<String> statuses, Pageable pageable);
+
+    // Kassir o'z ochiq savatchalari (DRAFT + HOLD)
+    @Query(value = """
+        SELECT s.* FROM sales s
+        WHERE s.seller_id = :sellerId
+          AND s.status IN (:statuses)
+        ORDER BY s.created_at DESC
+    """, nativeQuery = true,
+            countQuery = """
+        SELECT COUNT(*) FROM sales s
+        WHERE s.seller_id = :sellerId
+          AND s.status IN (:statuses)
+    """)
+    Page<Sale> findAllBySellerIdAndStatusInOrderByCreatedAtDesc(
+            @Param("sellerId") Long sellerId,
+            @Param("statuses") List<String> statuses,
+            Pageable pageable);
+
     // Smena bo'yicha sotuvlar
     List<Sale> findAllByShiftId(Long shiftId);
 
-    // ─────────────────────────────────────────
-    // Dashboard query lar
-    // ─────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // BUGUNGI STATISTIKA — SalesPage tezkor panel uchun
+    // ─────────────────────────────────────────────────────────────────
 
-    // Bugungi sotuvlar soni
+    @Query(value = """
+    SELECT
+        COUNT(s.id)                      AS saleCount,
+        COALESCE(SUM(s.total_amount), 0) AS totalAmount,
+        COALESCE(SUM(s.discount_amount), 0) AS totalDiscount,
+        COUNT(CASE WHEN s.status = 'CANCELLED' THEN 1 END) AS cancelledCount,
+        COUNT(CASE WHEN s.status = 'RETURNED'  THEN 1 END) AS returnedCount
+    FROM sales s
+    WHERE s.status IN ('COMPLETED', 'CANCELLED', 'RETURNED')
+      AND s.created_at >= :startOfDay
+      AND s.created_at <  :endOfDay
+""", nativeQuery = true)
+    List<Object[]> getTodayStatsList(
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay")   LocalDateTime endOfDay
+    );
+
+    @Query(value = """
+        SELECT COALESCE(SUM(sp.amount), 0)
+        FROM sales s
+        JOIN sale_payments sp ON sp.sale_id = s.id
+        WHERE s.status = 'COMPLETED'
+          AND s.created_at >= :startOfDay
+          AND s.created_at <  :endOfDay
+          AND sp.payment_method = CAST(:method AS VARCHAR)
+    """, nativeQuery = true)
+    BigDecimal sumTodayByPaymentMethod(
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay")   LocalDateTime endOfDay,
+            @Param("method")     String method
+    );
+
+    // ─────────────────────────────────────────────────────────────────
+    // DASHBOARD QUERY LAR (mavjud, o'zgartirilmadi)
+    // ─────────────────────────────────────────────────────────────────
+
     @Query("""
         SELECT COUNT(s) FROM Sale s
         WHERE s.status = com.buildpos.buildpos.entity.enums.SaleStatus.COMPLETED
@@ -58,7 +134,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Long countTodaySales(@Param("startOfDay") LocalDateTime startOfDay,
                          @Param("endOfDay") LocalDateTime endOfDay);
 
-    // Bugungi sotuv summasi
     @Query("""
         SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s
         WHERE s.status = com.buildpos.buildpos.entity.enums.SaleStatus.COMPLETED
@@ -68,21 +143,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     BigDecimal sumTodaySales(@Param("startOfDay") LocalDateTime startOfDay,
                              @Param("endOfDay") LocalDateTime endOfDay);
 
-    // Bugungi tushumlar — to'lov usuli bo'yicha (CASH, CARD, TRANSFER)
-    @Query(value = """
-        SELECT COALESCE(SUM(sp.amount), 0)
-        FROM sales s
-        JOIN sale_payments sp ON sp.sale_id = s.id
-        WHERE s.status = 'COMPLETED'
-          AND s.completed_at >= :startOfDay
-          AND s.completed_at < :endOfDay
-          AND sp.payment_method = :method
-    """, nativeQuery = true)
-    BigDecimal sumTodayByPaymentMethod(@Param("startOfDay") LocalDateTime startOfDay,
-                                       @Param("endOfDay") LocalDateTime endOfDay,
-                                       @Param("method") String method);
-
-    // Joriy oy sotuv summasi
     @Query("""
         SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s
         WHERE s.status = com.buildpos.buildpos.entity.enums.SaleStatus.COMPLETED
@@ -90,7 +150,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     """)
     BigDecimal sumMonthSales(@Param("startOfMonth") LocalDateTime startOfMonth);
 
-    // Haftalik sotuv (oxirgi 7 kun, kunlik breakdown)
     @Query(value = """
         SELECT
             TO_CHAR(DATE(s.completed_at), 'YYYY-MM-DD') AS sale_date,
@@ -104,11 +163,34 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     """, nativeQuery = true)
     List<Object[]> getWeeklySales(@Param("weekAgo") LocalDateTime weekAgo);
 
-    // So'nggi N ta sotuv
     @Query("""
         SELECT s FROM Sale s
         WHERE s.status = com.buildpos.buildpos.entity.enums.SaleStatus.COMPLETED
         ORDER BY s.completedAt DESC
     """)
     List<Sale> findRecentSales(Pageable pageable);
+
+    // ── Dashboard: bugungi top 5 mahsulot ─────────────────────────────────
+    @Query(value = """
+        SELECT
+            p.name          AS productName,
+            u.symbol        AS unitSymbol,
+            SUM(si.quantity) AS totalQuantity,
+            SUM(si.total_price) AS totalAmount
+        FROM sale_items si
+        JOIN product_units pu ON pu.id = si.product_unit_id
+        JOIN products p       ON p.id  = pu.product_id
+        JOIN units u          ON u.id  = pu.unit_id
+        JOIN sales s          ON s.id  = si.sale_id
+        WHERE s.status = 'COMPLETED'
+          AND s.completed_at >= :startOfDay
+          AND s.completed_at <= :endOfDay
+        GROUP BY p.name, u.symbol
+        ORDER BY totalAmount DESC
+        LIMIT 5
+    """, nativeQuery = true)
+    List<Object[]> findTopProductsToday(
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay")   LocalDateTime endOfDay
+    );
 }

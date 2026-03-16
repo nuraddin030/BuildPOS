@@ -13,27 +13,38 @@ import EmployeesPage from '../pages/EmployeesPage'
 import PurchasesPage from '../pages/PurchasesPage'
 import PurchaseNewPage from '../pages/PurchaseNewPage'
 import PurchaseDetailPage from '../pages/PurchaseDetailPage'
+import StockMovementsPage from '../pages/StockMovementsPage'
+import SalesPage from "../pages/SalesPage.jsx";
+import ShiftReportPage from '../pages/ShiftReportPage'
+import DebtsPage from '../pages/DebtsPage'
+
 import { useState, useEffect, useRef } from 'react'
 import {
-    LayoutDashboard, ShoppingCart, Package, Users, Truck,
+    LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
-    ChevronLeft, ChevronRight, Globe, DollarSign, Pencil,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff
+    ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
 import '../styles/ProductsPage.css'
 import '../i18n.js'
 
+
+
 // permission: null => barcha foydalanuvchilar ko'radi (OWNER/ADMIN ham)
 const navItems = [
     { path: '/',           key: 'dashboard',  icon: LayoutDashboard, permission: 'DASHBOARD_VIEW' },
-    { path: '/sales',      key: 'sales',      icon: ShoppingCart,    permission: 'SALES_VIEW' },
+    { path: '/cashier',    key: 'cashier',    icon: ShoppingCart,    permission: 'SALES_CREATE' },
+    { path: '/sales',      key: 'sales',      icon: ShoppingBag,     permission: 'SALES_VIEW' },
+    { path: '/debts',      key: 'debts',      icon: CreditCard,      permission: 'CUSTOMERS_DEBT_VIEW' },
     { path: '/products',   key: 'products',   icon: Package,         permission: 'PRODUCTS_VIEW' },
     { path: '/customers',  key: 'customers',  icon: Users,           permission: 'CUSTOMERS_VIEW' },
+    { path: '/shifts',     key: 'Smena hisoboti', icon: BarChart2,   permission: 'SHIFTS_VIEW'},
     { path: '/purchases',  key: 'purchases',  icon: Truck,           permission: 'PURCHASES_VIEW' },
     { path: '/suppliers',  key: 'suppliers',  icon: Factory,         permission: 'SUPPLIERS_VIEW' },
     { path: '/warehouses', key: 'warehouses', icon: Warehouse,       permission: 'WAREHOUSES_VIEW' },
+    { path: '/stock-movements', key: 'stock-movements', icon: ArrowLeftRight, permission: 'STOCK_VIEW' },
     { path: '/categories', key: 'categories', icon: FolderTree,      permission: 'CATEGORIES_VIEW' },
     { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
     { path: '/partners',   key: 'partners',   icon: Handshake,       permission: 'PARTNERS_VIEW' },
@@ -379,6 +390,19 @@ export default function Layout() {
                         <Route path="/purchases/:id" element={
                             <ProtectedRoute permission="PURCHASES_VIEW"><PurchaseDetailPage /></ProtectedRoute>
                         } />
+                        <Route path="/stock-movements" element={
+                            <ProtectedRoute permission="STOCK_VIEW"><StockMovementsPage/></ProtectedRoute>
+                        }/>
+                        <Route path="/sales" element={
+                            <ProtectedRoute permission="SALES_VIEW"> <SalesPage /></ProtectedRoute>
+                        }/>
+                        <Route path="/debts" element={
+                            <ProtectedRoute permission='CUSTOMERS_DEBT_VIEW'> <DebtsPage/></ProtectedRoute>
+                        }/>
+                        <Route path="/shifts" element = {
+                            <ProtectedRoute permission="SHIFTS_VIEW"> <ShiftReportPage/></ProtectedRoute>
+                        }
+                        />
                     </Routes>
                 </div>
             </div>

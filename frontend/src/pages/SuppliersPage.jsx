@@ -339,7 +339,7 @@ export default function SuppliersPage() {
                                         <tr key={d.id}>
                                             <td className="cell-num">{i + 1}</td>
                                             <td className="cell-muted" style={{ fontSize: 13 }}>
-                                                {d.createdAt ? new Date(d.createdAt).toLocaleDateString('uz-UZ') : '—'}
+                                                {d.createdAt ? new Date(d.createdAt).toLocaleDateString('ru-RU') : '—'}
                                             </td>
                                             <td className="th-right cell-price">{fmt(d.totalAmount)}</td>
                                             <td className="th-right" style={{ color: 'var(--success)' }}>{fmt(d.paidAmount)}</td>

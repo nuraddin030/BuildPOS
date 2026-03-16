@@ -1,6 +1,5 @@
 package com.buildpos.buildpos.dto.response;
 
-import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import com.buildpos.buildpos.entity.enums.PurchaseStatus;
 import lombok.Builder;
 import lombok.Data;
@@ -15,30 +14,34 @@ public class PurchaseResponse {
 
     private Long id;
     private String referenceNo;
-
     private Long supplierId;
     private String supplierName;
-
     private Long warehouseId;
     private String warehouseName;
-
     private PurchaseStatus status;
 
+    // Legacy (backward compat — UZS qism)
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     private BigDecimal debtAmount;
 
+    // ✅ Multi-currency: USD va UZS alohida
+    private BigDecimal totalUsd;
+    private BigDecimal totalUzs;
+    private BigDecimal paidUsd;
+    private BigDecimal paidUzs;
+    private BigDecimal debtUsd;
+    private BigDecimal debtUzs;
+
     private String notes;
     private LocalDateTime expectedAt;
     private LocalDateTime receivedAt;
+    private LocalDateTime createdAt;
+    private String createdBy;
 
     private List<PurchaseItemResponse> items;
     private List<PurchasePaymentResponse> payments;
 
-    private LocalDateTime createdAt;
-    private String createdBy;
-
-    // ─────────────────────────────────────────
     @Data
     @Builder
     public static class PurchaseItemResponse {
@@ -48,22 +51,22 @@ public class PurchaseResponse {
         private String unitSymbol;
         private String barcode;
         private BigDecimal quantity;
-        private BigDecimal unitPrice;
-        private BigDecimal totalPrice;
-        private BigDecimal receivedQty;
-        private BigDecimal remainingQty;   // quantity - receivedQty
+        private BigDecimal unitPrice;     // asl valyutada (USD yoki UZS)
+        private BigDecimal unitPriceUzs;  // UZS ekvivalent
+        private BigDecimal totalPrice;    // UZS da (hisoblangan)
         private String currency;
         private BigDecimal exchangeRate;
-        private BigDecimal unitPriceUzs;
+        private BigDecimal receivedQty;
+        private BigDecimal remainingQty;
     }
 
-    // ─────────────────────────────────────────
     @Data
     @Builder
     public static class PurchasePaymentResponse {
         private Long id;
         private BigDecimal amount;
-        private PaymentMethod paymentMethod;
+        private String currency;      // ✅ UZS yoki USD
+        private String paymentMethod;
         private String note;
         private LocalDateTime paidAt;
         private String paidBy;

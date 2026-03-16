@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
@@ -54,4 +55,10 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
           AND p.paidAmount < p.totalAmount
     """)
     BigDecimal sumTotalSupplierDebt();
+
+    @Query("""
+        SELECT p FROM Purchase p
+        ORDER BY p.createdAt DESC
+    """)
+    List<Purchase> findRecentPurchases(Pageable pageable);
 }

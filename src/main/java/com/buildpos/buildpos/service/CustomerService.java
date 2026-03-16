@@ -20,10 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.buildpos.buildpos.dto.response.CustomerDebtResponse;
+import com.buildpos.buildpos.dto.response.GroupedDebtResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +52,8 @@ public class CustomerService {
                 .phone(request.getPhone())
                 .notes(request.getNotes())
                 .isActive(true)
+                .debtLimit(request.getDebtLimit())
+                .debtLimitStrict(request.getDebtLimitStrict() != null ? request.getDebtLimitStrict() : false)
                 .build();
 
         return toResponse(customerRepository.save(customer));
@@ -96,6 +100,8 @@ public class CustomerService {
         customer.setName(request.getName());
         customer.setPhone(request.getPhone());
         customer.setNotes(request.getNotes());
+        customer.setDebtLimit(request.getDebtLimit());
+        customer.setDebtLimitStrict(request.getDebtLimitStrict() != null ? request.getDebtLimitStrict() : false);
 
         return toResponse(customerRepository.save(customer));
     }
@@ -146,6 +152,84 @@ public class CustomerService {
     }
 
     // ─────────────────────────────────────────
+    // TREE VIEW — mijoz bo'yicha guruhlangan ochiq qarzlar
+    // ─────────────────────────────────────────
+    public List<GroupedDebtResponse> getGroupedDebts(String search) {
+        List<CustomerDebt> debts = customerDebtRepository
+                .findAllOpenForTree(search == null || search.isBlank() ? null : search);
+
+        // Mijoz bo'yicha guruhlash
+        Map<Long, List<CustomerDebt>> grouped = new java.util.LinkedHashMap<>();
+        for (CustomerDebt debt : debts) {
+            grouped.computeIfAbsent(debt.getCustomer().getId(), k -> new java.util.ArrayList<>()).add(debt);
+        }
+
+        LocalDate today = LocalDate.now();
+        return grouped.entrySet().stream().map(entry -> {
+            List<CustomerDebt> customerDebts = entry.getValue();
+            CustomerDebt first = customerDebts.get(0);
+
+            BigDecimal totalDebt      = customerDebts.stream().map(CustomerDebt::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalRemaining = customerDebts.stream().map(d -> d.getAmount().subtract(d.getPaidAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+            long overdueCount = customerDebts.stream().filter(d -> d.getDueDate() != null && d.getDueDate().isBefore(today)).count();
+
+            return GroupedDebtResponse.builder()
+                    .entityId(first.getCustomer().getId())
+                    .entityName(first.getCustomer().getName())
+                    .entityPhone(first.getCustomer().getPhone())
+                    .totalDebt(totalDebt)
+                    .totalRemaining(totalRemaining)
+                    .openCount(customerDebts.size())
+                    .overdueCount((int) overdueCount)
+                    .debts(customerDebts.stream().map(this::toDebtResponse).toList())
+                    .build();
+        }).toList();
+    }
+
+    // ─────────────────────────────────────────
+    // BARCHA QARZLAR — DebtsPage uchun (filter + pagination)
+    // ─────────────────────────────────────────
+    public Page<CustomerDebtResponse> getAllDebts(String search, Boolean isPaid,
+                                                  Boolean isOverdue, LocalDateTime from,
+                                                  LocalDateTime to, Pageable pageable) {
+        return customerDebtRepository.findAllFiltered(search, isPaid, isOverdue, from, to, pageable)
+                .map(this::toDebtResponse);
+    }
+
+    public Map<String, Object> getDebtStats() {
+        LocalDate today = LocalDate.now();
+        return Map.of(
+                "totalRemaining", customerDebtRepository.sumAllRemaining(),
+                "openCount",      customerDebtRepository.countAllOpen(),
+                "overdueCount",   customerDebtRepository.countAllOverdue(today)
+        );
+    }
+
+    // ─────────────────────────────────────────
+    // QARZ MUDDATINI UZAYTIRISH
+    // ─────────────────────────────────────────
+    @Transactional
+    public CustomerDebtResponse extendDebt(Long debtId, LocalDate newDueDate, String notes) {
+        CustomerDebt debt = customerDebtRepository.findById(debtId)
+                .orElseThrow(() -> new NotFoundException("Qarz topilmadi: " + debtId));
+
+        if (debt.getIsPaid()) {
+            throw new BadRequestException("To'langan qarzning muddatini uzaytirish mumkin emas");
+        }
+        if (newDueDate != null && newDueDate.isBefore(LocalDate.now())) {
+            throw new BadRequestException("Yangi muddat bugundan katta bo'lishi kerak");
+        }
+
+        debt.setDueDate(newDueDate);
+        if (notes != null && !notes.isBlank()) {
+            String existing = debt.getNotes() != null ? debt.getNotes() + " | " : "";
+            debt.setNotes(existing + "Muddat uzaytirildi: " + newDueDate + " (" + notes + ")");
+        }
+
+        return toDebtResponse(customerDebtRepository.save(debt));
+    }
+
+    // ─────────────────────────────────────────
     // QARZ TARIXI
     // ─────────────────────────────────────────
     public List<CustomerDebtResponse> getDebts(Long customerId) {
@@ -154,6 +238,37 @@ public class CustomerService {
                 .stream()
                 .map(this::toDebtResponse)
                 .toList();
+    }
+
+    // ─────────────────────────────────────────
+    // QARZ LIMITI TEKSHIRUVI (CashierPage uchun)
+    // ─────────────────────────────────────────
+    public Map<String, Object> checkDebtLimit(Long customerId, BigDecimal newDebtAmount) {
+        Customer customer = findById(customerId);
+        BigDecimal totalDebt = customerDebtRepository.getTotalDebtByCustomerId(customerId);
+        BigDecimal afterDebt = totalDebt.add(newDebtAmount);
+
+        boolean hasLimit = customer.getDebtLimit() != null
+                && customer.getDebtLimit().compareTo(BigDecimal.ZERO) > 0;
+
+        if (!hasLimit) {
+            return Map.of("allowed", true, "hasLimit", false);
+        }
+
+        boolean exceeded   = afterDebt.compareTo(customer.getDebtLimit()) > 0;
+        boolean strict     = Boolean.TRUE.equals(customer.getDebtLimitStrict());
+        BigDecimal remaining = customer.getDebtLimit().subtract(totalDebt);
+
+        return Map.of(
+                "allowed",       !exceeded || !strict,
+                "hasLimit",      true,
+                "exceeded",      exceeded,
+                "strict",        strict,
+                "debtLimit",     customer.getDebtLimit(),
+                "currentDebt",   totalDebt,
+                "remaining",     remaining,
+                "afterDebt",     afterDebt
+        );
     }
 
     // ─────────────────────────────────────────
@@ -172,6 +287,9 @@ public class CustomerService {
 
         return CustomerDebtResponse.builder()
                 .id(debt.getId())
+                .customerId(debt.getCustomer() != null ? debt.getCustomer().getId() : null)
+                .customerName(debt.getCustomer() != null ? debt.getCustomer().getName() : null)
+                .customerPhone(debt.getCustomer() != null ? debt.getCustomer().getPhone() : null)
                 .saleId(debt.getSale() != null ? debt.getSale().getId() : null)
                 .saleReferenceNo(debt.getSale() != null ? debt.getSale().getReferenceNo() : null)
                 .amount(debt.getAmount())
@@ -197,6 +315,13 @@ public class CustomerService {
         BigDecimal totalDebt = customerDebtRepository
                 .getTotalDebtByCustomerId(customer.getId());
 
+        boolean hasLimit = customer.getDebtLimit() != null
+                && customer.getDebtLimit().compareTo(BigDecimal.ZERO) > 0;
+        boolean limitExceeded = hasLimit && totalDebt.compareTo(customer.getDebtLimit()) > 0;
+        BigDecimal limitRemaining = hasLimit
+                ? customer.getDebtLimit().subtract(totalDebt)
+                : null;
+
         return CustomerResponse.builder()
                 .id(customer.getId())
                 .name(customer.getName())
@@ -204,6 +329,10 @@ public class CustomerService {
                 .notes(customer.getNotes())
                 .isActive(customer.getIsActive())
                 .totalDebt(totalDebt)
+                .debtLimit(customer.getDebtLimit())
+                .debtLimitStrict(customer.getDebtLimitStrict())
+                .limitExceeded(limitExceeded)
+                .limitRemaining(limitRemaining)
                 .createdAt(customer.getCreatedAt())
                 .build();
     }

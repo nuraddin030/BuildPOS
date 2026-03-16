@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ChevronDown, ChevronUp } from 'lucide-react'
-import { getCustomers, createCustomer, updateCustomer, getCustomerDebts, payCustomerDebt } from '../api/customers'
+import { useNavigate } from 'react-router-dom'
+import { Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink } from 'lucide-react'
+import { getCustomers, createCustomer, updateCustomer } from '../api/customers'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
 
-const EMPTY_FORM = { name: '', phone: '', notes: '' }
+const EMPTY_FORM = { name: '', phone: '', notes: '', debtLimit: '', debtLimitStrict: false }
 const formatPhone = (v) => v.replace(/\D/g, '').slice(0, 12)
 const fmt = (v) => v ? new Intl.NumberFormat('uz-UZ').format(v) + ' UZS' : '0 UZS'
 
 export default function CustomersPage() {
+    const navigate = useNavigate()
     const [customers, setCustomers] = useState([])
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(false)
@@ -19,12 +21,8 @@ export default function CustomersPage() {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
-    // Debts
-    const [debtCustomer, setDebtCustomer] = useState(null)
-    const [debts, setDebts] = useState([])
-    const [debtLoading, setDebtLoading] = useState(false)
-    const [payingDebtId, setPayingDebtId] = useState(null)
-    const [payAmount, setPayAmount] = useState('')
+    // Debts endi DebtsPage ga yo'naltiriladi — bu state lar kerak emas
+    const [noDebtModal, setNoDebtModal] = useState(null) // qarz yo'q mijoz nomi
 
     const load = useCallback(() => {
         setLoading(true)
@@ -48,7 +46,13 @@ export default function CustomersPage() {
 
     const openEdit = (c) => {
         setEditId(c.id)
-        setForm({ name: c.name || '', phone: c.phone || '', notes: c.notes || '' })
+        setForm({
+            name: c.name || '',
+            phone: c.phone || '',
+            notes: c.notes || '',
+            debtLimit: c.debtLimit ? String(c.debtLimit) : '',
+            debtLimitStrict: c.debtLimitStrict || false
+        })
         setError(''); setShowModal(true)
     }
 
@@ -57,7 +61,12 @@ export default function CustomersPage() {
         if (!form.phone.trim()) { setError("Telefon kiritilishi shart"); return }
         setSaving(true); setError('')
         try {
-            editId ? await updateCustomer(editId, form) : await createCustomer(form)
+            const payload = {
+                ...form,
+                debtLimit: form.debtLimit ? Number(form.debtLimit) : null,
+                debtLimitStrict: form.debtLimitStrict || false,
+            }
+            editId ? await updateCustomer(editId, payload) : await createCustomer(payload)
             setShowModal(false); load()
         } catch (err) {
             setError(err.response?.data?.message || 'Xatolik yuz berdi')
@@ -73,25 +82,6 @@ export default function CustomersPage() {
         return () => document.removeEventListener('keydown', handleKey)
     }, [showModal, handleSave])
 
-    const openDebts = async (c) => {
-        setDebtCustomer(c); setDebtLoading(true); setDebts([])
-        try {
-            const res = await getCustomerDebts(c.id)
-            setDebts(res.data || [])
-        } catch (e) { console.error(e) }
-        finally { setDebtLoading(false) }
-    }
-
-    const handlePay = async (debtId) => {
-        if (!payAmount || Number(payAmount) <= 0) return
-        try {
-            await payCustomerDebt(debtId, { amount: Number(payAmount) })
-            setPayAmount(''); setPayingDebtId(null)
-            openDebts(debtCustomer); load()
-        } catch (err) { alert(err.response?.data?.message || 'Xatolik') }
-    }
-
-    const totalDebt = debts.reduce((s, d) => s + (d.remainingAmount || 0), 0)
 
     return (
         <div className="products-wrapper">
@@ -148,6 +138,7 @@ export default function CustomersPage() {
                                 <th>Telefon</th>
                                 <th>Izoh</th>
                                 <th className="th-right">Qarz</th>
+                                <th className="th-right">Limit</th>
                                 <th className="th-center">Holat</th>
                                 <th className="th-center">Amallar</th>
                             </tr>
@@ -170,6 +161,28 @@ export default function CustomersPage() {
                                             <span className="cell-muted">—</span>
                                         )}
                                     </td>
+                                    <td className="th-right">
+                                        {c.debtLimit ? (
+                                            <div>
+                                                <div style={{ fontSize: 12, fontWeight: 600,
+                                                    color: c.limitExceeded ? '#dc2626' : 'var(--text-secondary)' }}>
+                                                    {fmt(c.debtLimit)}
+                                                </div>
+                                                <div style={{ fontSize: 10, marginTop: 2 }}>
+                                                    <span style={{
+                                                        padding: '1px 5px', borderRadius: 6,
+                                                        background: c.debtLimitStrict ? 'rgba(220,38,38,0.1)' : 'rgba(245,158,11,0.1)',
+                                                        color: c.debtLimitStrict ? '#dc2626' : '#f59e0b',
+                                                        fontWeight: 600
+                                                    }}>
+                                                        {c.debtLimitStrict ? '🚫 Qat\'iy' : '⚠ Ogohlantirish'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span className="cell-muted">—</span>
+                                        )}
+                                    </td>
                                     <td className="th-center">
                                             <span className={`status-badge ${c.isActive !== false ? 'status-active' : 'status-inactive'}`}>
                                                 {c.isActive !== false ? 'Faol' : 'Noaktiv'}
@@ -185,11 +198,23 @@ export default function CustomersPage() {
                                             {hasPermission('CUSTOMERS_DEBT_VIEW') && (
                                                 <button
                                                     className="act-btn"
-                                                    title="Nasiyalar"
-                                                    style={{ color: 'var(--info, #0891b2)', borderColor: 'var(--border-color)' }}
-                                                    onClick={() => openDebts(c)}
+                                                    title={c.totalDebt > 0 ? "Nasiyalarni ko'rish" : "Nasiya yo'q"}
+                                                    style={{
+                                                        color: c.totalDebt > 0 ? '#dc2626' : 'var(--text-muted)',
+                                                        borderColor: 'var(--border-color)'
+                                                    }}
+                                                    onClick={() => {
+                                                        if (c.totalDebt > 0) {
+                                                            navigate(`/debts?customerId=${c.id}`)
+                                                        } else {
+                                                            setNoDebtModal(c.name)
+                                                        }
+                                                    }}
                                                 >
-                                                    <CreditCard size={14} />
+                                                    {c.totalDebt > 0
+                                                        ? <ExternalLink size={14} />
+                                                        : <CreditCard size={14} />
+                                                    }
                                                 </button>
                                             )}
                                         </div>
@@ -236,6 +261,69 @@ export default function CustomersPage() {
                                           onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                                           placeholder="Ixtiyoriy" />
                             </div>
+
+                            {/* Qarz limiti bo'limi */}
+                            <div style={{
+                                marginTop: 16, padding: '14px 16px',
+                                background: 'var(--surface-secondary)',
+                                borderRadius: 10, border: '1px solid var(--border-color)'
+                            }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)',
+                                    textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 12 }}>
+                                    Qarz limiti
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 12 }}>
+                                    <label className="form-label">Maksimal nasiya summasi (UZS)</label>
+                                    <input className="form-input"
+                                           value={form.debtLimit}
+                                           onChange={e => setForm(f => ({ ...f, debtLimit: e.target.value.replace(/[^\d]/g, '') }))}
+                                           placeholder="Bo'sh qoldiring = limit yo'q" />
+                                    {form.debtLimit && (
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                            Limit: {Number(form.debtLimit).toLocaleString('ru-RU')} UZS
+                                        </div>
+                                    )}
+                                </div>
+                                {form.debtLimit && (
+                                    <div>
+                                        <label className="form-label" style={{ marginBottom: 8 }}>
+                                            Limit turi
+                                        </label>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm(f => ({ ...f, debtLimitStrict: false }))}
+                                                style={{
+                                                    flex: 1, padding: '8px 12px', borderRadius: 8,
+                                                    border: `2px solid ${!form.debtLimitStrict ? '#f59e0b' : 'var(--border-color)'}`,
+                                                    background: !form.debtLimitStrict ? 'rgba(245,158,11,0.08)' : 'var(--surface)',
+                                                    cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                                                    color: !form.debtLimitStrict ? '#f59e0b' : 'var(--text-secondary)'
+                                                }}>
+                                                ⚠ Ogohlantirish
+                                                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2 }}>
+                                                    Kassir ko'radi, sotishi mumkin
+                                                </div>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm(f => ({ ...f, debtLimitStrict: true }))}
+                                                style={{
+                                                    flex: 1, padding: '8px 12px', borderRadius: 8,
+                                                    border: `2px solid ${form.debtLimitStrict ? '#dc2626' : 'var(--border-color)'}`,
+                                                    background: form.debtLimitStrict ? 'rgba(220,38,38,0.08)' : 'var(--surface)',
+                                                    cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                                                    color: form.debtLimitStrict ? '#dc2626' : 'var(--text-secondary)'
+                                                }}>
+                                                🚫 Qat'iy bloklash
+                                                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2 }}>
+                                                    Nasiya berib bo'lmaydi
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setShowModal(false)}>Bekor qilish</button>
@@ -247,83 +335,29 @@ export default function CustomersPage() {
                 </div>
             )}
 
-            {/* Debts Modal */}
-            {debtCustomer && (
-                <div className="modal-overlay" onClick={() => setDebtCustomer(null)}>
-                    <div className="modal-box products-modal" style={{ maxWidth: 700 }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div className="modal-header-left">
-                                <CreditCard size={20} />
-                                <div>
-                                    <h6 className="modal-title">{debtCustomer.name} — Nasiyalar</h6>
-                                    {totalDebt > 0 && (
-                                        <p className="modal-subtitle" style={{ color: 'var(--danger)' }}>
-                                            Jami qarz: {fmt(totalDebt)}
-                                        </p>
-                                    )}
-                                </div>
+            {/* Nasiya yo'q modal */}
+            {noDebtModal && (
+                <div className="modal-overlay" onClick={() => setNoDebtModal(null)}>
+                    <div className="modal-box" style={{ maxWidth: 360, textAlign: 'center' }}
+                         onClick={e => e.stopPropagation()}>
+                        <div className="modal-body" style={{ padding: '32px 28px' }}>
+                            <div style={{
+                                width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
+                                background: 'rgba(22,163,74,0.1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#16a34a', fontSize: 28
+                            }}>✓</div>
+                            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+                                {noDebtModal}
                             </div>
-                            <button className="modal-close-btn" onClick={() => setDebtCustomer(null)}><X size={16} /></button>
+                            <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                                Bu mijozda hozircha nasiya yo'q ✅
+                            </div>
                         </div>
-                        <div className="modal-body" style={{ padding: 0 }}>
-                            {debtLoading ? (
-                                <div className="table-loading"><Loader2 size={24} className="spin" /></div>
-                            ) : debts.length === 0 ? (
-                                <div className="table-empty">
-                                    <CreditCard size={36} strokeWidth={1} />
-                                    <p>Nasiya yo'q ✅</p>
-                                </div>
-                            ) : (
-                                <table className="ptable">
-                                    <thead>
-                                    <tr>
-                                        <th className="th-num">#</th>
-                                        <th>Sana</th>
-                                        <th className="th-right">Umumiy</th>
-                                        <th className="th-right">To'langan</th>
-                                        <th className="th-right">Qoldi</th>
-                                        <th className="th-center">To'lash</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {debts.map((d, i) => (
-                                        <tr key={d.id}>
-                                            <td className="cell-num">{i + 1}</td>
-                                            <td className="cell-muted" style={{ fontSize: 13 }}>
-                                                {d.createdAt ? new Date(d.createdAt).toLocaleDateString('uz-UZ') : '—'}
-                                            </td>
-                                            <td className="th-right cell-price">{fmt(d.totalAmount)}</td>
-                                            <td className="th-right" style={{ color: 'var(--success)' }}>{fmt(d.paidAmount)}</td>
-                                            <td className="th-right">
-                                                    <span style={{ fontWeight: 700, color: d.remainingAmount > 0 ? 'var(--danger)' : 'var(--success)' }}>
-                                                        {fmt(d.remainingAmount)}
-                                                    </span>
-                                            </td>
-                                            <td className="th-center">
-                                                {d.remainingAmount > 0 ? (
-                                                    payingDebtId === d.id ? (
-                                                        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                                                            <input type="number" className="form-input" style={{ width: 110, height: 32 }}
-                                                                   value={payAmount} onChange={e => setPayAmount(e.target.value)}
-                                                                   placeholder="Summa" autoFocus />
-                                                            <button className="act-btn act-edit" onClick={() => handlePay(d.id)} style={{ color: 'var(--success)' }}>✓</button>
-                                                            <button className="act-btn" onClick={() => setPayingDebtId(null)}>✕</button>
-                                                        </div>
-                                                    ) : (
-                                                        <button className="act-btn act-edit" style={{ width: 'auto', padding: '0 10px', fontSize: 12 }}
-                                                                onClick={() => { setPayingDebtId(d.id); setPayAmount('') }}>
-                                                            To'lash
-                                                        </button>
-                                                    )
-                                                ) : (
-                                                    <span className="status-badge status-active">To'langan</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            )}
+                        <div className="modal-footer" style={{ justifyContent: 'center' }}>
+                            <button className="btn-save" onClick={() => setNoDebtModal(null)}>
+                                Yopish
+                            </button>
                         </div>
                     </div>
                 </div>

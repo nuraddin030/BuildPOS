@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -35,6 +36,14 @@ public class Customer {
 
     @Column(nullable = false)
     private Boolean isActive = true;
+
+    // ── Qarz limiti ──────────────────────────────────────────────
+    @Column(precision = 18, scale = 2)
+    private BigDecimal debtLimit;           // NULL = limit yo'q
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean debtLimitStrict = false; // true = qat'iy bloklash, false = faqat ogohlantirish
 
     @CreatedDate
     @Column(updatable = false)

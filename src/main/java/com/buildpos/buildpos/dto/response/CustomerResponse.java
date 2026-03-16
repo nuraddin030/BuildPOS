@@ -15,6 +15,14 @@ public class CustomerResponse {
     private String phone;
     private String notes;
     private Boolean isActive;
-    private BigDecimal totalDebt;       // jami to'lanmagan qarz
+    // Qarz ma'lumotlari
+    private BigDecimal totalDebt;           // Hozirgi jami qarz
+
+    // Qarz limiti
+    private BigDecimal debtLimit;           // NULL = limit yo'q
+    private Boolean debtLimitStrict;        // true = bloklash, false = ogohlantirish
+    private Boolean limitExceeded;          // totalDebt > debtLimit
+    private BigDecimal limitRemaining;      // debtLimit - totalDebt (manfiy bo'lishi mumkin)
+
     private LocalDateTime createdAt;
 }

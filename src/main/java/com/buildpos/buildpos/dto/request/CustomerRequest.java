@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class CustomerRequest {
 
@@ -16,4 +18,8 @@ public class CustomerRequest {
     private String phone;
 
     private String notes;
+    // Qarz limiti
+    private BigDecimal debtLimit;           // NULL = limit yo'q
+
+    private Boolean debtLimitStrict = false; // true = bloklash, false = ogohlantirish
 }

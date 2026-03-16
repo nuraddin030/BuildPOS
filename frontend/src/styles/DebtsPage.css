@@ -1,0 +1,527 @@
+/* ============================================================
+   BuildPOS — NasiyalarPage Styles
+   ============================================================ */
+
+/* ── Statistika grid ──────────────────────────────────────────── */
+.nasiya-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.nasiya-stat-group {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.nasiya-stat-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 12px;
+}
+
+.nasiya-stat-cards {
+    display: flex;
+    gap: 10px;
+}
+
+.nasiya-mini-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface-secondary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.nasiya-mini-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.nasiya-mini-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nasiya-mini-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* ── Tab ──────────────────────────────────────────────────────── */
+.nasiya-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--surface-secondary);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    width: fit-content;
+}
+
+.nasiya-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nasiya-tab:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.nasiya-tab.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ── Tab badge ────────────────────────────────────────────────── */
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.tab-badge-blue {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+}
+
+.tab-badge-red {
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+}
+
+/* ── Status filter tugmalari ──────────────────────────────────── */
+.nasiya-status-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ── Muddati o'tgan qator rangi ───────────────────────────────── */
+.ptable tbody tr.row-overdue {
+    background: rgba(220, 38, 38, 0.035);
+}
+
+.ptable tbody tr.row-overdue:hover {
+    background: rgba(220, 38, 38, 0.07);
+}
+
+/* ── To'lash tugmasi ──────────────────────────────────────────── */
+.act-pay {
+    color: #16a34a;
+}
+
+.act-pay:hover {
+    background: var(--success-bg);
+    border-color: #16a34a;
+}
+
+/* ── Qarz ma'lumot bloki ──────────────────────────────────────── */
+.debt-info-box {
+    background: var(--surface-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.debt-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.debt-info-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.debt-info-main {
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ── To'lov usuli tugmalari ───────────────────────────────────── */
+.pay-method-group {
+    display: flex;
+    gap: 8px;
+}
+
+.pay-method-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pay-method-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.pay-method-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* ── Spin ─────────────────────────────────────────────────────── */
+.spin {
+    animation: spin 0.8s linear infinite;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .nasiya-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .nasiya-stat-cards {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .nasiya-tabs {
+        width: 100%;
+    }
+
+    .nasiya-tab {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 12px;
+    }
+
+    .nasiya-status-filters {
+        width: 100%;
+    }
+
+    .nasiya-status-filters .btn-outline {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .pay-method-group {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .nasiya-mini-card {
+        padding: 8px 10px;
+    }
+
+    .nasiya-mini-value {
+        font-size: 13px;
+    }
+}
+
+/* ── Modal padding ────────────────────────────────────────────── */
+.modal-box .modal-header {
+    padding: 24px 28px 20px;
+}
+
+.modal-box .modal-body {
+    padding: 20px 28px 24px;
+}
+
+.modal-box .modal-footer {
+    padding: 16px 28px;
+}
+
+/* ── Detail modal tab navigatsiya ─────────────────────────────── */
+.modal-detail-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface);
+}
+
+.modal-detail-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s ease;
+}
+
+.modal-detail-tab:hover {
+    color: var(--text-primary);
+}
+
+.modal-detail-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+@media (max-width: 768px) {
+    .modal-box .modal-header { padding: 18px 20px 14px; }
+    .modal-box .modal-body   { padding: 16px 20px 20px; }
+    .modal-box .modal-footer { padding: 14px 20px; }
+    .modal-detail-tabs       { padding: 0 20px; }
+}
+
+@media (max-width: 480px) {
+    .modal-box .modal-header { padding: 14px 16px 12px; }
+    .modal-box .modal-body   { padding: 14px 16px 16px; }
+    .modal-box .modal-footer { padding: 12px 16px; }
+    .modal-detail-tabs       { padding: 0 16px; }
+}
+
+/* ── View toggle ──────────────────────────────────────────────── */
+.view-toggle-group {
+    display: flex;
+    gap: 4px;
+    background: var(--surface-secondary);
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.view-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.view-toggle-btn.active {
+    background: var(--surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ── Tree view ────────────────────────────────────────────────── */
+.debt-tree {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.debt-tree-group {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.debt-tree-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface-secondary);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.debt-tree-header:hover {
+    background: var(--surface-hover);
+}
+
+.debt-tree-header.overdue {
+    background: rgba(220, 38, 38, 0.04);
+    border-left: 3px solid #dc2626;
+}
+
+.debt-tree-toggle {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.debt-tree-entity {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.debt-tree-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.debt-tree-phone {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.debt-tree-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.debt-tree-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.debt-tree-badge-count {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+.debt-tree-badge-overdue {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+}
+
+.debt-tree-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.debt-tree-remaining {
+    font-size: 15px;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.debt-tree-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Tree ichki qarzlar ───────────────────────────────────────── */
+.debt-tree-children {
+    border-top: 1px solid var(--border-color);
+}
+
+.debt-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px 10px 44px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.debt-tree-row:last-child {
+    border-bottom: none;
+}
+
+.debt-tree-row:hover {
+    background: var(--surface-hover);
+}
+
+.debt-tree-row.overdue {
+    background: rgba(220, 38, 38, 0.03);
+}
+
+.debt-tree-row-ref {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 150px;
+}
+
+.debt-tree-row-amounts {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+@media (max-width: 768px) {
+    .debt-tree-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .debt-tree-row {
+        flex-wrap: wrap;
+        padding-left: 32px;
+    }
+
+    .view-toggle-group {
+        width: 100%;
+        justify-content: center;
+    }
+}

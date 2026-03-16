@@ -12,6 +12,13 @@ import java.time.LocalDateTime;
 public class SupplierDebtResponse {
 
     private Long id;
+
+    // Yetkazuvchi ma'lumotlari
+    private Long supplierId;
+    private String supplierName;
+    private String supplierPhone;
+
+    // Xarid ma'lumotlari
     private Long purchaseId;
     private String purchaseReferenceNo;
 

@@ -1,6 +1,8 @@
 package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.response.StockMovementResponse;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.buildpos.buildpos.entity.StockMovement;
 import com.buildpos.buildpos.entity.enums.StockMovementType;
 import com.buildpos.buildpos.repository.StockMovementRepository;
@@ -28,11 +30,34 @@ public class StockMovementService {
             StockMovementType movementType,
             LocalDateTime from,
             LocalDateTime to,
+            String productName,
             Pageable pageable) {
 
+        String movementTypeStr = movementType != null ? movementType.name() : null;
+        String fromStr = from != null ? from.toString() : null;
+        String toStr   = to   != null ? to.toString()   : null;
+        String productNameStr = (productName != null && !productName.isBlank()) ? productName : null;
         return stockMovementRepository
-                .findAllFiltered(productUnitId, warehouseId, movementType, from, to, pageable)
+                .findAllFiltered(productUnitId, warehouseId, movementTypeStr, fromStr, toStr, productNameStr, pageable)
                 .map(this::toResponse);
+    }
+
+    // ─────────────────────────────────────────
+    // GET COUNTS — har bir type bo'yicha jami son
+    // ─────────────────────────────────────────
+    public Map<String, Long> getCounts() {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        // Barcha typelarni 0 bilan initsializatsiya
+        for (StockMovementType type : StockMovementType.values()) {
+            counts.put(type.name(), 0L);
+        }
+        // DB dan kelgan sonlarni ustiga yozish
+        stockMovementRepository.countByMovementType().forEach(row -> {
+            String type = (String) row[0];
+            Long count = ((Number) row[1]).longValue();
+            counts.put(type, count);
+        });
+        return counts;
     }
 
     // ─────────────────────────────────────────

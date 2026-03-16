@@ -32,4 +32,25 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStock, 
           AND ws.quantity <= ws.minStock
     """)
     Long countLowStockItems();
+
+    // Dashboard: kam zaxiradagi mahsulotlar ro'yxati (top 5)
+    @Query(value = """
+        SELECT
+            pu.id           AS productUnitId,
+            p.name          AS productName,
+            u.symbol        AS unitSymbol,
+            w.name          AS warehouseName,
+            ws.quantity     AS currentStock,
+            ws.min_stock    AS minStock
+        FROM warehouse_stock ws
+        JOIN product_units pu ON pu.id = ws.product_unit_id
+        JOIN products p       ON p.id  = pu.product_id
+        JOIN units u          ON u.id  = pu.unit_id
+        JOIN warehouses w     ON w.id  = ws.warehouse_id
+        WHERE ws.min_stock IS NOT NULL
+          AND ws.quantity <= ws.min_stock
+        ORDER BY (ws.quantity / NULLIF(ws.min_stock, 0)) ASC
+        LIMIT 5
+    """, nativeQuery = true)
+    List<Object[]> findLowStockItems();
 }

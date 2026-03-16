@@ -1,0 +1,407 @@
+/* ============================================================
+   BuildPOS — DashboardPage Styles
+   ============================================================ */
+
+/* ── KPI kartalar ─────────────────────────────────────────────── */
+.dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.dash-kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: box-shadow 0.15s ease;
+}
+
+.dash-kpi-clickable {
+    cursor: pointer;
+}
+
+.dash-kpi-clickable:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.dash-kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dash-kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.dash-kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.dash-kpi-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.dash-kpi-currency {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.dash-kpi-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dash-kpi-sub--warn {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* ── Smena badge ──────────────────────────────────────────────── */
+.dash-shift-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1.5px solid;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.dash-shift-badge--open {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.3);
+    color: #16a34a;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.dash-shift-badge--open:hover {
+    background: rgba(22, 163, 74, 0.14);
+}
+
+.dash-shift-badge--closed {
+    background: var(--surface-secondary);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+.dash-shift-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #16a34a;
+    line-height: 1.2;
+}
+
+.dash-shift-time {
+    font-size: 11px;
+    font-weight: 500;
+    color: #16a34a;
+    opacity: 0.8;
+}
+
+/* ── Ogohlantirish ───────────────────────────────────────────── */
+.dash-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.dash-alert:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.dash-alert > svg:first-child {
+    color: #ef4444;
+    flex-shrink: 0;
+}
+
+.dash-alert-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ef4444;
+    display: block;
+}
+
+.dash-alert-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+}
+
+.dash-alert-arrow {
+    margin-left: auto;
+    color: #ef4444;
+    flex-shrink: 0;
+}
+
+/* ── Karta ────────────────────────────────────────────────────── */
+.dash-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.dash-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+}
+
+.dash-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.dash-card-total {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.dash-card-badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.dash-card-link {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    padding: 0;
+    transition: opacity 0.15s;
+}
+
+.dash-card-link:hover {
+    opacity: 0.7;
+}
+
+/* ── Grid lar ─────────────────────────────────────────────────── */
+.dash-mid-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.dash-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+/* ── To'lov satrlari ─────────────────────────────────────────── */
+.dash-pay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dash-pay-row {
+    position: relative;
+}
+
+.dash-pay-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.dash-pay-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dash-pay-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.dash-pay-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dash-pay-value {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.dash-pay-pct {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 28px;
+    text-align: right;
+}
+
+.dash-pay-bar-bg {
+    height: 5px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.dash-pay-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* ── Haftalik grafik ─────────────────────────────────────────── */
+.dash-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 140px;
+    padding-bottom: 24px;
+    position: relative;
+}
+
+.dash-chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    position: relative;
+}
+
+.dash-chart-amount {
+    font-size: 9px;
+    color: var(--text-muted);
+    position: absolute;
+    top: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.dash-chart-track {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding-top: 16px;
+}
+
+.dash-chart-bar {
+    width: 100%;
+    background: var(--primary);
+    border-radius: 4px 4px 0 0;
+    opacity: 0.5;
+    transition: height 0.5s ease;
+    min-height: 4px;
+}
+
+.dash-chart-bar--today {
+    opacity: 1;
+    background: var(--primary);
+}
+
+.dash-chart-day {
+    font-size: 11px;
+    color: var(--text-muted);
+    position: absolute;
+    bottom: 0;
+    font-weight: 500;
+}
+
+.dash-chart-day--today {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .dash-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .dash-mid-grid {
+        grid-template-columns: 1fr;
+    }
+    .dash-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dash-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .dash-kpi-value {
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dash-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}

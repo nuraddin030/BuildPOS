@@ -20,6 +20,7 @@ public class DashboardResponse {
     private BigDecimal todayCash;
     private BigDecimal todayCard;
     private BigDecimal todayTransfer;
+    private BigDecimal todayDebt;          // ← YANGI: bugungi nasiya summasi
 
     // Bugungi tranzaksiyalar
     private Long todayTransactionCount;
@@ -33,10 +34,10 @@ public class DashboardResponse {
     // ─────────────────────────────────────────
     // Nasiya holati
     // ─────────────────────────────────────────
-    private BigDecimal totalCustomerDebt;      // Jami mijoz qarzi
-    private Long openDebtCount;               // Ochiq nasiyalar soni
-    private Long overdueDebtCount;            // Muddati o'tgan nasiyalar soni
-    private BigDecimal overdueDebtAmount;     // Muddati o'tgan nasiyalar summasi
+    private BigDecimal totalCustomerDebt;
+    private Long openDebtCount;
+    private Long overdueDebtCount;
+    private BigDecimal overdueDebtAmount;
 
     // ─────────────────────────────────────────
     // Yetkazuvchi qarzi
@@ -47,6 +48,17 @@ public class DashboardResponse {
     // Ombor
     // ─────────────────────────────────────────
     private Long lowStockCount;
+    private List<LowStockItem> lowStockItems;  // ← YANGI: kam qolgan mahsulotlar
+
+    // ─────────────────────────────────────────
+    // Top mahsulotlar (bugun)
+    // ─────────────────────────────────────────
+    private List<TopProductItem> topProducts;  // ← YANGI
+
+    // ─────────────────────────────────────────
+    // So'nggi xaridlar
+    // ─────────────────────────────────────────
+    private List<RecentPurchaseItem> recentPurchases; // ← YANGI
 
     // ─────────────────────────────────────────
     // Haftalik sotuv grafigi (oxirgi 7 kun)
@@ -59,14 +71,45 @@ public class DashboardResponse {
     private List<SaleResponse> recentSales;
 
     // ─────────────────────────────────────────
-    // Ichki DTO
+    // Ichki DTO lar
     // ─────────────────────────────────────────
     @Data
     @Builder
     public static class DailySaleResponse {
-        private String day;        // "Dushanba", "Seshanba", ...
-        private String date;       // "2026-03-01"
+        private String day;
+        private String date;
         private BigDecimal amount;
         private Long count;
+    }
+
+    @Data
+    @Builder
+    public static class TopProductItem {
+        private String productName;
+        private String unitSymbol;
+        private BigDecimal totalQuantity;
+        private BigDecimal totalAmount;
+    }
+
+    @Data
+    @Builder
+    public static class LowStockItem {
+        private Long productUnitId;
+        private String productName;
+        private String unitSymbol;
+        private String warehouseName;
+        private BigDecimal currentStock;
+        private BigDecimal minStock;
+    }
+
+    @Data
+    @Builder
+    public static class RecentPurchaseItem {
+        private Long id;
+        private String referenceNo;
+        private String supplierName;
+        private String status;
+        private BigDecimal totalAmount;
+        private String createdAt;
     }
 }

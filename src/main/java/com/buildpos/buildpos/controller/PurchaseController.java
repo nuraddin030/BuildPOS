@@ -5,7 +5,6 @@ import com.buildpos.buildpos.dto.request.PurchaseRequest;
 import com.buildpos.buildpos.dto.request.ReceivePurchaseRequest;
 import com.buildpos.buildpos.dto.response.PurchaseResponse;
 import com.buildpos.buildpos.dto.response.PurchaseSummaryResponse;
-import com.buildpos.buildpos.entity.enums.PurchaseStatus;
 import com.buildpos.buildpos.service.PurchaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +34,16 @@ public class PurchaseController {
     @Operation(summary = "Yangi xarid yaratish")
     public ResponseEntity<PurchaseResponse> create(@Valid @RequestBody PurchaseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(purchaseService.create(request));
+    }
+
+    // ✅ PENDING xaridga yangi item qo'shish
+    @PostMapping("/{id}/items")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_CREATE')")
+    @Operation(summary = "PENDING xaridga yangi mahsulot qo'shish")
+    public ResponseEntity<PurchaseResponse> addItem(
+            @PathVariable Long id,
+            @Valid @RequestBody PurchaseRequest.PurchaseItemRequest request) {
+        return ResponseEntity.ok(purchaseService.addItem(id, request));
     }
 
     @GetMapping

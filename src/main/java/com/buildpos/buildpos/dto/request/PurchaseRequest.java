@@ -48,5 +48,10 @@ public class PurchaseRequest {
         private String currency = "UZS";
 
         private BigDecimal exchangeRate;  // USD bo'lsa kurs kiritiladi
+
+        // Sotuv va minimal narx — har doim UZS da
+        private Boolean updatePrices = false;
+        private BigDecimal salePrice;
+        private BigDecimal minPrice;
     }
 }

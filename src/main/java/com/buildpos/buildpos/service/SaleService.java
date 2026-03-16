@@ -1,7 +1,9 @@
 package com.buildpos.buildpos.service;
 
+import com.buildpos.buildpos.dto.request.ReturnRequest;
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
+import com.buildpos.buildpos.dto.response.TodayStatsResponse;
 import com.buildpos.buildpos.entity.Partner;
 import com.buildpos.buildpos.repository.PartnerRepository;
 import com.buildpos.buildpos.entity.*;
@@ -20,10 +22,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import com.buildpos.buildpos.util.StockCalculator;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -72,7 +78,6 @@ public class SaleService {
             sale.setCustomer(customer);
         }
 
-        // Hamkor
         if (request.getPartnerId() != null) {
             Partner partner = partnerRepository.findById(request.getPartnerId())
                     .orElseThrow(() -> new NotFoundException("Hamkor topilmadi"));
@@ -139,7 +144,36 @@ public class SaleService {
         sale.setDiscountAmount(overallDiscountAmount);
         sale.setTotalAmount(subtotal.subtract(overallDiscountAmount));
 
-        return toResponse(saleRepository.save(sale));
+        sale = saleRepository.save(sale);
+
+        // DRAFT yaratilganda stock rezerv qilamiz
+        for (SaleItem item : sale.getItems()) {
+            WarehouseStock stock = warehouseStockRepository
+                    .findByWarehouseIdAndProductUnitId(
+                            item.getWarehouse().getId(), item.getProductUnit().getId())
+                    .orElseThrow(() -> new BadRequestException(
+                            item.getProductUnit().getProduct().getName() + " omborda mavjud emas"));
+            if (!StockCalculator.isEnough(stock.getQuantity(), item.getQuantity())) {
+                throw new BadRequestException(
+                        item.getProductUnit().getProduct().getName()
+                                + " uchun yetarli tovar yo'q. Mavjud: "
+                                + stock.getQuantity() + " " + item.getProductUnit().getUnit().getSymbol());
+            }
+            stock.setQuantity(StockCalculator.subtract(stock.getQuantity(), item.getQuantity()));
+            warehouseStockRepository.save(stock);
+            stockMovementRepository.save(StockMovement.builder()
+                    .productUnit(item.getProductUnit())
+                    .movementType(StockMovementType.ADJUSTMENT_OUT)
+                    .fromWarehouse(item.getWarehouse())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getSalePrice())
+                    .totalPrice(item.getTotalPrice())
+                    .referenceType("DRAFT")
+                    .referenceId(sale.getId())
+                    .build());
+        }
+
+        return toResponse(sale);
     }
 
     // ─────────────────────────────────────────
@@ -160,28 +194,10 @@ public class SaleService {
             throw new BadRequestException("Nasiya sotuvda mijoz ko'rsatilishi shart");
         }
 
-        // Stock tekshirish
-        for (SaleItem item : sale.getItems()) {
-            WarehouseStock stock = warehouseStockRepository
-                    .findByWarehouseIdAndProductUnitId(
-                            item.getWarehouse().getId(), item.getProductUnit().getId())
-                    .orElseThrow(() -> new BadRequestException(
-                            item.getProductUnit().getProduct().getName() + " omborda mavjud emas"));
-
-            if (stock.getQuantity().compareTo(item.getQuantity()) < 0) {
-                throw new BadRequestException(
-                        item.getProductUnit().getProduct().getName()
-                                + " uchun yetarli tovar yo'q. Mavjud: "
-                                + stock.getQuantity() + " " + item.getProductUnit().getUnit().getSymbol()
-                );
-            }
-        }
-
-        // To'lovlar
         BigDecimal totalPaid = BigDecimal.ZERO;
         BigDecimal debtAmount = BigDecimal.ZERO;
+        LocalDate debtDueDate = null;
 
-        java.time.LocalDate debtDueDate = null;
         for (SaleRequest.SalePaymentRequest paymentReq : payments) {
             SalePayment payment = SalePayment.builder()
                     .sale(sale)
@@ -211,7 +227,6 @@ public class SaleService {
         sale.setDebtAmount(debtAmount);
         sale.setChangeAmount(changeAmount.compareTo(BigDecimal.ZERO) > 0 ? changeAmount : BigDecimal.ZERO);
 
-        // Kassir
         User cashier = userRepository.findByUsername(cashierUsername)
                 .orElseThrow(() -> new NotFoundException("Kassir topilmadi"));
         sale.setCashier(cashier);
@@ -219,17 +234,9 @@ public class SaleService {
         shiftRepository.findByCashierIdAndStatus(cashier.getId(), ShiftStatus.OPEN)
                 .ifPresent(sale::setShift);
 
-        // Stock kamaytirish
+        // Stock DRAFT da allaqachon kamaygаn — faqat SALE_OUT movement yozamiz
         for (SaleItem item : sale.getItems()) {
-            WarehouseStock stock = warehouseStockRepository
-                    .findByWarehouseIdAndProductUnitId(
-                            item.getWarehouse().getId(), item.getProductUnit().getId())
-                    .orElseThrow();
-
-            stock.setQuantity(stock.getQuantity().subtract(item.getQuantity()));
-            warehouseStockRepository.save(stock);
-
-            StockMovement movement = StockMovement.builder()
+            stockMovementRepository.save(StockMovement.builder()
                     .productUnit(item.getProductUnit())
                     .movementType(StockMovementType.SALE_OUT)
                     .fromWarehouse(item.getWarehouse())
@@ -238,11 +245,9 @@ public class SaleService {
                     .totalPrice(item.getTotalPrice())
                     .referenceType("SALE")
                     .referenceId(sale.getId())
-                    .build();
-            stockMovementRepository.save(movement);
+                    .build());
         }
 
-        // Nasiya
         if (debtAmount.compareTo(BigDecimal.ZERO) > 0) {
             CustomerDebt debt = CustomerDebt.builder()
                     .customer(sale.getCustomer())
@@ -255,7 +260,6 @@ public class SaleService {
             customerDebtRepository.save(debt);
         }
 
-        // Shift hisoboti
         if (sale.getShift() != null) {
             updateShiftReport(sale.getShift(), sale, payments);
         }
@@ -272,11 +276,179 @@ public class SaleService {
     @Transactional
     public SaleResponse cancel(Long id) {
         Sale sale = findById(id);
-        if (sale.getStatus() != SaleStatus.DRAFT) {
-            throw new BadRequestException("Faqat DRAFT statusdagi savatchani bekor qilish mumkin");
+        if (sale.getStatus() != SaleStatus.DRAFT && sale.getStatus() != SaleStatus.HOLD) {
+            throw new BadRequestException("Faqat ochiq savatchani bekor qilish mumkin");
         }
+        returnStockForSale(sale, "CANCEL");
         sale.setStatus(SaleStatus.CANCELLED);
         return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // QAYTARISH (RETURN) — yangi
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse returnSale(Long saleId, ReturnRequest request, String username) {
+        Sale sale = findById(saleId);
+
+        if (sale.getStatus() != SaleStatus.COMPLETED) {
+            throw new BadRequestException("Faqat yakunlangan sotuvni qaytarish mumkin");
+        }
+
+        for (ReturnRequest.ReturnItem returnItem : request.getItems()) {
+            SaleItem saleItem = sale.getItems().stream()
+                    .filter(i -> i.getId().equals(returnItem.getSaleItemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException(
+                            "Sotuv itemı topilmadi: " + returnItem.getSaleItemId()));
+
+            if (returnItem.getQuantity().compareTo(saleItem.getQuantity()) > 0) {
+                throw new BadRequestException(
+                        saleItem.getProductUnit().getProduct().getName()
+                                + ": qaytarish miqdori sotilgan miqdordan oshib ketdi. "
+                                + "Sotilgan: " + saleItem.getQuantity()
+                                + ", Qaytarilmoqchi: " + returnItem.getQuantity());
+            }
+
+            // Stock qaytarish
+            WarehouseStock stock = warehouseStockRepository
+                    .findByWarehouseIdAndProductUnitId(
+                            saleItem.getWarehouse().getId(), saleItem.getProductUnit().getId())
+                    .orElse(null);
+            if (stock != null) {
+                stock.setQuantity(stock.getQuantity().add(returnItem.getQuantity()));
+                warehouseStockRepository.save(stock);
+            }
+
+            // RETURN_IN movement
+            BigDecimal returnTotal = saleItem.getSalePrice().multiply(returnItem.getQuantity());
+            stockMovementRepository.save(StockMovement.builder()
+                    .productUnit(saleItem.getProductUnit())
+                    .movementType(StockMovementType.RETURN_IN)
+                    .toWarehouse(saleItem.getWarehouse())
+                    .quantity(returnItem.getQuantity())
+                    .unitPrice(saleItem.getSalePrice())
+                    .totalPrice(returnTotal)
+                    .referenceType("RETURN")
+                    .referenceId(sale.getId())
+                    .notes(request.getReason())
+                    .build());
+        }
+
+        sale.setStatus(SaleStatus.RETURNED);
+        sale.setNotes(
+                (sale.getNotes() != null ? sale.getNotes() + " | " : "")
+                        + "Qaytarildi: " + (request.getReason() != null ? request.getReason() : "")
+        );
+
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // BUGUNGI STATISTIKA — yangi
+    // ─────────────────────────────────────────
+    public TodayStatsResponse getTodayStats() {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = startOfDay.plusDays(1);
+
+        // Object[] emas — List<Object[]> dan birinchi elementni olamiz
+        List<Object[]> rows = saleRepository.getTodayStatsList(startOfDay, endOfDay);
+        Object[] row = rows.isEmpty() ? new Object[]{0L, 0, 0, 0L, 0L} : rows.get(0);
+
+        long saleCount      = row[0] != null ? ((Number) row[0]).longValue() : 0L;
+        BigDecimal total    = row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO;
+        BigDecimal discount = row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO;
+        long cancelled      = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+        long returned       = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+
+        BigDecimal cash     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CASH"));
+        BigDecimal card     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CARD"));
+        BigDecimal transfer = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "TRANSFER"));
+        BigDecimal debt     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "DEBT"));
+
+        return TodayStatsResponse.builder()
+                .saleCount(saleCount)
+                .totalAmount(total)
+                .totalDiscount(discount)
+                .cancelledCount(cancelled)
+                .returnedCount(returned)
+                .totalCash(cash)
+                .totalCard(card)
+                .totalTransfer(transfer)
+                .totalDebt(debt)
+                .build();
+    }
+    // ─────────────────────────────────────────
+    // HOLD / UNHOLD
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse holdSale(Long id, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.DRAFT) {
+            throw new BadRequestException("Faqat DRAFT statusdagi savatchani kechiktirish mumkin");
+        }
+        sale.setStatus(SaleStatus.HOLD);
+        return toResponse(saleRepository.save(sale));
+    }
+
+    @Transactional
+    public SaleResponse unholdSale(Long id, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.HOLD && sale.getStatus() != SaleStatus.DRAFT) {
+            throw new BadRequestException("Faqat HOLD yoki DRAFT statusdagi savatchani ochish mumkin");
+        }
+        returnStockForSale(sale, "UNHOLD");
+        sale.setStatus(SaleStatus.DRAFT);
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // OMBOR TEKSHIRISH
+    // ─────────────────────────────────────────
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> checkWarehouses(List<Long> productUnitIds) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Long productUnitId : productUnitIds) {
+            List<WarehouseStock> stocks = warehouseStockRepository
+                    .findAllByProductUnitId(productUnitId)
+                    .stream()
+                    .filter(s -> s.getQuantity().compareTo(BigDecimal.ZERO) > 0)
+                    .toList();
+
+            List<Map<String, Object>> warehouses = stocks.stream().map(s -> {
+                Map<String, Object> w = new java.util.HashMap<>();
+                w.put("warehouseId", s.getWarehouse().getId());
+                w.put("warehouseName", s.getWarehouse().getName());
+                w.put("quantity", s.getQuantity());
+                return w;
+            }).toList();
+
+            Map<String, Object> item = new java.util.HashMap<>();
+            item.put("productUnitId", productUnitId);
+            item.put("warehouses", warehouses);
+            item.put("needsSelection", warehouses.size() > 1);
+            result.add(item);
+        }
+        return result;
+    }
+
+    // ─────────────────────────────────────────
+    // OCHIQ SAVATCHALAR (DRAFT + HOLD)
+    // ─────────────────────────────────────────
+    @Transactional(readOnly = true)
+    public Page<SaleResponse> getOpenSales(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi"));
+
+        List<String> openStatuses = List.of("DRAFT", "HOLD");
+
+        if ("ADMIN".equals(user.getRole().getName()) || "OWNER".equals(user.getRole().getName())) {
+            return saleRepository.findAllByStatusInOrderByCreatedAtDesc(openStatuses, pageable)
+                    .map(this::toResponse);
+        }
+        return saleRepository.findAllBySellerIdAndStatusInOrderByCreatedAtDesc(
+                        user.getId(), openStatuses, pageable)
+                .map(this::toResponse);
     }
 
     // ─────────────────────────────────────────
@@ -303,7 +475,9 @@ public class SaleService {
     // ─────────────────────────────────────────
     public Page<SaleResponse> getHistory(Long sellerId, Long customerId, SaleStatus status,
                                          LocalDateTime from, LocalDateTime to, Pageable pageable) {
-        return saleRepository.findAllFiltered(sellerId, customerId, status, from, to, pageable)
+        // Native SQL uchun enum → String
+        String statusStr = status != null ? status.name() : null;
+        return saleRepository.findAllFiltered(sellerId, customerId, statusStr, from, to, pageable)
                 .map(this::toResponse);
     }
 
@@ -311,7 +485,8 @@ public class SaleService {
                                            LocalDateTime from, LocalDateTime to, Pageable pageable) {
         User seller = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi"));
-        return saleRepository.findAllFiltered(seller.getId(), null, status, from, to, pageable)
+        String statusStr = status != null ? status.name() : null;
+        return saleRepository.findAllFiltered(seller.getId(), null, statusStr, from, to, pageable)
                 .map(this::toResponse);
     }
 
@@ -339,17 +514,47 @@ public class SaleService {
 
     private void updateShiftReport(Shift shift, Sale sale,
                                    List<SaleRequest.SalePaymentRequest> payments) {
-        shift.setTotalSales(shift.getTotalSales().add(sale.getTotalAmount()));
-        shift.setSaleCount(shift.getSaleCount() + 1);
+        BigDecimal totalSales    = shift.getTotalSales()    != null ? shift.getTotalSales()    : BigDecimal.ZERO;
+        BigDecimal totalCash     = shift.getTotalCash()     != null ? shift.getTotalCash()     : BigDecimal.ZERO;
+        BigDecimal totalCard     = shift.getTotalCard()     != null ? shift.getTotalCard()     : BigDecimal.ZERO;
+        BigDecimal totalTransfer = shift.getTotalTransfer() != null ? shift.getTotalTransfer() : BigDecimal.ZERO;
+        BigDecimal totalDebt     = shift.getTotalDebt()     != null ? shift.getTotalDebt()     : BigDecimal.ZERO;
+        int saleCount            = shift.getSaleCount()     != null ? shift.getSaleCount()     : 0;
+
+        shift.setTotalSales(totalSales.add(sale.getTotalAmount()));
+        shift.setSaleCount(saleCount + 1);
+
         for (SaleRequest.SalePaymentRequest p : payments) {
             switch (p.getPaymentMethod()) {
-                case CASH     -> shift.setTotalCash(shift.getTotalCash().add(p.getAmount()));
-                case CARD     -> shift.setTotalCard(shift.getTotalCard().add(p.getAmount()));
-                case TRANSFER -> shift.setTotalTransfer(shift.getTotalTransfer().add(p.getAmount()));
-                case DEBT     -> shift.setTotalDebt(shift.getTotalDebt().add(p.getAmount()));
+                case CASH     -> shift.setTotalCash(totalCash.add(p.getAmount()));
+                case CARD     -> shift.setTotalCard(totalCard.add(p.getAmount()));
+                case TRANSFER -> shift.setTotalTransfer(totalTransfer.add(p.getAmount()));
+                case DEBT     -> shift.setTotalDebt(totalDebt.add(p.getAmount()));
             }
         }
         shiftRepository.save(shift);
+    }
+
+    private void returnStockForSale(Sale sale, String reason) {
+        for (SaleItem item : sale.getItems()) {
+            WarehouseStock stock = warehouseStockRepository
+                    .findByWarehouseIdAndProductUnitId(
+                            item.getWarehouse().getId(), item.getProductUnit().getId())
+                    .orElse(null);
+            if (stock == null) continue;
+            stock.setQuantity(stock.getQuantity().add(item.getQuantity()));
+            warehouseStockRepository.save(stock);
+            stockMovementRepository.save(StockMovement.builder()
+                    .productUnit(item.getProductUnit())
+                    .movementType(StockMovementType.ADJUSTMENT_IN)
+                    .toWarehouse(item.getWarehouse())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getSalePrice())
+                    .totalPrice(item.getTotalPrice())
+                    .referenceType(reason)
+                    .referenceId(sale.getId())
+                    .build());
+        }
     }
 
     private String generateReferenceNo() {
@@ -361,6 +566,10 @@ public class SaleService {
     private Sale findById(Long id) {
         return saleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sotuv topilmadi: " + id));
+    }
+
+    private BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     public SaleResponse toResponsePublic(Sale sale) { return toResponse(sale); }
@@ -426,6 +635,33 @@ public class SaleService {
                                 .amount(p.getAmount())
                                 .notes(p.getNotes())
                                 .build()).toList())
+                .build();
+    }
+    public TodayStatsResponse getStats(LocalDateTime from, LocalDateTime to) {
+        List<Object[]> rows = saleRepository.getTodayStatsList(from, to);
+        Object[] row = rows.isEmpty() ? new Object[]{0L, 0, 0, 0L, 0L} : rows.get(0);
+
+        long saleCount      = row[0] != null ? ((Number) row[0]).longValue() : 0L;
+        BigDecimal total    = row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO;
+        BigDecimal discount = row[2] != null ? new BigDecimal(row[2].toString()) : BigDecimal.ZERO;
+        long cancelled      = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+        long returned       = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+
+        BigDecimal cash     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CASH"));
+        BigDecimal card     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CARD"));
+        BigDecimal transfer = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "TRANSFER"));
+        BigDecimal debt     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "DEBT"));
+
+        return TodayStatsResponse.builder()
+                .saleCount(saleCount)
+                .totalAmount(total)
+                .totalDiscount(discount)
+                .cancelledCount(cancelled)
+                .returnedCount(returned)
+                .totalCash(cash)
+                .totalCard(card)
+                .totalTransfer(transfer)
+                .totalDebt(debt)
                 .build();
     }
 }

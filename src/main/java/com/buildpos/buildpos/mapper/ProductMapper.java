@@ -85,6 +85,8 @@ public class ProductMapper {
                 .isDefault(pu.getIsDefault())
                 .barcode(pu.getBarcode())
                 .costPrice(pu.getCostPrice())
+                .costPriceUsd(pu.getCostPriceUsd())
+                .exchangeRateAtSave(pu.getExchangeRateAtSave())
                 .salePrice(pu.getSalePrice())
                 .minPrice(pu.getMinPrice())
                 .isActive(pu.getIsActive())

@@ -16,9 +16,18 @@ public class PurchaseSummaryResponse {
     private String supplierName;
     private String warehouseName;
     private PurchaseStatus status;
+
+    // Legacy
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     private BigDecimal debtAmount;
+
+    // ✅ Multi-currency
+    private BigDecimal totalUsd;
+    private BigDecimal totalUzs;
+    private BigDecimal debtUsd;
+    private BigDecimal debtUzs;
+
     private int itemCount;
     private LocalDateTime expectedAt;
     private LocalDateTime receivedAt;
