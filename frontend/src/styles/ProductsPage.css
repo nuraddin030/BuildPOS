@@ -1065,3 +1065,63 @@ to   { opacity: 1; transform: translateX(0); }
 }
 
 /* Cart item — yangi dizayn */
+
+/* ── Ombor qoldiqlari va minimal miqdor ──────────────────────── */
+.stock-info-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.stock-badges-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stock-min-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stock-min-wrap .form-label-sm {
+    white-space: nowrap;
+    margin-bottom: 0;
+}
+
+.stock-min-input {
+    width: 80px;
+}
+
+/* ── Toast xabar ─────────────────────────────────────────────── */
+.toast-msg {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    font-weight: 500;
+    max-width: 360px;
+    line-height: 1.4;
+    animation: fadeInRight 0.25s ease;
+}
+
+.toast-msg--success { background: #22c55e; }
+.toast-msg--error   { background: #ef4444; }
+
+@media (max-width: 768px) {
+    .stock-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .stock-min-input {
+        width: 100%;
+    }
+}

@@ -158,7 +158,7 @@ public class ProductService {
                         .warehouse(warehouse)
                         .productUnit(productUnit)
                         .quantity(qty)
-                        .minStock(BigDecimal.ZERO)
+                        .minStock(unitReq.getMinStock() != null ? unitReq.getMinStock() : BigDecimal.ZERO)
                         .build();
                 warehouseStockRepository.save(stock);
             }
@@ -299,6 +299,15 @@ public class ProductService {
                             pu.setMinPrice(unitReq.getMinPrice());
                             pu.setBarcode(unitReq.getBarcode());
                             productUnitRepository.save(pu);
+
+                            // minStock — barcha omborlardagi WarehouseStock ni yangilash
+                            if (unitReq.getMinStock() != null) {
+                                List<WarehouseStock> stocks = warehouseStockRepository.findAllByProductUnitId(pu.getId());
+                                for (WarehouseStock ws : stocks) {
+                                    ws.setMinStock(unitReq.getMinStock());
+                                    warehouseStockRepository.save(ws);
+                                }
+                            }
                         });
             }
         }

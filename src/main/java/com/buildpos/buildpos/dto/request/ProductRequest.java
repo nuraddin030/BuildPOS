@@ -58,6 +58,9 @@ public class ProductRequest {
         private BigDecimal initialStock;
         private Long warehouseId;
 
+        // Minimal zaxira miqdori (ogohlantirish uchun)
+        private BigDecimal minStock;
+
         // USD narxlar (ixtiyoriy)
         private BigDecimal costPriceUsd;
         private BigDecimal salePriceUsd;

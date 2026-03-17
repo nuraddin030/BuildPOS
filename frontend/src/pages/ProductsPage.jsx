@@ -6,6 +6,7 @@ import {
 } from '../api/products'
 import { uploadImage } from '../api/upload'
 import { adjustStock } from '../api/products'
+import api from '../api/api'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
     Unlock, Trash2, X, Upload, ImageIcon, ChevronLeft,
@@ -36,7 +37,7 @@ const genBarcode = () => '' + Math.floor(1000000000000 + Math.random() * 9000000
 const EMPTY_UNIT = {
     unitId: '', isDefault: true, barcode: '',
     costPrice: '', salePrice: '', minPrice: '',
-    currency: 'UZS',
+    currency: 'UZS', minStock: '',
     initialStock: '', warehouseId: ''
 }
 
@@ -125,6 +126,7 @@ export default function ProductsPage() {
                     salePrice: u.salePrice || '',
                     minPrice: u.minPrice || '',
                     warehouseStocks: u.warehouseStocks || [],
+                    minStock: u.minStock ?? '',
                     initialStock: '',
                     warehouseId: ''
                 })),
@@ -198,6 +200,7 @@ export default function ProductsPage() {
                     exchangeRateAtSave: u.currency === 'USD' ? exchangeRate : null,
                     initialStock: u.initialStock ? Number(u.initialStock) : null,
                     warehouseId: u.warehouseId ? Number(u.warehouseId) : null,
+                    minStock: u.minStock !== '' ? Number(u.minStock) : null,
                     priceTiers: []
                 }))
             }
@@ -603,7 +606,7 @@ export default function ProductsPage() {
                                                     <select className="form-input form-input-sm"
                                                             value={u.currency || 'UZS'}
                                                             onChange={e => setUnit(i, 'currency', e.target.value)}>
-                                                        <option value="UZS">{"UZS (so'm)"}</option>
+                                                        <option value="UZS">{"UZS"}</option>
                                                         <option value="USD">USD ($)</option>
                                                     </select>
                                                 </div>
@@ -611,7 +614,7 @@ export default function ProductsPage() {
                                                     <label className="form-label-sm">
                                                         {t('products.cost_price')}
                                                         {u.currency === 'USD' && u.costPrice && (
-                                                            <span className="usd-hint">{'\u2248'}{fmt(u.costPrice * exchangeRate)}</span>
+                                                            <span className="usd-hint">≈{fmt(u.costPrice * exchangeRate)}</span>
                                                         )}
                                                     </label>
                                                     <div className="input-with-prefix">
@@ -622,28 +625,18 @@ export default function ProductsPage() {
                                                     </div>
                                                 </div>
                                                 <div className="form-group">
-                                                    <label className="form-label-sm">
-                                                        {t('products.sale_price')}
-                                                        {u.currency === 'USD' && u.salePrice && (
-                                                            <span className="usd-hint">{'\u2248'}{fmt(u.salePrice * exchangeRate)}</span>
-                                                        )}
-                                                    </label>
+                                                    <label className="form-label-sm">{t('products.sale_price')}</label>
                                                     <div className="input-with-prefix">
-                                                        <span className="input-prefix">{u.currency || 'UZS'}</span>
+                                                        <span className="input-prefix">UZS</span>
                                                         <input type="text" inputMode="numeric" className="form-input form-input-sm"
                                                                value={fmtPrice(u.salePrice)}
                                                                onChange={e => setUnit(i, 'salePrice', parsePrice(e.target.value))} />
                                                     </div>
                                                 </div>
                                                 <div className="form-group">
-                                                    <label className="form-label-sm">
-                                                        {t('products.min_price')}
-                                                        {u.currency === 'USD' && u.minPrice && (
-                                                            <span className="usd-hint">{'\u2248'}{fmt(u.minPrice * exchangeRate)}</span>
-                                                        )}
-                                                    </label>
+                                                    <label className="form-label-sm">{t('products.min_price')}</label>
                                                     <div className="input-with-prefix">
-                                                        <span className="input-prefix">{u.currency || 'UZS'}</span>
+                                                        <span className="input-prefix">UZS</span>
                                                         <input type="text" inputMode="numeric" className="form-input form-input-sm"
                                                                value={fmtPrice(u.minPrice)}
                                                                onChange={e => setUnit(i, 'minPrice', parsePrice(e.target.value))} />
@@ -672,6 +665,13 @@ export default function ProductsPage() {
                                                                     <option key={w.id} value={w.id}>{w.name}</option>
                                                                 ))}
                                                             </select>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label className="form-label-sm">Minimal miqdor</label>
+                                                            <input type="number" className="form-input form-input-sm"
+                                                                   value={u.minStock}
+                                                                   onChange={e => setUnit(i, 'minStock', e.target.value)}
+                                                                   placeholder="0" min="0" />
                                                         </div>
                                                     </div>
                                                 ) : u.id && (
@@ -705,11 +705,27 @@ export default function ProductsPage() {
                                                         </div>
                                                         {u.warehouseStocks && u.warehouseStocks.length > 0 && (
                                                             <div className="stock-current-info">
-                                                                {u.warehouseStocks.map(ws => (
-                                                                    <span key={ws.warehouseId} className="stock-badge">
-                                                                    {ws.warehouseName}: <strong>{ws.quantity}</strong>
-                                                                </span>
-                                                                ))}
+                                                                <div className="stock-info-row">
+                                                                    <div className="stock-badges-wrap">
+                                                                        {u.warehouseStocks.map(ws => (
+                                                                            <span key={ws.warehouseId} className="stock-badge">
+                                                                                {ws.warehouseName}: <strong>{ws.quantity}</strong>
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                    <div className="stock-min-wrap">
+                                                                        <label className="form-label-sm">
+                                                                            Minimal miqdor:
+                                                                        </label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-input form-input-sm stock-min-input"
+                                                                            placeholder="0"
+                                                                            value={u.minStock ?? ''}
+                                                                            onChange={e => setUnit(i, 'minStock', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
@@ -737,14 +753,7 @@ export default function ProductsPage() {
             </div>
             {/* Toast */}
             {toast && (
-                <div style={{
-                    position: 'fixed', top: 20, right: 20, zIndex: 99999,
-                    background: toast.type === 'error' ? '#ef4444' : '#22c55e',
-                    color: '#fff', padding: '12px 20px', borderRadius: 10,
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)', fontSize: 14,
-                    fontWeight: 500, maxWidth: 360, lineHeight: 1.4,
-                    animation: 'fadeInRight 0.25s ease'
-                }}>
+                <div className={`toast-msg toast-msg--${toast.type}`}>
                     {toast.type === 'error' ? '⚠ ' : '✓ '}{toast.msg}
                 </div>
             )}
