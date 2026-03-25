@@ -110,6 +110,7 @@ public class DashboardResponse {
         private String supplierName;
         private String status;
         private BigDecimal totalAmount;
+        private String totalDisplay;    // "6 USD" yoki "600 000 UZS" yoki "6 USD + 100 000 UZS"
         private String createdAt;
     }
 }

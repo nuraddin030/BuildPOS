@@ -13,7 +13,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Relative path — jar qayerda bo'lsa uploads/ shu yerda
+        String location = "file:" + System.getProperty("user.dir") + "/" + uploadDir + "/";
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:C:/My/Projects/buildpos/buildpos/uploads/");
+                .addResourceLocations(location);
     }
 }

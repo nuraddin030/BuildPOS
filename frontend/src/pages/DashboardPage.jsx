@@ -379,7 +379,9 @@ export default function DashboardPage() {
                                         onClick={() => navigate(`/purchases/${p.id}`)}>
                                         <td><span className="cell-muted" style={{ fontSize: 11 }}>{p.referenceNo}</span></td>
                                         <td><span className="cell-name">{p.supplierName}</span></td>
-                                        <td className="th-right" style={{ fontWeight: 700 }}>{fmt(p.totalAmount)} UZS</td>
+                                        <td className="th-right" style={{ fontWeight: 700 }}>
+                                            {p.totalDisplay || (fmt(p.totalAmount) + ' UZS')}
+                                        </td>
                                         <td className="th-center">
                                             <span style={{
                                                 fontSize: 11, padding: '2px 8px', borderRadius: 20,

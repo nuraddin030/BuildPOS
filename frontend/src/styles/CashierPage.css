@@ -1542,3 +1542,300 @@ textarea:focus-visible {
     background: #bae6fd;
     color: #0369a1;
 }
+/* ── Oxirgi sotuv badge ──────────────────────────────────────── */
+.pos-last-sale {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+/* ── Search hint ─────────────────────────────────────────────── */
+.pos-search-hint {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* ── Search clear button ─────────────────────────────────────── */
+.pos-search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.pos-search-clear:hover {
+    color: #ef4444;
+}
+/* ================================================================
+   INLINE STIL REFAKTOR — yangi class lar
+   ================================================================ */
+
+/* ── SearchSelect ─────────────────────────────────────────────── */
+.pos-ss-wrap       { position: relative; }
+.pos-ss-inner      { position: relative; }
+.pos-ss-icon       { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+.pos-ss-clear      { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #9ca3af; display: flex; align-items: center; padding: 0; }
+.pos-ss-dropdown   { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid #e8eaed; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 200; max-height: 220px; overflow-y: auto; }
+.pos-ss-hint       { padding: 12px; color: #9ca3af; font-size: 13px; text-align: center; }
+.pos-ss-item       { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f3f4f6; transition: background .1s; }
+.pos-ss-item:hover { background: #f0f4ff; }
+.pos-ss-item-name  { font-weight: 600; font-size: 13px; }
+.pos-ss-item-sub   { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+/* ── Modal sizes ──────────────────────────────────────────────── */
+.pos-modal--sm  { max-width: 360px; }
+.pos-modal--md  { max-width: 420px; }
+.pos-modal--lg  { max-width: 500px; }
+.pos-modal--xl  { max-width: 560px; }
+
+/* ── Modal close button ───────────────────────────────────────── */
+.pos-modal-close { background: none; border: none; cursor: pointer; color: #6b7280; display: flex; align-items: center; padding: 0; }
+.pos-modal-close:hover { color: #374151; }
+
+/* ── Limit ogohlantirish ─────────────────────────────────────── */
+.pos-limit-warn {
+    padding: 10px 14px; margin-bottom: 12px;
+    background: rgba(245,158,11,0.1); border-radius: 8px;
+    border: 1px solid rgba(245,158,11,0.3);
+    font-size: 13px; color: #b45309; font-weight: 500;
+}
+.pos-limit-block {
+    padding: 10px 14px; margin-bottom: 12px;
+    background: rgba(220,38,38,0.1); border-radius: 8px;
+    border: 1px solid rgba(220,38,38,0.3);
+    font-size: 13px; color: #dc2626; font-weight: 600;
+}
+
+/* ── To'lash summasi banner ───────────────────────────────────── */
+.pos-pay-total-banner {
+    background: #1a1a2e; border-radius: 10px;
+    padding: 14px 20px; margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.pos-pay-total-label { color: rgba(255,255,255,.6); font-size: 13px; }
+.pos-pay-total-value { color: #fff; font-size: 24px; font-weight: 800; }
+
+/* ── To'lov usuli qator ───────────────────────────────────────── */
+.pos-pay-row       { border: 1.5px solid #e8eaed; border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+.pos-pay-row-top   { display: flex; gap: 8px; align-items: center; }
+.pos-pay-row-debt  { display: flex; gap: 8px; margin-top: 8px; }
+.pos-pay-row-debt .pos-input { flex: 1; }
+.pos-pay-row-del   { background: none; border: none; cursor: pointer; color: #ef4444; display: flex; align-items: center; padding: 0; }
+.pos-pay-select    { width: 130px; flex-shrink: 0; }
+
+/* ── To'lov yig'indisi ────────────────────────────────────────── */
+.pos-pay-summary       { background: #f8f9fa; border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+.pos-pay-summary-row   { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.pos-pay-summary-label { color: #6b7280; }
+.pos-pay-summary-val   { font-weight: 600; }
+.pos-pay-change        { display: flex; justify-content: space-between; color: #22c55e; font-weight: 700; }
+.pos-pay-remain        { display: flex; justify-content: space-between; color: #f59e0b; font-weight: 700; }
+.pos-btn-p--disabled   { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Chek ─────────────────────────────────────────────────────── */
+.pos-mh--success { color: #16a34a; }
+.receipt-item      { margin-bottom: 6px; }
+.receipt-item-name { font-weight: 600; }
+.receipt-item-name span { color: #888; font-weight: 400; }
+.receipt-item-row  { display: flex; justify-content: space-between; }
+.receipt-item-qty  { color: #555; }
+.receipt-discount  { display: flex; justify-content: space-between; color: #ef4444; }
+.receipt-total     { display: flex; justify-content: space-between; font-weight: 800; font-size: 15px; }
+.receipt-payment   { display: flex; justify-content: space-between; font-size: 12px; }
+.receipt-change    { display: flex; justify-content: space-between; color: #22c55e; font-weight: 700; font-size: 12px; }
+.receipt-thanks    { text-align: center; color: #888; font-size: 12px; }
+.receipt-title     { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.receipt-meta      { font-size: 12px; color: #555; margin-bottom: 6px; }
+.pos-btn-icon      { display: flex; align-items: center; gap: 6px; }
+
+/* ── Cart item ichki elementlar ───────────────────────────────── */
+.pos-cart-thumb {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+}
+.pos-cart-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pos-cart-info      { flex: 1; min-width: 0; }
+.pos-cart-name      { font-size: 14px; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos-cart-meta      { font-size: 12px; color: #94a3b8; margin-top: 3px; }
+.pos-cart-stock-ok  { margin-left: 6px; color: #94a3b8; }
+.pos-cart-stock-low { margin-left: 6px; color: #f59e0b; }
+.pos-cart-price-wrap  { text-align: right; flex-shrink: 0; }
+.pos-cart-price-row   { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.pos-cart-price-info  { position: relative; }
+.pos-info-btn {
+    background: none; border: none; cursor: pointer;
+    color: #94a3b8; padding: 0 2px;
+    display: flex; align-items: center; line-height: 1;
+}
+.pos-info-btn:hover, .pos-info-btn--active { color: #0ea5e9; }
+.pos-cart-price-val   { font-size: 15px; font-weight: 700; color: #f59e0b; }
+.pos-edit-price-btn {
+    background: none; border: none; cursor: pointer;
+    color: #22c55e; padding: 0;
+    display: flex; align-items: center;
+}
+.pos-del-btn {
+    background: none; border: none; cursor: pointer;
+    color: #cbd5e1; padding: 4px;
+    display: flex; align-items: center;
+    transition: color 0.15s;
+}
+.pos-del-btn:hover { color: #ef4444; }
+.pos-qty-edit-input {
+    width: 52px; border: none; outline: none;
+    font-weight: 700; font-size: 14px;
+    background: transparent; text-align: center;
+}
+.pos-qty-value--edit { padding: 4px 6px; }
+.pos-qty-value--click { cursor: text; }
+
+/* ── Footer butunlar ──────────────────────────────────────────── */
+.pos-tot-val       { font-weight: 600; }
+.pos-pay-btn-inner { display: flex; align-items: center; gap: 8px; }
+.pos-pay-btn-label { font-weight: 700; }
+.pos-pay-btn-kbd   { background: rgba(255,255,255,.2); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
+.pos-pay-btn-sum   { font-weight: 800; font-size: 18px; }
+.pos-hold-row      { display: flex; gap: 6px; }
+.pos-hold-btn-flex { flex: 1; }
+
+/* ── Price popover ────────────────────────────────────────────── */
+.pos-popover {
+    position: fixed;
+    transform: translate(-100%, -100%);
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    padding: 10px 14px; min-width: 170px;
+    z-index: 9999; white-space: nowrap;
+}
+.pos-popover-title  { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+.pos-popover-row    { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; margin-bottom: 5px; }
+.pos-popover-row:last-child { margin-bottom: 0; }
+.pos-popover-label  { color: #64748b; }
+.pos-popover-cost   { color: #0f172a; }
+.pos-popover-min    { color: #ef4444; }
+
+/* ── Loading ──────────────────────────────────────────────────── */
+.pos-loading-wrap  { display: flex; align-items: center; justify-content: center; height: 100vh; gap: 12px; }
+.pos-loading-text  { color: #6b7280; }
+
+/* ── CloseShift stats grid ────────────────────────────────────── */
+.pos-shift-stats   { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8f9fa; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+.pos-shift-stat    { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid #e8eaed; }
+.pos-shift-stat-label { color: #6b7280; }
+.pos-shift-stat-val   { font-weight: 600; }
+.pos-shift-diff    { margin-top: 6px; font-size: 13px; font-weight: 700; }
+.pos-shift-diff--ok  { color: #22c55e; }
+.pos-shift-diff--err { color: #ef4444; }
+
+/* ── Search dropdown items ────────────────────────────────────── */
+.pos-search-item-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+.pos-search-item-info { flex: 1; min-width: 0; }
+.pos-search-item-name { font-weight: 600; font-size: 14px; }
+.pos-search-item-code { font-size: 12px; color: #9ca3af; }
+.pos-search-item-price { font-weight: 700; font-size: 14px; color: #0ea5e9; white-space: nowrap; }
+
+/* ── Ombor tanlash modali ─────────────────────────────────────── */
+.pos-wh-modal   { width: 420px; }
+.pos-wh-list    { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.pos-wh-item    { }
+.pos-wh-label   { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+.pos-wh-btns    { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Cart empty ───────────────────────────────────────────────── */
+.pos-cart-empty-title { font-weight: 600; font-size: 15px; }
+.pos-cart-empty-hint  { font-size: 13px; }
+
+/* ── Qo'shimcha class lar ─────────────────────────────────────── */
+
+/* pos-btn-p danger versiyasi */
+.pos-btn-p--danger { background: #ef4444 !important; }
+.pos-btn-p--disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* pos-note-btn margin */
+.pos-note-btn--mb { margin-bottom: 14px; }
+
+/* pos-overlay yuqori z-index */
+.pos-overlay--top { z-index: 1100; }
+
+/* pos-confirm-btn-ok ko'k */
+.pos-confirm-btn-ok--blue { background: #0ea5e9 !important; }
+
+/* Qarz limiti box */
+.pos-debt-limit-box {
+    margin-top: 8px; padding: 12px 14px;
+    background: #f8f9fa; border-radius: 8px;
+    border: 1px solid #e8eaed;
+}
+.pos-debt-limit-title {
+    font-size: 11px; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin-bottom: 10px;
+}
+.pos-fg--mb8 { margin-bottom: 8px; }
+.pos-debt-limit-btns { display: flex; gap: 8px; }
+.pos-debt-limit-btn {
+    flex: 1; padding: 7px 10px; border-radius: 7px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 2px solid #e8eaed;
+    background: #fff; color: #9ca3af;
+    transition: all 0.15s;
+}
+.pos-debt-limit-btn--warn {
+    border-color: #f59e0b;
+    background: rgba(245,158,11,0.08);
+    color: #f59e0b;
+}
+.pos-debt-limit-btn--block {
+    border-color: #ef4444;
+    background: rgba(239,68,68,0.08);
+    color: #ef4444;
+}
+
+/* Unit modal */
+.pos-unit-hint { color: #6b7280; font-size: 13px; margin-bottom: 12px; }
+.pos-unit-list { display: flex; flex-direction: column; gap: 8px; }
+.pos-unit-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; border: 1.5px solid #e8eaed;
+    border-radius: 8px; background: #f8f9fa;
+    cursor: pointer; transition: all .15s;
+    width: 100%; text-align: left;
+}
+.pos-unit-item:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.pos-unit-symbol { font-weight: 700; font-size: 15px; color: #0f172a; }
+.pos-unit-barcode { font-size: 11px; color: #9ca3af; }
+.pos-unit-price { font-weight: 800; color: #2563eb; font-size: 16px; }
+
+/* Cart header left */
+.pos-cart-header-left { display: flex; align-items: center; gap: 8px; }
+
+/* Toast */
+.pos-toast {
+    position: fixed; top: 24px; right: 24px;
+    color: #fff; padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; z-index: 2000;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    animation: fadeInRight .2s ease;
+}
+.pos-toast--success { background: #22c55e; }
+.pos-toast--error   { background: #ef4444; }

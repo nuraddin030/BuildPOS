@@ -169,14 +169,31 @@ public class DashboardService {
     private List<DashboardResponse.RecentPurchaseItem> buildRecentPurchases() {
         try {
             return purchaseRepository.findRecentPurchases(PageRequest.of(0, 5))
-                    .stream().map(p -> DashboardResponse.RecentPurchaseItem.builder()
-                            .id(p.getId())
-                            .referenceNo(p.getReferenceNo())
-                            .supplierName(p.getSupplier() != null ? p.getSupplier().getName() : "")
-                            .status(p.getStatus() != null ? p.getStatus().name() : "")
-                            .totalAmount(p.getTotalUzs() != null ? p.getTotalUzs() : BigDecimal.ZERO)
-                            .createdAt(p.getCreatedAt() != null ? p.getCreatedAt().toLocalDate().toString() : "")
-                            .build()).toList();
+                    .stream().map(p -> {
+                        // USD va UZS summalarini birlashtirib ko'rsatish
+                        String totalStr;
+                        boolean hasUsd = p.getTotalUsd() != null && p.getTotalUsd().compareTo(BigDecimal.ZERO) > 0;
+                        boolean hasUzs = p.getTotalUzs() != null && p.getTotalUzs().compareTo(BigDecimal.ZERO) > 0;
+
+                        if (hasUsd && hasUzs) {
+                            totalStr = p.getTotalUsd().stripTrailingZeros().toPlainString() + " USD + " +
+                                    p.getTotalUzs().toBigInteger() + " UZS";
+                        } else if (hasUsd) {
+                            totalStr = p.getTotalUsd().stripTrailingZeros().toPlainString() + " USD";
+                        } else {
+                            totalStr = (p.getTotalUzs() != null ? p.getTotalUzs() : BigDecimal.ZERO).toBigInteger() + " UZS";
+                        }
+
+                        return DashboardResponse.RecentPurchaseItem.builder()
+                                .id(p.getId())
+                                .referenceNo(p.getReferenceNo())
+                                .supplierName(p.getSupplier() != null ? p.getSupplier().getName() : "")
+                                .status(p.getStatus() != null ? p.getStatus().name() : "")
+                                .totalAmount(hasUzs ? p.getTotalUzs() : (hasUsd ? p.getTotalUsd() : BigDecimal.ZERO))
+                                .totalDisplay(totalStr)
+                                .createdAt(p.getCreatedAt() != null ? p.getCreatedAt().toLocalDate().toString() : "")
+                                .build();
+                    }).toList();
         } catch (Exception e) {
             return List.of();
         }

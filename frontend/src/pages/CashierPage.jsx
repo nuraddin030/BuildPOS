@@ -47,9 +47,9 @@ function SearchSelect({ placeholder, value, search, onSearchChange, onSelect, on
     }, [])
 
     return (
-        <div ref={wrapRef} style={{ position: 'relative' }}>
-            <div style={{ position: 'relative' }}>
-                <User size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
+        <div ref={wrapRef} className="pos-ss-wrap">
+            <div className="pos-ss-inner">
+                <User size={14} className="pos-ss-icon" />
                 <input
                     className="pos-input"
                     style={{ paddingLeft: 32, paddingRight: selected ? 32 : 12 }}
@@ -60,26 +60,23 @@ function SearchSelect({ placeholder, value, search, onSearchChange, onSelect, on
                     onClick={() => { if (!selected) setOpen(true) }}
                 />
                 {selected && (
-                    <button onClick={onClear}
-                            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
+                    <button onClick={onClear} className="pos-ss-clear">
                         <X size={14} />
                     </button>
                 )}
             </div>
             {open && !selected && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1.5px solid #e8eaed', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.12)', zIndex: 200, maxHeight: 220, overflowY: 'auto' }}>
+                <div className="pos-ss-dropdown">
                     {search.length < minChars ? (
-                        <div style={{ padding: 12, color: '#9ca3af', fontSize: 13, textAlign: 'center' }}>Kamida {minChars} ta harf yozing...</div>
+                        <div className="pos-ss-hint">Kamida {minChars} ta harf yozing...</div>
                     ) : items.length === 0 ? (
-                        <div style={{ padding: 12, color: '#9ca3af', fontSize: 13, textAlign: 'center' }}>Topilmadi</div>
+                        <div className="pos-ss-hint">Topilmadi</div>
                     ) : items.map(item => (
                         <div key={item.id}
                              onClick={() => { onSelect(String(item.id)); setOpen(false) }}
-                             style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', transition: 'background .1s' }}
-                             onMouseEnter={e => e.currentTarget.style.background = '#f0f4ff'}
-                             onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-                            <div style={{ fontWeight: 600, fontSize: 13 }}>{getLabel(item)}</div>
-                            {getSub && getSub(item) && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{getSub(item)}</div>}
+                             className="pos-ss-item">
+                            <div className="pos-ss-item-name">{getLabel(item)}</div>
+                            {getSub && getSub(item) && <div className="pos-ss-item-sub">{getSub(item)}</div>}
                         </div>
                     ))}
                 </div>
@@ -103,7 +100,7 @@ function OpenShiftModal({ warehouses, onOpen }) {
     }
     return ReactDOM.createPortal(
         <div className="pos-overlay">
-            <div className="pos-modal" style={{ maxWidth: 400 }}>
+            <div className="pos-modal pos-modal--md">
                 <div className="pos-mh">🕐 Smena ochish</div>
                 <div className="pos-mb">
                     {error && <div className="pos-alert">{error}</div>}
@@ -141,24 +138,25 @@ function CloseShiftModal({ shift, onClose, onClosed }) {
     }
     return ReactDOM.createPortal(
         <div className="pos-overlay">
-            <div className="pos-modal" style={{ maxWidth: 480 }}>
-                <div className="pos-mh">Smena yopish <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button></div>
+            <div className="pos-modal pos-modal--lg">
+                <div className="pos-mh">Smena yopish <button onClick={onClose} className="pos-modal-close"><X size={18} /></button></div>
                 <div className="pos-mb">
                     {error && <div className="pos-alert">{error}</div>}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, background: '#f8f9fa', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                    <div className="pos-shift-stats">
                         {[['Jami sotuv', fmt(shift?.totalSales) + ' so\'m'], ['Sotuvlar', (shift?.saleCount || 0) + ' ta'],
                             ['Naqd', fmt(shift?.totalCash) + ' so\'m'], ['Karta', fmt(shift?.totalCard) + ' so\'m'],
                             ["O'tkazma", fmt(shift?.totalTransfer) + ' so\'m'], ['Nasiya', fmt(shift?.totalDebt) + ' so\'m']
                         ].map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '4px 0', borderBottom: '1px solid #e8eaed' }}>
-                                <span style={{ color: '#6b7280' }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span>
+                            <div key={k} className="pos-shift-stat">
+                                <span className="pos-shift-stat-label">{k}</span>
+                                <span className="pos-shift-stat-val">{v}</span>
                             </div>
                         ))}
                     </div>
                     <div className="pos-fg"><label className="pos-label">Kassadagi haqiqiy naqd</label>
                         <input className="pos-input" type="text" inputMode="numeric" placeholder="0"
                                value={fmtPrice(closingCash)} onChange={e => setClosingCash(e.target.value.replace(/\D/g, ''))} />
-                        {diff !== null && <div style={{ marginTop: 6, fontSize: 13, fontWeight: 700, color: diff === 0 ? '#22c55e' : diff > 0 ? '#22c55e' : '#ef4444' }}>
+                        {diff !== null && <div className={`pos-shift-diff ${diff >= 0 ? 'pos-shift-diff--ok' : 'pos-shift-diff--err'}`}>
                             {diff === 0 ? '✓ Mos keladi' : diff > 0 ? `+${fmt(diff)} so'm ortiqcha` : `-${fmt(Math.abs(diff))} so'm kam`}
                         </div>}
                     </div>
@@ -168,7 +166,7 @@ function CloseShiftModal({ shift, onClose, onClosed }) {
                 </div>
                 <div className="pos-mf">
                     <button className="pos-btn-s" onClick={onClose}>Bekor</button>
-                    <button className="pos-btn-p" style={{ background: '#ef4444' }} onClick={handle} disabled={loading}>{loading ? 'Yopilmoqda...' : 'Smena yopish'}</button>
+                    <button className="pos-btn-p pos-btn-p--danger" onClick={handle} disabled={loading}>{loading ? 'Yopilmoqda...' : 'Smena yopish'}</button>
                 </div>
             </div>
         </div>,
@@ -226,76 +224,64 @@ function PaymentModal({ sale, onClose, onCompleted }) {
 
     return ReactDOM.createPortal(
         <div className="pos-overlay">
-            <div className="pos-modal" style={{ maxWidth: 500 }}>
-                <div className="pos-mh">To'lov <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button></div>
+            <div className="pos-modal pos-modal--xl">
+                <div className="pos-mh">To'lov <button onClick={onClose} className="pos-modal-close"><X size={18} /></button></div>
                 <div className="pos-mb">
                     {error && <div className="pos-alert">{error}</div>}
-
-                    {/* Limit ogohlantirish */}
                     {limitWarning && !limitWarning.strict && (
-                        <div style={{
-                            padding: '10px 14px', marginBottom: 12,
-                            background: 'rgba(245,158,11,0.1)', borderRadius: 8,
-                            border: '1px solid rgba(245,158,11,0.3)',
-                            fontSize: 13, color: '#b45309', fontWeight: 500
-                        }}>
+                        <div className="pos-limit-warn">
                             ⚠ Diqqat! Bu mijozning qarz limiti ({fmt(limitWarning.debtLimit)} UZS) oshib ketmoqda.
                             Qolgan limit: {fmt(Math.max(0, limitWarning.remaining))} UZS
                         </div>
                     )}
                     {limitWarning?.strict && (
-                        <div style={{
-                            padding: '10px 14px', marginBottom: 12,
-                            background: 'rgba(220,38,38,0.1)', borderRadius: 8,
-                            border: '1px solid rgba(220,38,38,0.3)',
-                            fontSize: 13, color: '#dc2626', fontWeight: 600
-                        }}>
+                        <div className="pos-limit-block">
                             🚫 Bu mijozning qarz limiti to'ldi ({fmt(limitWarning.debtLimit)} UZS). Nasiya berib bo'lmaydi!
                         </div>
                     )}
-
-                    <div style={{ background: '#1a1a2e', borderRadius: 10, padding: '14px 20px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: 'rgba(255,255,255,.6)', fontSize: 13 }}>To'lash kerak</span>
-                        <span style={{ color: '#fff', fontSize: 24, fontWeight: 800 }}>{fmt(total)} so'm</span>
+                    <div className="pos-pay-total-banner">
+                        <span className="pos-pay-total-label">To'lash kerak</span>
+                        <span className="pos-pay-total-value">{fmt(total)} so'm</span>
                     </div>
                     {payments.map((p, i) => (
-                        <div key={i} style={{ border: '1.5px solid #e8eaed', borderRadius: 10, padding: 12, marginBottom: 8 }}>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <select className="pos-select" style={{ width: 130, flexShrink: 0 }} value={p.method} onChange={e => upd(i, 'method', e.target.value)}>
+                        <div key={i} className="pos-pay-row">
+                            <div className="pos-pay-row-top">
+                                <select className="pos-select pos-pay-select" value={p.method} onChange={e => upd(i, 'method', e.target.value)}>
                                     {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                                 </select>
                                 <input className="pos-input" type="text" inputMode="numeric" placeholder="Summa"
                                        value={fmtPrice(p.amount)} onChange={e => upd(i, 'amount', e.target.value.replace(/\D/g, ''))} />
                                 {payments.length > 1 && <button onClick={() => setPayments(prev => prev.filter((_, idx) => idx !== i))}
-                                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><X size={16} /></button>}
+                                                                className="pos-pay-row-del"><X size={16} /></button>}
                             </div>
                             {p.method === 'DEBT' && (
-                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                                    <input className="pos-input" type="date" value={p.dueDate} onChange={e => upd(i, 'dueDate', e.target.value)} style={{ flex: 1 }} />
-                                    <input className="pos-input" placeholder="Izoh" value={p.notes} onChange={e => upd(i, 'notes', e.target.value)} style={{ flex: 1 }} />
+                                <div className="pos-pay-row-debt">
+                                    <input className="pos-input" type="date" value={p.dueDate} onChange={e => upd(i, 'dueDate', e.target.value)} />
+                                    <input className="pos-input" placeholder="Izoh" value={p.notes} onChange={e => upd(i, 'notes', e.target.value)} />
                                 </div>
                             )}
                         </div>
                     ))}
                     {payments.length < 4 && (
-                        <button className="pos-note-btn" style={{ marginBottom: 14 }}
+                        <button className="pos-note-btn pos-note-btn--mb"
                                 onClick={() => { const used = payments.map(p => p.method); const next = PAYMENT_METHODS.find(m => !used.includes(m.value)); if (next) setPayments(p => [...p, { method: next.value, amount: '', dueDate: '', notes: '' }]) }}>
                             <Plus size={14} /> To'lov usuli qo'shish
                         </button>
                     )}
-                    <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', fontSize: 13 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ color: '#6b7280' }}>Kiritildi</span><span style={{ fontWeight: 600 }}>{fmt(totalPaid)} so'm</span>
+                    <div className="pos-pay-summary">
+                        <div className="pos-pay-summary-row">
+                            <span className="pos-pay-summary-label">Kiritildi</span>
+                            <span className="pos-pay-summary-val">{fmt(totalPaid)} so'm</span>
                         </div>
-                        {change > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: '#22c55e', fontWeight: 700 }}><span>Qaytim</span><span>{fmt(change)} so'm</span></div>}
-                        {change < 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', fontWeight: 700 }}><span>Qoldiq</span><span>{fmt(Math.abs(change))} so'm</span></div>}
+                        {change > 0 && <div className="pos-pay-change"><span>Qaytim</span><span>{fmt(change)} so'm</span></div>}
+                        {change < 0 && <div className="pos-pay-remain"><span>Qoldiq</span><span>{fmt(Math.abs(change))} so'm</span></div>}
                     </div>
                 </div>
                 <div className="pos-mf">
                     <button className="pos-btn-s" onClick={onClose}>Bekor</button>
-                    <button className="pos-btn-p" onClick={handle}
+                    <button onClick={handle}
                             disabled={loading || totalPaid === 0 || (limitWarning?.strict && debtAmount > 0)}
-                            style={limitWarning?.strict && debtAmount > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}>
+                            className={`pos-btn-p${limitWarning?.strict && debtAmount > 0 ? ' pos-btn-p--disabled' : ''}`}>
                         {loading ? 'Saqlanmoqda...' : '✓ Tasdiqlash'}
                     </button>
                 </div>
@@ -368,15 +354,15 @@ function ReceiptModal({ sale, onClose }) {
     }
     return ReactDOM.createPortal(
         <div className="pos-overlay">
-            <div className="pos-modal" style={{ maxWidth: 420 }}>
-                <div className="pos-mh" style={{ color: '#16a34a' }}>✓ Sotuv yakunlandi
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button>
+            <div className="pos-modal pos-modal--md">
+                <div className="pos-mh pos-mh--success">✓ Sotuv yakunlandi
+                    <button onClick={onClose} className="pos-modal-close"><X size={18} /></button>
                 </div>
                 <div className="pos-mb">
                     <div className="receipt">
-                        <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 15, marginBottom: 6 }}>BUILDPOS — SOTUV CHEKI</div>
+                        <div className="receipt-title">BUILDPOS — SOTUV CHEKI</div>
                         <div className="receipt-div" />
-                        <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>
+                        <div className="receipt-meta">
                             <div>Chek: <b>{sale.referenceNo}</b></div>
                             <div>Sana: {new Date(sale.completedAt||sale.createdAt).toLocaleString('ru-RU')}</div>
                             <div>Kassir: {sale.cashierName||sale.sellerName||'—'}</div>
@@ -384,30 +370,30 @@ function ReceiptModal({ sale, onClose }) {
                         </div>
                         <div className="receipt-div" />
                         {(sale.items||[]).map((item,i) => (
-                            <div key={i} style={{ marginBottom: 6 }}>
-                                <div style={{ fontWeight: 600 }}>{item.productName} <span style={{ color: '#888', fontWeight: 400 }}>({item.unitSymbol})</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#555' }}>{item.quantity} × {fmt(item.salePrice)}</span>
+                            <div key={i} className="receipt-item">
+                                <div className="receipt-item-name">{item.productName} <span>({item.unitSymbol})</span></div>
+                                <div className="receipt-item-row">
+                                    <span className="receipt-item-qty">{item.quantity} × {fmt(item.salePrice)}</span>
                                     <b>{fmt(item.totalPrice)} so'm</b>
                                 </div>
                             </div>
                         ))}
                         <div className="receipt-div" />
-                        {sale.discountAmount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}><span>Chegirma</span><span>-{fmt(sale.discountAmount)} so'm</span></div>}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: 15 }}><span>JAMI</span><span>{fmt(sale.totalAmount)} so'm</span></div>
+                        {sale.discountAmount > 0 && <div className="receipt-discount"><span>Chegirma</span><span>-{fmt(sale.discountAmount)} so'm</span></div>}
+                        <div className="receipt-total"><span>JAMI</span><span>{fmt(sale.totalAmount)} so'm</span></div>
                         <div className="receipt-div" />
                         {(sale.payments||[]).map((p,i) => {
                             const pm = PAYMENT_METHODS.find(m => m.value === p.paymentMethod)
-                            return <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}><span style={{ color: pm?.color }}>{pm?.label}</span><b>{fmt(p.amount)} so'm</b></div>
+                            return <div key={i} className="receipt-payment"><span style={{ color: pm?.color }}>{pm?.label}</span><b>{fmt(p.amount)} so'm</b></div>
                         })}
-                        {sale.changeAmount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: '#22c55e', fontWeight: 700, fontSize: 12 }}><span>Qaytim</span><span>{fmt(sale.changeAmount)} so'm</span></div>}
+                        {sale.changeAmount > 0 && <div className="receipt-change"><span>Qaytim</span><span>{fmt(sale.changeAmount)} so'm</span></div>}
                         <div className="receipt-div" />
-                        <div style={{ textAlign: 'center', color: '#888', fontSize: 12 }}>Rahmat! Yana keling 😊</div>
+                        <div className="receipt-thanks">Rahmat! Yana keling 😊</div>
                     </div>
                 </div>
                 <div className="pos-mf">
-                    <button className="pos-btn-s" onClick={dl}><Download size={14} style={{ marginRight: 6 }} />PDF</button>
-                    <button className="pos-btn-s" onClick={() => window.print()}><Printer size={14} style={{ marginRight: 6 }} />Chop etish</button>
+                    <button className="pos-btn-s" onClick={dl}><span className="pos-btn-icon"><Download size={14} />PDF</span></button>
+                    <button className="pos-btn-s" onClick={() => window.print()}><span className="pos-btn-icon"><Printer size={14} />Chop etish</span></button>
                     <button className="pos-btn-p" onClick={onClose}>Yangi sotuv</button>
                 </div>
             </div>
@@ -450,11 +436,11 @@ function CreateModal({ type, onClose, onCreated }) {
     }
 
     return ReactDOM.createPortal(
-        <div className="pos-overlay" style={{ zIndex: 1100 }}>
-            <div className="pos-modal" style={{ maxWidth: 420 }}>
+        <div className="pos-overlay pos-overlay--top">
+            <div className="pos-modal pos-modal--md">
                 <div className="pos-mh">
                     {title}
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button>
+                    <button onClick={onClose} className="pos-modal-close"><X size={18} /></button>
                 </div>
                 <div className="pos-mb">
                     {error && <div className="pos-alert">{error}</div>}
@@ -475,46 +461,25 @@ function CreateModal({ type, onClose, onCreated }) {
                         <textarea className="pos-input" rows={2} placeholder="Ixtiyoriy..."
                                   value={notes} onChange={e => setNotes(e.target.value)} />
                     </div>
-
-                    {/* Qarz limiti — faqat mijoz uchun */}
                     {isCustomer && (
-                        <div style={{
-                            marginTop: 8, padding: '12px 14px',
-                            background: '#f8f9fa', borderRadius: 8,
-                            border: '1px solid #e8eaed'
-                        }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af',
-                                textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 10 }}>
-                                Qarz limiti (ixtiyoriy)
-                            </div>
-                            <div className="pos-fg" style={{ marginBottom: 8 }}>
+                        <div className="pos-debt-limit-box">
+                            <div className="pos-debt-limit-title">Qarz limiti (ixtiyoriy)</div>
+                            <div className="pos-fg pos-fg--mb8">
                                 <label className="pos-label">Maksimal nasiya summasi (UZS)</label>
                                 <input className="pos-input" placeholder="Bo'sh = limit yo'q"
                                        value={debtLimit}
                                        onChange={e => setDebtLimit(e.target.value.replace(/\D/g, ''))} />
                             </div>
                             {debtLimit && (
-                                <div style={{ display: 'flex', gap: 8 }}>
+                                <div className="pos-debt-limit-btns">
                                     <button type="button"
                                             onClick={() => setDebtLimitStrict(false)}
-                                            style={{
-                                                flex: 1, padding: '7px 10px', borderRadius: 7, fontSize: 12,
-                                                fontWeight: 600, cursor: 'pointer',
-                                                border: `2px solid ${!debtLimitStrict ? '#f59e0b' : '#e8eaed'}`,
-                                                background: !debtLimitStrict ? 'rgba(245,158,11,0.08)' : '#fff',
-                                                color: !debtLimitStrict ? '#f59e0b' : '#9ca3af'
-                                            }}>
+                                            className={`pos-debt-limit-btn${!debtLimitStrict ? ' pos-debt-limit-btn--warn' : ''}`}>
                                         ⚠ Ogohlantirish
                                     </button>
                                     <button type="button"
                                             onClick={() => setDebtLimitStrict(true)}
-                                            style={{
-                                                flex: 1, padding: '7px 10px', borderRadius: 7, fontSize: 12,
-                                                fontWeight: 600, cursor: 'pointer',
-                                                border: `2px solid ${debtLimitStrict ? '#ef4444' : '#e8eaed'}`,
-                                                background: debtLimitStrict ? 'rgba(239,68,68,0.08)' : '#fff',
-                                                color: debtLimitStrict ? '#ef4444' : '#9ca3af'
-                                            }}>
+                                            className={`pos-debt-limit-btn${debtLimitStrict ? ' pos-debt-limit-btn--block' : ''}`}>
                                         🚫 Qat'iy blok
                                     </button>
                                 </div>
@@ -537,23 +502,21 @@ function CreateModal({ type, onClose, onCreated }) {
 function UnitModal({ data, onSelect, onClose }) {
     return ReactDOM.createPortal(
         <div className="pos-overlay">
-            <div className="pos-modal" style={{ maxWidth: 360 }}>
+            <div className="pos-modal pos-modal--sm">
                 <div className="pos-mh">{data.productName}
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}><X size={18} /></button>
+                    <button onClick={onClose} className="pos-modal-close"><X size={18} /></button>
                 </div>
                 <div className="pos-mb">
-                    <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 12 }}>O'lchov birligini tanlang:</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <p className="pos-unit-hint">O'lchov birligini tanlang:</p>
+                    <div className="pos-unit-list">
                         {data.units.map(u => (
                             <button key={u.id} onClick={() => onSelect(data.product, u)}
-                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', border: '1.5px solid #e8eaed', borderRadius: 8, background: '#f8f9fa', cursor: 'pointer', transition: 'all .15s' }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor='#2563eb'; e.currentTarget.style.background='#eff6ff' }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor='#e8eaed'; e.currentTarget.style.background='#f8f9fa' }}>
+                                    className="pos-unit-item">
                                 <div>
-                                    <div style={{ fontWeight: 700, fontSize: 15 }}>{u.unitSymbol}</div>
-                                    {u.barcode && <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.barcode}</div>}
+                                    <div className="pos-unit-symbol">{u.unitSymbol}</div>
+                                    {u.barcode && <div className="pos-unit-barcode">{u.barcode}</div>}
                                 </div>
-                                <div style={{ fontWeight: 800, color: '#2563eb', fontSize: 16 }}>{fmt(u.salePrice)} so'm</div>
+                                <div className="pos-unit-price">{fmt(u.salePrice)} so'm</div>
                             </button>
                         ))}
                     </div>
@@ -579,6 +542,8 @@ export default function CashierPage() {
     const [showDrop, setShowDrop] = useState(false)
     const searchRef = useRef()
     const searchTO = useRef()
+    const scannerBuffer = useRef('')      // barcode scanner bufer
+    const scannerTimer = useRef(null)     // scanner timeout
 
     const { user } = useAuth()
     const isAdmin = ['ADMIN', 'OWNER', 'ROLE_ADMIN', 'ROLE_OWNER'].includes(user?.role)
@@ -645,6 +610,7 @@ export default function CashierPage() {
     const [unitModal, setUnitModal] = useState(null)
     const [createModal, setCreateModal] = useState(null) // 'customer' | 'partner'
     const [currentSale, setCurrentSale] = useState(null)
+    const [lastSale, setLastSale] = useState(null)
     const [showPayment, setShowPayment] = useState(false)
     const [completedSale, setCompletedSale] = useState(null)
     const [saving, setSaving] = useState(false)
@@ -686,23 +652,151 @@ export default function CashierPage() {
         finally { setShiftLoading(false) }
     }
 
-    // ── Keyboard shortcuts ──────────
+    // ── Barcode scanner detector ────────────────────────────────
+    // Scanner har bir belgini ~5-10ms ichida yozadi, Enter bilan tugatadi
+    // Standart barcode uzunliklari: EAN-8(8), UPC-A(12), EAN-13(13), Code128(variable)
+    useEffect(() => {
+        const BARCODE_LENGTHS = [8, 12, 13] // standart barcode uzunliklari
+
+        const handleScannerKey = (e) => {
+            const hasModal = showPayment || completedSale || confirmCancel || warehouseModal
+            if (hasModal) return
+
+            if (e.key === 'Enter') {
+                // Enter bilan tugagan — scanner dan keldi
+                const buf = scannerBuffer.current.trim()
+                scannerBuffer.current = ''
+                clearTimeout(scannerTimer.current)
+                if (buf.length >= 4) {
+                    doScannerSearch(buf)
+                }
+                return
+            }
+
+            if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
+                scannerBuffer.current += e.key
+                clearTimeout(scannerTimer.current)
+
+                // Standart barcode uzunligiga yetdi — Enter kutmay avtomatik qidirish
+                const buf = scannerBuffer.current.trim()
+                if (BARCODE_LENGTHS.includes(buf.length) && /^\d+$/.test(buf)) {
+                    // 80ms kuting — scanner ba'zan checksum belgisini qo'shadi
+                    scannerTimer.current = setTimeout(() => {
+                        const finalBuf = scannerBuffer.current.trim()
+                        scannerBuffer.current = ''
+                        if (finalBuf.length >= 4) doScannerSearch(finalBuf)
+                    }, 80)
+                } else {
+                    // 400ms ichida Enter kelmasa — oddiy klaviatura, buferni tozalaymiz
+                    scannerTimer.current = setTimeout(() => {
+                        scannerBuffer.current = ''
+                    }, 400)
+                }
+            }
+        }
+
+        const doScannerSearch = (code) => {
+            // 1. Avval barcode endpoint
+            api.get('/api/v1/products/barcode/' + encodeURIComponent(code))
+                .then(r => {
+                    if (r.data) selectProduct(r.data)
+                })
+                .catch(() => {
+                    // 2. Search endpoint orqali (barcode ham qidiriladi)
+                    api.get('/api/v1/products', { params: { search: code, size: 5, active: true } })
+                        .then(r => {
+                            const list = r.data.content || r.data || []
+                            if (list.length === 1) {
+                                selectProduct(list[0])
+                            } else if (list.length > 1) {
+                                // Aniq barcode mosligini topamiz
+                                const exact = list.find(p =>
+                                    p.units?.some(u => u.barcode === code) ||
+                                    p.defaultBarcode === code
+                                )
+                                if (exact) selectProduct(exact)
+                                else { setSearchResults(list); setSearch(code); setShowDrop(true) }
+                            } else {
+                                showToast('Barcode topilmadi: ' + code, 'error')
+                            }
+                        })
+                        .catch(() => showToast('Xatolik yuz berdi', 'error'))
+                })
+        }
+
+        window.addEventListener('keydown', handleScannerKey, true)
+        return () => window.removeEventListener('keydown', handleScannerKey, true)
+    }, [showPayment, completedSale, confirmCancel, warehouseModal])
+
+    // ── Global Ctrl+V — input aktiv bo'lmasa ham paste ishlaydi ──
+    useEffect(() => {
+        const h = (e) => {
+            if (!e.ctrlKey || e.key !== 'v') return
+            const tag = document.activeElement.tagName
+            const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+            const hasModal = showPayment || completedSale || confirmCancel || warehouseModal
+            if (inInput || hasModal) return  // input aktiv bo'lsa — oddiy paste ishlaydi
+
+            e.preventDefault()
+            // Clipboarddan o'qib, search inputga focus + paste
+            navigator.clipboard.readText().then(text => {
+                const q = text.trim()
+                if (!q) return
+                searchRef.current?.focus()
+                setSearch(q)
+                // Barcode formatida bo'lsa — avtomatik qidirish
+                if (/^\d{4,}$/.test(q)) {
+                    setTimeout(() => {
+                        api.get('/api/v1/products/barcode/' + encodeURIComponent(q))
+                            .then(r => { if (r.data) { selectProduct(r.data); setSearch('') } })
+                            .catch(() => {
+                                api.get('/api/v1/products', { params: { search: q, size: 5, active: true } })
+                                    .then(r => {
+                                        const list = r.data.content || r.data || []
+                                        if (list.length === 1) { selectProduct(list[0]); setSearch('') }
+                                    })
+                            })
+                    }, 100)
+                }
+            }).catch(() => {
+                // Clipboard API ishlamasa — inputga focus qilib oddiy paste ishlaydi
+                searchRef.current?.focus()
+            })
+        }
+        window.addEventListener('keydown', h, true)
+        return () => window.removeEventListener('keydown', h, true)
+    }, [showPayment, completedSale, confirmCancel, warehouseModal])
+
+    // ── Keyboard shortcuts ──────────────────────────────────────
     useEffect(() => {
         const h = (e) => {
             const tag = document.activeElement.tagName
             const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
-            if (e.key === '/' && !inInput) { e.preventDefault(); searchRef.current?.focus() }
-            if (e.key === 'Escape') { setShowDrop(false); setSearch(''); searchRef.current?.blur() }
-            if (!showDrop && !inInput) {
+            const hasModal = showPayment || completedSale || confirmCancel || warehouseModal
+
+            if (e.key === 'Escape') {
+                setShowDrop(false); setSearch(''); searchRef.current?.blur()
+                return
+            }
+
+            if (hasModal || inInput) return
+
+            // ArrowUp/Down — savat navigatsiya
+            if (!showDrop) {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(0, i - 1)) }
                 if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(cart.length - 1, i + 1)) }
                 if (e.key === 'ArrowRight') setCart(prev => prev.map((c, i) => i === activeIdx ? { ...c, quantity: c.quantity + 1 } : c))
                 if (e.key === 'ArrowLeft') setCart(prev => prev.map((c, i) => i === activeIdx ? { ...c, quantity: Math.max(0.001, c.quantity - 1) } : c).filter(c => c.quantity > 0))
             }
+
+            // Har qanday harf/raqam — search inputga focus
+            if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                searchRef.current?.focus()
+            }
         }
         window.addEventListener('keydown', h)
         return () => window.removeEventListener('keydown', h)
-    }, [cart, activeIdx, showDrop])
+    }, [cart, activeIdx, showDrop, showPayment, completedSale, confirmCancel, warehouseModal, currentSale])
 
     // ── Mijoz qidirish (server, min 4 belgi) ──
     const custTO = useRef()
@@ -782,17 +876,19 @@ export default function CashierPage() {
         setUnitModal(null)
     }
 
-    const updateQty = (id, delta) => setCart(prev =>
-        prev.map(c => {
+    const updateQty = (id, delta) => setCart(prev => {
+        const updated = prev.map(c => {
             if (c.productUnitId !== id) return c
-            const newQty = Math.max(0.001, c.quantity + delta)
+            const newQty = Math.round((c.quantity + delta) * 1000) / 1000  // float tozalash
+            if (newQty <= 0) return { ...c, quantity: 0 }  // o'chirish uchun belgi
             if (delta > 0 && c.availableStock != null && newQty > c.availableStock) {
                 showToast(`Omborda faqat ${c.availableStock} ${c.unitSymbol} bor`, 'error')
                 return c
             }
             return { ...c, quantity: newQty }
         })
-    )
+        return updated.filter(c => c.quantity > 0)  // 0 bo'lganlarni o'chirish
+    })
     const updatePrice = (id, val) => {
         // onChange: faqat saqlaymiz, tekshirmaymiz
         const price = parseNum(val)
@@ -953,8 +1049,10 @@ export default function CashierPage() {
     const cancelOpenSale = async (saleId) => {
         try {
             await api.patch(`/api/v1/sales/${saleId}/cancel`)
-            // Agar hozirgi aktiv savatcha bekor bo'lsa — tozalaymiz
-            if (currentSale?.id === saleId) { setCurrentSale(null); clearCart() }
+            if (currentSale?.id === saleId) {
+                setCurrentSale(null)
+                clearCart(false)  // resetSale=false — cancel allaqachon yuborildi
+            }
             setConfirmCancel(null)
             await loadHoldSales()
             showToast('Savatcha bekor qilindi')
@@ -977,6 +1075,10 @@ export default function CashierPage() {
     }
 
     const clearCart = (resetSale = true) => {
+        // Agar DRAFT savatcha mavjud bo'lsa — backend da ham bekor qilish kerak
+        if (resetSale && currentSale?.id) {
+            api.patch(`/api/v1/sales/${currentSale.id}/cancel`).catch(console.error)
+        }
         setCart([]); setCustomerId(''); setCustomerSearch('')
         localStorage.removeItem('pos_cart'); localStorage.removeItem('pos_ref')
         setPartnerId(''); setPartnerSearch(''); setDiscountValue(''); setNotes('')
@@ -985,9 +1087,9 @@ export default function CashierPage() {
     }
 
     if (shiftLoading) return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 12 }}>
+        <div className="pos-loading-wrap">
             <RefreshCw size={24} className="spin" style={{ color: '#2563eb' }} />
-            <span style={{ color: '#6b7280' }}>Yuklanmoqda...</span>
+            <span className="pos-loading-text">Yuklanmoqda...</span>
         </div>
     )
 
@@ -1000,14 +1102,7 @@ export default function CashierPage() {
                 {showCloseShift && <CloseShiftModal shift={shift} onClose={() => setShowCloseShift(false)} onClosed={() => { setShift(null); setShowCloseShift(false) }} />}
                 {/* Toast */}
                 {toast && (
-                    <div style={{
-                        position: 'fixed', top: 24, right: 24,
-                        background: toast.type === 'error' ? '#ef4444' : '#22c55e',
-                        color: '#fff', padding: '12px 20px', borderRadius: 10,
-                        fontSize: 14, fontWeight: 600, zIndex: 2000,
-                        boxShadow: '0 4px 20px rgba(0,0,0,.2)',
-                        animation: 'fadeInRight .2s ease'
-                    }}>
+                    <div className={`pos-toast pos-toast--${toast.type}`}>
                         {toast.msg}
                     </div>
                 )}
@@ -1018,18 +1113,18 @@ export default function CashierPage() {
                 {/* ── Ombor tanlash modal ── */}
                 {warehouseModal && (
                     <div className="pos-confirm-overlay" onClick={() => setWarehouseModal(null)}>
-                        <div className="pos-confirm-modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
-                            <div className="pos-confirm-title" style={{ marginBottom: 4 }}>Ombor tanlash</div>
-                            <div className="pos-confirm-desc" style={{ marginBottom: 16 }}>
+                        <div className="pos-confirm-modal pos-wh-modal" onClick={e => e.stopPropagation()}>
+                            <div className="pos-confirm-title">Ombor tanlash</div>
+                            <div className="pos-confirm-desc">
                                 Quyidagi tovarlar bir nechta omborda mavjud. Har biri uchun ombor tanlang:
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+                            <div className="pos-wh-list">
                                 {warehouseModal.items.map(item => {
                                     const cartItem = cart.find(c => c.productUnitId === item.productUnitId)
                                     return (
                                         <div key={item.productUnitId} className="pos-wh-select-row">
                                             <div className="pos-wh-select-name">{cartItem?.productName}</div>
-                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                            <div className="pos-wh-btns">
                                                 {item.warehouses.map(w => (
                                                     <button
                                                         key={w.warehouseId}
@@ -1047,7 +1142,7 @@ export default function CashierPage() {
                             </div>
                             <div className="pos-confirm-actions">
                                 <button className="pos-confirm-btn-cancel" onClick={() => setWarehouseModal(null)}>Bekor</button>
-                                <button className="pos-confirm-btn-ok" style={{ background: '#0ea5e9' }} onClick={confirmWarehouseSelection}>
+                                <button className="pos-confirm-btn-ok pos-confirm-btn-ok--blue" onClick={confirmWarehouseSelection}>
                                     Tasdiqlash
                                 </button>
                             </div>
@@ -1082,40 +1177,89 @@ export default function CashierPage() {
                     <div className="pos-search-wrap">
                         <Search size={16} className="pos-search-icon" />
                         <input ref={searchRef} className="pos-search"
-                               placeholder="Artikul, shtrix-kod, nom"
+                               placeholder="Artikul, shtrix-kod yoki nom yozing..."
                                value={search}
                                onChange={e => setSearch(e.target.value)}
                                onFocus={() => search && setShowDrop(true)}
                                onBlur={() => setTimeout(() => setShowDrop(false), 150)}
+                               onKeyDown={e => {
+                                   if (e.key === 'Enter' && search.trim()) {
+                                       e.preventDefault()
+                                       const q = search.trim()
+                                       // Agar bitta natija bo'lsa — darhol tanlash
+                                       if (searchResults.length === 1) {
+                                           selectProduct(searchResults[0])
+                                           return
+                                       }
+                                       // Aniq moslik tekshirish
+                                       const exact = searchResults.find(p =>
+                                           p.defaultBarcode === q || p.sku === q ||
+                                           p.units?.some(u => u.barcode === q)
+                                       )
+                                       if (exact) { selectProduct(exact); return }
+                                       // Search natijasi yo'q — to'g'ridan API
+                                       api.get('/api/v1/products/barcode/' + encodeURIComponent(q))
+                                           .then(r => { if (r.data) selectProduct(r.data) })
+                                           .catch(() => {
+                                               api.get('/api/v1/products', { params: { search: q, size: 5, active: true } })
+                                                   .then(r => {
+                                                       const list = r.data.content || r.data || []
+                                                       if (list.length === 1) selectProduct(list[0])
+                                                       else if (list.length > 1) { setSearchResults(list); setShowDrop(true) }
+                                                       else showToast('Mahsulot topilmadi', 'error')
+                                                   })
+                                           })
+                                   }
+                               }}
+                               onPaste={e => {
+                                   // Ctrl+V bilan paste — 300ms keyin search natijalari tayyor bo'ladi
+                                   setTimeout(() => {
+                                       const q = (e.target.value || '').trim()
+                                       if (!q) return
+                                       // Barcode uzunligiga mos bo'lsa — avtomatik qidirish
+                                       if (/^\d{8,13}$/.test(q)) {
+                                           api.get('/api/v1/products/barcode/' + encodeURIComponent(q))
+                                               .then(r => { if (r.data) { selectProduct(r.data); setSearch('') } })
+                                               .catch(() => {
+                                                   api.get('/api/v1/products', { params: { search: q, size: 5, active: true } })
+                                                       .then(r => {
+                                                           const list = r.data.content || r.data || []
+                                                           if (list.length === 1) { selectProduct(list[0]); setSearch('') }
+                                                           // else — dropdown ko'rsatiladi (debounce orqali)
+                                                       })
+                                               })
+                                       }
+                                   }, 350)
+                               }}
                         />
                         {!search && (
                             <div className="pos-search-actions">
-                                <span style={{ fontSize: 12, color: '#94a3b8', marginRight: 4 }}>Bosing</span>
-                                <span className="pos-kbd" style={{ background: '#f1f5f9', padding: '2px 6px' }}>/</span>
+                                <span className="pos-search-hint">Scan yoki yoz</span>
                             </div>
                         )}
                         {search && <button onClick={() => { setSearch(''); setShowDrop(false) }}
-                                           style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+                                           className="pos-search-clear">
                             <X size={14} /></button>}
 
                         {/* Dropdown */}
                         {showDrop && (
                             <div className="pos-search-dropdown">
                                 {searching
-                                    ? <div style={{ padding: 16, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>Qidirilmoqda...</div>
+                                    ? <div className="pos-ss-hint">Qidirilmoqda...</div>
                                     : searchResults.length === 0
-                                        ? <div style={{ padding: 16, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>Topilmadi</div>
+                                        ? <div className="pos-ss-hint">Topilmadi</div>
                                         : searchResults.map(p => (
                                             <div key={p.id} className="pos-search-item" onMouseDown={() => selectProduct(p)}>
                                                 <div className="pos-search-img">
-                                                    {p.imageUrl ? <img src={p.imageUrl} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} />
+                                                    {p.imageUrl
+                                                        ? <img src={p.imageUrl} alt="" className="pos-search-item-img" />
                                                         : <Package size={18} style={{ color: '#d1d5db' }} />}
                                                 </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name}</div>
-                                                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{p.defaultBarcode || p.sku}</div>
+                                                <div className="pos-search-item-info">
+                                                    <div className="pos-search-item-name">{p.name}</div>
+                                                    <div className="pos-search-item-code">{p.defaultBarcode || p.sku}</div>
                                                 </div>
-                                                <div style={{ fontWeight: 700, fontSize: 14, color: '#0ea5e9', whiteSpace: 'nowrap' }}>{fmt(p.defaultSalePrice)} so'm</div>
+                                                <div className="pos-search-item-price">{fmt(p.defaultSalePrice)} so'm</div>
                                             </div>
                                         ))
                                 }
@@ -1124,6 +1268,12 @@ export default function CashierPage() {
                     </div>
 
                     {shift && <div className="pos-smena-badge">● Smena #{shift.id} — {shift.warehouseName}</div>}
+
+                    {lastSale && (
+                        <div className="pos-last-sale">
+                            ✓ {lastSale.referenceNo} — {fmt(lastSale.totalAmount)} so'm
+                        </div>
+                    )}
 
                     {shift && <button className="pos-tbtn pos-tbtn-danger" onClick={() => setShowCloseShift(true)}>Smena yopish</button>}
                 </div>
@@ -1134,7 +1284,7 @@ export default function CashierPage() {
                     {/* ── CHAP: Savatcha ── */}
                     <div className={`pos-left${activeTab === 'cart' ? ' pos-tab-visible' : ''}`}>
                         <div className="pos-cart-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div className="pos-cart-header-left">
                                 <span className="pos-cart-title">Savatcha</span>
                                 <span className="pos-cart-badge">
                                     {cart.length}
@@ -1159,9 +1309,9 @@ export default function CashierPage() {
                             {!cart.length ? (
                                 <div className="pos-cart-empty">
                                     <div className="pos-cart-empty-icon"><ShoppingCart size={30} style={{ color: '#d1d5db' }} /></div>
-                                    <div style={{ fontWeight: 600, fontSize: 15 }}>Savatcha hozircha bo'sh</div>
-                                    <div style={{ fontSize: 13 }}>
-                                        Tovarlarni qidirish uchun <kbd className="pos-kbd">/</kbd> tugmasini bosing yoki tovarlarni skanerlang
+                                    <div className="pos-cart-empty-title">Savatcha hozircha bo'sh</div>
+                                    <div className="pos-cart-empty-hint">
+                                        Tovarlarni qidirish uchun yozing yoki skanerlang
                                     </div>
                                 </div>
                             ) : cart.map((item, idx) => (
@@ -1172,7 +1322,7 @@ export default function CashierPage() {
                                     {/* Miqdor box — screenshot uslubida */}
                                     <div className="pos-qty-box">
                                         {item.editQty ? (
-                                            <div className="pos-qty-value" style={{ padding: '4px 6px' }}>
+                                            <div className="pos-qty-value pos-qty-value--edit">
                                                 <input
                                                     autoFocus
                                                     type="text" inputMode="decimal"
@@ -1190,12 +1340,12 @@ export default function CashierPage() {
                                                         setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, quantity: newQty, editQty: false } : c))
                                                     }}
                                                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { e.stopPropagation(); setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, editQty: false } : c)) } }}
-                                                    style={{ width: 52, border: 'none', outline: 'none', fontWeight: 700, fontSize: 14, background: 'transparent', textAlign: 'center' }}
+                                                    className="pos-qty-edit-input"
                                                 />
                                                 <span>{item.unitSymbol}</span>
                                             </div>
                                         ) : (
-                                            <div className="pos-qty-value" onClick={e => { e.stopPropagation(); setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, editQty: true } : c)) }} style={{ cursor: 'text' }} title="Bosib miqdorni kiriting">
+                                            <div className="pos-qty-value pos-qty-value--click" onClick={e => { e.stopPropagation(); setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, editQty: true } : c)) }} title="Bosib miqdorni kiriting">
                                                 <span>{item.quantity % 1 === 0 ? item.quantity : item.quantity.toFixed(2)}</span>
                                                 <span>{item.unitSymbol}</span>
                                             </div>
@@ -1211,19 +1361,19 @@ export default function CashierPage() {
                                     </div>
 
                                     {/* Rasm */}
-                                    <div style={{ width: 48, height: 48, borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                                    <div className="pos-cart-thumb">
                                         {item.image
-                                            ? <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ? <img src={item.image} alt="" />
                                             : <Package size={20} style={{ color: '#94a3b8' }} />}
                                     </div>
 
                                     {/* Nom + artikul / barcode */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.productName}</div>
-                                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>
+                                    <div className="pos-cart-info">
+                                        <div className="pos-cart-name">{item.productName}</div>
+                                        <div className="pos-cart-meta">
                                             {[item.artikul, item.barcode].filter(Boolean).join(' / ')}
                                             {item.availableStock != null && (
-                                                <span style={{ marginLeft: 6, color: (item.availableStock - item.quantity) <= 3 ? '#f59e0b' : '#94a3b8' }}>
+                                                <span className={(item.availableStock - item.quantity) <= 3 ? 'pos-cart-stock-low' : 'pos-cart-stock-ok'}>
                                                     ({Math.max(0, item.availableStock - item.quantity)} ta qoldi)
                                                 </span>
                                             )}
@@ -1231,7 +1381,7 @@ export default function CashierPage() {
                                     </div>
 
                                     {/* Narx + info icon */}
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    <div className="pos-cart-price-wrap">
                                         {item.editPrice ? (
                                             <input className="pos-price-input"
                                                    autoFocus
@@ -1242,9 +1392,8 @@ export default function CashierPage() {
                                                    onChange={e => updatePrice(item.productUnitId, e.target.value.replace(/\s/g, ''))}
                                                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, salePrice: c.originalPrice, editPrice: false } : c)) } }} />
                                         ) : (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                                                {/* ℹ️ Narx ma'lumoti popover */}
-                                                <div data-price-info style={{ position: 'relative' }}>
+                                            <div className="pos-cart-price-row">
+                                                <div className="pos-cart-price-info" data-price-info>
                                                     <button
                                                         onClick={e => {
                                                             e.stopPropagation()
@@ -1253,17 +1402,17 @@ export default function CashierPage() {
                                                             setPricePopoverPos({ top: rect.top - 8, left: rect.right })
                                                             setPriceInfoId(item.productUnitId)
                                                         }}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: priceInfoId === item.productUnitId ? '#0ea5e9' : '#94a3b8', padding: '0 2px', display: 'flex', alignItems: 'center', lineHeight: 1 }}>
+                                                        className={`pos-info-btn${priceInfoId === item.productUnitId ? ' pos-info-btn--active' : ''}`}>
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                                                         </svg>
                                                     </button>
                                                 </div>
-                                                <span style={{ fontSize: 15, fontWeight: 700, color: '#f59e0b' }}>
+                                                <span className="pos-cart-price-val">
                                                     {fmt(Math.round(Number(item.salePrice) * item.quantity))} UZS
                                                 </span>
                                                 <button onClick={e => { e.stopPropagation(); setCart(prev => prev.map(c => c.productUnitId === item.productUnitId ? { ...c, editPrice: true } : c)) }}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#22c55e', padding: 0, display: 'flex', alignItems: 'center' }}>
+                                                        className="pos-edit-price-btn">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                                 </button>
                                             </div>
@@ -1272,9 +1421,7 @@ export default function CashierPage() {
 
                                     {/* O'chirish tugmasi */}
                                     <button onClick={e => { e.stopPropagation(); removeItem(item.productUnitId) }}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#cbd5e1', padding: 4, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
-                                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                                            onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}>
+                                            className="pos-del-btn">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -1403,21 +1550,21 @@ export default function CashierPage() {
                         <div className="pos-totals">
                             <div className="pos-tot-row">
                                 <span>Oraliq jami</span>
-                                <span style={{ fontWeight: 600 }}>{fmt(subtotal)} UZS</span>
+                                <span className="pos-tot-val">{fmt(subtotal)} UZS</span>
                             </div>
                             <div className="pos-tot-row">
                                 <span>Chegirma</span>
-                                <span style={{ fontWeight: 600 }}>{discountAmount > 0 ? `-${fmt(discountAmount)}` : '0'} UZS</span>
+                                <span className="pos-tot-val">{discountAmount > 0 ? `-${fmt(discountAmount)}` : '0'} UZS</span>
                             </div>
                             <button className="pos-pay-btn" onClick={handlePay} disabled={!cart.length || saving}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{ fontWeight: 700 }}>TO'LASH</span>
-                                    <span style={{ background: 'rgba(255,255,255,.2)', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>L</span>
+                                <div className="pos-pay-btn-inner">
+                                    <span className="pos-pay-btn-label">TO'LASH</span>
+                                    <span className="pos-pay-btn-kbd">Ctrl+P</span>
                                 </div>
-                                <span style={{ fontWeight: 800, fontSize: 18 }}>{fmt(totalAmount)} UZS</span>
+                                <span className="pos-pay-btn-sum">{fmt(totalAmount)} UZS</span>
                             </button>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                                <button className="pos-hold-btn" onClick={handleHold} disabled={!cart.length || saving} style={{ flex: 1 }}>
+                            <div className="pos-hold-row">
+                                <button className="pos-hold-btn pos-hold-btn-flex" onClick={handleHold} disabled={!cart.length || saving}>
                                     Kechiktirish <span className="pos-kbd">O</span>
                                 </button>
                                 <button className={`pos-hold-count-btn${holdSales.length > 0 ? ' has-items' : ''}`}
@@ -1437,17 +1584,18 @@ export default function CashierPage() {
                     if (!item) return null
                     return (
                         <div data-price-info
-                             style={{ position: 'fixed', top: pricePopoverPos.top, left: pricePopoverPos.left, transform: 'translate(-100%, -100%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', padding: '10px 14px', minWidth: 170, zIndex: 9999, whiteSpace: 'nowrap' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 8 }}>Narx ma'lumoti</div>
+                             className="pos-popover"
+                             style={{ top: pricePopoverPos.top, left: pricePopoverPos.left }}>
+                            <div className="pos-popover-title">Narx ma'lumoti</div>
                             {isAdmin && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginBottom: 5 }}>
-                                    <span style={{ color: '#64748b' }}>Tannarx</span>
-                                    <b style={{ color: '#0f172a' }}>{fmt(item.costPrice)} so'm</b>
+                                <div className="pos-popover-row">
+                                    <span className="pos-popover-label">Tannarx</span>
+                                    <b className="pos-popover-cost">{fmt(item.costPrice)} so'm</b>
                                 </div>
                             )}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12 }}>
-                                <span style={{ color: '#64748b' }}>Min narx</span>
-                                <b style={{ color: '#ef4444' }}>{fmt(item.minPrice)} so'm</b>
+                            <div className="pos-popover-row">
+                                <span className="pos-popover-label">Min narx</span>
+                                <b className="pos-popover-min">{fmt(item.minPrice)} so'm</b>
                             </div>
                         </div>
                     )
@@ -1466,7 +1614,7 @@ export default function CashierPage() {
                     </button>
                 </div>
             </div>
-            {showPayment && currentSale?.id && <PaymentModal sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null }} onClose={() => setShowPayment(false)} onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); clearCart() }} />}
+            {showPayment && currentSale?.id && <PaymentModal sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null }} onClose={() => setShowPayment(false)} onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); setLastSale(s); setCurrentSale(null); clearCart(false) }} />}
             {completedSale && <ReceiptModal sale={completedSale} onClose={() => setCompletedSale(null)} />}
         </>
     )
