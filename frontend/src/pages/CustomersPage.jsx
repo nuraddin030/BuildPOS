@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink } from 'lucide-react'
-import { getCustomers, createCustomer, updateCustomer } from '../api/customers'
+import {useState, useEffect, useCallback} from 'react'
+import {useNavigate} from 'react-router-dom'
+import {Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink} from 'lucide-react'
+import {getCustomers, createCustomer, updateCustomer} from '../api/customers'
 import '../styles/ProductsPage.css'
-import { useAuth } from '../context/AuthContext'
+import {useAuth} from '../context/AuthContext'
 
-const EMPTY_FORM = { name: '', phone: '', notes: '', debtLimit: '', debtLimitStrict: false }
+const EMPTY_FORM = {name: '', phone: '', notes: '', debtLimit: '', debtLimitStrict: false}
 const formatPhone = (v) => v.replace(/\D/g, '').slice(0, 12)
 const fmt = (v) => v ? new Intl.NumberFormat('uz-UZ').format(v) + ' UZS' : '0 UZS'
 
@@ -26,7 +26,7 @@ export default function CustomersPage() {
 
     const load = useCallback(() => {
         setLoading(true)
-        getCustomers({ search: search || undefined, size: 100 })
+        getCustomers({search: search || undefined, size: 100})
             .then(res => {
                 const d = res.data
                 setCustomers(d.content || d || [])
@@ -36,13 +36,18 @@ export default function CustomersPage() {
             .finally(() => setLoading(false))
     }, [search])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => {
+        load()
+    }, [load])
 
     const openAdd = () => {
-        setEditId(null); setForm(EMPTY_FORM); setError(''); setShowModal(true)
+        setEditId(null);
+        setForm(EMPTY_FORM);
+        setError('');
+        setShowModal(true)
     }
 
-    const { hasPermission } = useAuth()
+    const {hasPermission} = useAuth()
 
     const openEdit = (c) => {
         setEditId(c.id)
@@ -53,13 +58,21 @@ export default function CustomersPage() {
             debtLimit: c.debtLimit ? String(c.debtLimit) : '',
             debtLimitStrict: c.debtLimitStrict || false
         })
-        setError(''); setShowModal(true)
+        setError('');
+        setShowModal(true)
     }
 
     const handleSave = async () => {
-        if (!form.name.trim()) { setError("Ismi kiritilishi shart"); return }
-        if (!form.phone.trim()) { setError("Telefon kiritilishi shart"); return }
-        setSaving(true); setError('')
+        if (!form.name.trim()) {
+            setError("Ismi kiritilishi shart");
+            return
+        }
+        if (!form.phone.trim()) {
+            setError("Telefon kiritilishi shart");
+            return
+        }
+        setSaving(true);
+        setError('')
         try {
             const payload = {
                 ...form,
@@ -67,10 +80,13 @@ export default function CustomersPage() {
                 debtLimitStrict: form.debtLimitStrict || false,
             }
             editId ? await updateCustomer(editId, payload) : await createCustomer(payload)
-            setShowModal(false); load()
+            setShowModal(false);
+            load()
         } catch (err) {
             setError(err.response?.data?.message || 'Xatolik yuz berdi')
-        } finally { setSaving(false) }
+        } finally {
+            setSaving(false)
+        }
     }
     useEffect(() => {
         if (!showModal) return
@@ -89,7 +105,7 @@ export default function CustomersPage() {
             <div className="products-header">
                 <div className="products-header-left">
                     <div className="page-icon-wrap">
-                        <Users size={22} />
+                        <Users size={22}/>
                     </div>
                     <div>
                         <h1 className="page-title">
@@ -101,7 +117,7 @@ export default function CustomersPage() {
                 </div>
                 {hasPermission('CUSTOMERS_CREATE') && (
                     <button className="btn-add" onClick={openAdd}>
-                        <Plus size={16} />
+                        <Plus size={16}/>
                         Mijoz qo'shish
                     </button>
                 )}
@@ -110,9 +126,9 @@ export default function CustomersPage() {
             {/* Filter */}
             <div className="filter-bar">
                 <div className="filter-search-wrap">
-                    <Search size={16} className="filter-search-icon" />
+                    <Search size={16} className="filter-search-icon"/>
                     <input className="filter-search" placeholder="Ism yoki telefon..." value={search}
-                           onChange={e => setSearch(e.target.value)} />
+                           onChange={e => setSearch(e.target.value)}/>
                 </div>
             </div>
 
@@ -120,12 +136,12 @@ export default function CustomersPage() {
             <div className="table-card">
                 {loading ? (
                     <div className="table-loading">
-                        <Loader2 size={28} className="spin" />
+                        <Loader2 size={28} className="spin"/>
                         <p>Yuklanmoqda...</p>
                     </div>
                 ) : customers.length === 0 ? (
                     <div className="table-empty">
-                        <Users size={40} strokeWidth={1} />
+                        <Users size={40} strokeWidth={1}/>
                         <p>Mijozlar yo'q</p>
                     </div>
                 ) : (
@@ -154,7 +170,7 @@ export default function CustomersPage() {
                                     <td className="cell-muted">{c.notes || '—'}</td>
                                     <td className="th-right">
                                         {c.totalDebt > 0 ? (
-                                            <span style={{ color: 'var(--danger)', fontWeight: 600, fontSize: 13 }}>
+                                            <span style={{color: 'var(--danger)', fontWeight: 600, fontSize: 13}}>
                                                     {fmt(c.totalDebt)}
                                                 </span>
                                         ) : (
@@ -164,11 +180,13 @@ export default function CustomersPage() {
                                     <td className="th-right">
                                         {c.debtLimit ? (
                                             <div>
-                                                <div style={{ fontSize: 12, fontWeight: 600,
-                                                    color: c.limitExceeded ? '#dc2626' : 'var(--text-secondary)' }}>
+                                                <div style={{
+                                                    fontSize: 12, fontWeight: 600,
+                                                    color: c.limitExceeded ? '#dc2626' : 'var(--text-secondary)'
+                                                }}>
                                                     {fmt(c.debtLimit)}
                                                 </div>
-                                                <div style={{ fontSize: 10, marginTop: 2 }}>
+                                                <div style={{fontSize: 10, marginTop: 2}}>
                                                     <span style={{
                                                         padding: '1px 5px', borderRadius: 6,
                                                         background: c.debtLimitStrict ? 'rgba(220,38,38,0.1)' : 'rgba(245,158,11,0.1)',
@@ -184,15 +202,17 @@ export default function CustomersPage() {
                                         )}
                                     </td>
                                     <td className="th-center">
-                                            <span className={`status-badge ${c.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                            <span
+                                                className={`status-badge ${c.isActive !== false ? 'status-active' : 'status-inactive'}`}>
                                                 {c.isActive !== false ? 'Faol' : 'Noaktiv'}
                                             </span>
                                     </td>
                                     <td>
                                         <div className="action-group">
                                             {hasPermission('CUSTOMERS_EDIT') && (
-                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(c)}>
-                                                    <Pencil size={14} />
+                                                <button className="act-btn act-edit" title="Tahrirlash"
+                                                        onClick={() => openEdit(c)}>
+                                                    <Pencil size={14}/>
                                                 </button>
                                             )}
                                             {hasPermission('CUSTOMERS_DEBT_VIEW') && (
@@ -212,8 +232,8 @@ export default function CustomersPage() {
                                                     }}
                                                 >
                                                     {c.totalDebt > 0
-                                                        ? <ExternalLink size={14} />
-                                                        : <CreditCard size={14} />
+                                                        ? <ExternalLink size={14}/>
+                                                        : <CreditCard size={14}/>
                                                     }
                                                 </button>
                                             )}
@@ -230,36 +250,38 @@ export default function CustomersPage() {
             {/* Add/Edit Modal */}
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="modal-box products-modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+                    <div className="modal-box products-modal" style={{maxWidth: 500}}
+                         onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div className="modal-header-left">
-                                <Users size={20} />
+                                <Users size={20}/>
                                 <div>
                                     <h6 className="modal-title">{editId ? 'Mijozni tahrirlash' : 'Mijoz qo\'shish'}</h6>
                                     <p className="modal-subtitle">Mijoz ma'lumotlarini kiriting</p>
                                 </div>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setShowModal(false)}><X size={16} /></button>
+                            <button className="modal-close-btn" onClick={() => setShowModal(false)}><X size={16}/>
+                            </button>
                         </div>
                         <div className="modal-body">
-                            {error && <div className="form-error"><AlertCircle size={16} />{error}</div>}
-                            <div className="form-group" style={{ marginBottom: 16 }}>
+                            {error && <div className="form-error"><AlertCircle size={16}/>{error}</div>}
+                            <div className="form-group" style={{marginBottom: 16}}>
                                 <label className="form-label">Ismi <span className="required">*</span></label>
                                 <input className="form-input" value={form.name}
-                                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                       placeholder="Mijoz ismi" autoFocus />
+                                       onChange={e => setForm(f => ({...f, name: e.target.value}))}
+                                       placeholder="Mijoz ismi" autoFocus/>
                             </div>
-                            <div className="form-group" style={{ marginBottom: 16 }}>
+                            <div className="form-group" style={{marginBottom: 16}}>
                                 <label className="form-label">Telefon <span className="required">*</span></label>
                                 <input className="form-input" value={form.phone}
-                                       onChange={e => setForm(f => ({ ...f, phone: formatPhone(e.target.value) }))}
-                                       placeholder="+998901234567" />
+                                       onChange={e => setForm(f => ({...f, phone: formatPhone(e.target.value)}))}
+                                       placeholder="+998901234567"/>
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Izoh</label>
                                 <textarea className="form-textarea" rows={2} value={form.notes}
-                                          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                                          placeholder="Ixtiyoriy" />
+                                          onChange={e => setForm(f => ({...f, notes: e.target.value}))}
+                                          placeholder="Ixtiyoriy"/>
                             </div>
 
                             {/* Qarz limiti bo'limi */}
@@ -268,31 +290,36 @@ export default function CustomersPage() {
                                 background: 'var(--surface-secondary)',
                                 borderRadius: 10, border: '1px solid var(--border-color)'
                             }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)',
-                                    textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 12 }}>
+                                <div style={{
+                                    fontSize: 12, fontWeight: 700, color: 'var(--text-muted)',
+                                    textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 12
+                                }}>
                                     Qarz limiti
                                 </div>
-                                <div className="form-group" style={{ marginBottom: 12 }}>
+                                <div className="form-group" style={{marginBottom: 12}}>
                                     <label className="form-label">Maksimal nasiya summasi (UZS)</label>
                                     <input className="form-input"
                                            value={form.debtLimit}
-                                           onChange={e => setForm(f => ({ ...f, debtLimit: e.target.value.replace(/[^\d]/g, '') }))}
-                                           placeholder="Bo'sh qoldiring = limit yo'q" />
+                                           onChange={e => setForm(f => ({
+                                               ...f,
+                                               debtLimit: e.target.value.replace(/[^\d]/g, '')
+                                           }))}
+                                           placeholder="Bo'sh qoldiring = limit yo'q"/>
                                     {form.debtLimit && (
-                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                                        <div style={{fontSize: 12, color: 'var(--text-muted)', marginTop: 4}}>
                                             Limit: {Number(form.debtLimit).toLocaleString('ru-RU')} UZS
                                         </div>
                                     )}
                                 </div>
                                 {form.debtLimit && (
                                     <div>
-                                        <label className="form-label" style={{ marginBottom: 8 }}>
+                                        <label className="form-label" style={{marginBottom: 8}}>
                                             Limit turi
                                         </label>
-                                        <div style={{ display: 'flex', gap: 8 }}>
+                                        <div style={{display: 'flex', gap: 8}}>
                                             <button
                                                 type="button"
-                                                onClick={() => setForm(f => ({ ...f, debtLimitStrict: false }))}
+                                                onClick={() => setForm(f => ({...f, debtLimitStrict: false}))}
                                                 style={{
                                                     flex: 1, padding: '8px 12px', borderRadius: 8,
                                                     border: `2px solid ${!form.debtLimitStrict ? '#f59e0b' : 'var(--border-color)'}`,
@@ -301,13 +328,13 @@ export default function CustomersPage() {
                                                     color: !form.debtLimitStrict ? '#f59e0b' : 'var(--text-secondary)'
                                                 }}>
                                                 ⚠ Ogohlantirish
-                                                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2 }}>
+                                                <div style={{fontSize: 11, fontWeight: 400, marginTop: 2}}>
                                                     Kassir ko'radi, sotishi mumkin
                                                 </div>
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setForm(f => ({ ...f, debtLimitStrict: true }))}
+                                                onClick={() => setForm(f => ({...f, debtLimitStrict: true}))}
                                                 style={{
                                                     flex: 1, padding: '8px 12px', borderRadius: 8,
                                                     border: `2px solid ${form.debtLimitStrict ? '#dc2626' : 'var(--border-color)'}`,
@@ -316,7 +343,7 @@ export default function CustomersPage() {
                                                     color: form.debtLimitStrict ? '#dc2626' : 'var(--text-secondary)'
                                                 }}>
                                                 🚫 Qat'iy bloklash
-                                                <div style={{ fontSize: 11, fontWeight: 400, marginTop: 2 }}>
+                                                <div style={{fontSize: 11, fontWeight: 400, marginTop: 2}}>
                                                     Nasiya berib bo'lmaydi
                                                 </div>
                                             </button>
@@ -328,7 +355,7 @@ export default function CustomersPage() {
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setShowModal(false)}>Bekor qilish</button>
                             <button className="btn-save" onClick={handleSave} disabled={saving}>
-                                {saving ? <><Loader2 size={14} className="spin" /> Saqlanmoqda...</> : 'Saqlash'}
+                                {saving ? <><Loader2 size={14} className="spin"/> Saqlanmoqda...</> : 'Saqlash'}
                             </button>
                         </div>
                     </div>
@@ -338,23 +365,24 @@ export default function CustomersPage() {
             {/* Nasiya yo'q modal */}
             {noDebtModal && (
                 <div className="modal-overlay" onClick={() => setNoDebtModal(null)}>
-                    <div className="modal-box" style={{ maxWidth: 360, textAlign: 'center' }}
+                    <div className="modal-box" style={{maxWidth: 360, textAlign: 'center'}}
                          onClick={e => e.stopPropagation()}>
-                        <div className="modal-body" style={{ padding: '32px 28px' }}>
+                        <div className="modal-body" style={{padding: '32px 28px'}}>
                             <div style={{
                                 width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
                                 background: 'rgba(22,163,74,0.1)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: '#16a34a', fontSize: 28
-                            }}>✓</div>
-                            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+                            }}>✓
+                            </div>
+                            <div style={{fontWeight: 700, fontSize: 16, marginBottom: 6}}>
                                 {noDebtModal}
                             </div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                            <div style={{color: 'var(--text-muted)', fontSize: 14}}>
                                 Bu mijozda hozircha nasiya yo'q ✅
                             </div>
                         </div>
-                        <div className="modal-footer" style={{ justifyContent: 'center' }}>
+                        <div className="modal-footer" style={{justifyContent: 'center'}}>
                             <button className="btn-save" onClick={() => setNoDebtModal(null)}>
                                 Yopish
                             </button>
