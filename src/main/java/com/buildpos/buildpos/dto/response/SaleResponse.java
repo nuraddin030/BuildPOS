@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -47,6 +48,7 @@ public class SaleResponse {
     private BigDecimal changeAmount;    // qaytim
 
     private String notes;
+    private LocalDateTime submittedAt;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
 
@@ -72,7 +74,8 @@ public class SaleResponse {
         private BigDecimal discountValue;
         private BigDecimal discountAmount;
         private BigDecimal totalPrice;
-        private BigDecimal availableStock;  // ombordagi qoldiq (real vaqt)
+        private BigDecimal returnedQuantity; // necha dona qaytarildi
+        private BigDecimal availableStock;   // ombordagi qoldiq (real vaqt)
     }
 
     // ─────────────────────────────────────────
@@ -83,5 +86,6 @@ public class SaleResponse {
         private PaymentMethod paymentMethod;
         private BigDecimal amount;
         private String notes;
+        private LocalDate dueDate;   // faqat DEBT uchun
     }
 }

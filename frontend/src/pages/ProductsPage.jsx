@@ -327,7 +327,7 @@ export default function ProductsPage() {
                         </div>
                     ) : (
                         <div className="table-responsive">
-                            <table className="ptable">
+                            <table className="ptable products-ptable">
                                 <thead>
                                 <tr>
                                     <th className="th-num">#</th>

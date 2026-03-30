@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,6 +37,10 @@ public class SalePayment {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    // Faqat DEBT uchun — nasiya muddati
+    @Column
+    private LocalDate dueDate;
 
     @CreatedDate
     @Column(updatable = false)

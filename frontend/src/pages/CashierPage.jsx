@@ -4,8 +4,9 @@ import {
     Search, X, Plus, Minus, Trash2, User, CreditCard,
     Banknote, ArrowLeftRight, Clock, RefreshCw,
     Download, PauseCircle, Package, ShoppingCart, Printer,
-    Calendar, ArrowUpDown, History
+    Calendar, ArrowUpDown, History, Bell, CheckCircle, XCircle, CornerUpLeft, Home, LogOut as ShiftClose
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useReactToPrint } from 'react-to-print'
 import { salesApi } from '../api/sales'
@@ -175,13 +176,14 @@ function CloseShiftModal({ shift, onClose, onClosed }) {
 }
 
 // ─── To'lov modali ────────────────────────────
-function PaymentModal({ sale, onClose, onCompleted }) {
+function PaymentModal({ sale, onClose, onCompleted, onCustomerSet }) {
     const total = Number(sale?.totalAmount || 0)
     const [payments, setPayments] = useState([{ method: 'CASH', amount: String(total), dueDate: '', notes: '' }])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [limitWarning, setLimitWarning] = useState(null) // { exceeded, strict, remaining, debtLimit }
     const [limitChecking, setLimitChecking] = useState(false)
+    const [debtInfo, setDebtInfo] = useState(null) // { currentDebt, debtLimit, remaining, ... }
 
     const totalPaid = payments.reduce((s, p) => s + parseNum(p.amount), 0)
     const change = totalPaid - total
@@ -193,23 +195,74 @@ function PaymentModal({ sale, onClose, onCompleted }) {
 
     // DEBT tanlanganda limit tekshiruvi
     useEffect(() => {
-        if (!sale?.customerId || debtAmount <= 0) { setLimitWarning(null); return }
+        if (!sale?.customerId || debtAmount <= 0) { setLimitWarning(null); setDebtInfo(null); return }
         setLimitChecking(true)
         api.get(`/api/v1/customers/${sale.customerId}/check-debt-limit`, {
             params: { amount: debtAmount }
         })
             .then(res => {
                 const d = res.data
+                setDebtInfo(d)
                 if (d.hasLimit && d.exceeded) setLimitWarning(d)
                 else setLimitWarning(null)
             })
-            .catch(() => setLimitWarning(null))
+            .catch(() => { setLimitWarning(null); setDebtInfo(null) })
             .finally(() => setLimitChecking(false))
     }, [debtAmount, sale?.customerId])
 
+    const noCustomerDebt = debtAmount > 0 && !sale.customerId
+
+    const [custSearch, setCustSearch] = useState('')
+    const [custResults, setCustResults] = useState([])
+    const [custSearching, setCustSearching] = useState(false)
+    const [custLinking, setCustLinking] = useState(false)
+    const [showNewCust, setShowNewCust] = useState(false)
+    const [newCustName, setNewCustName] = useState('')
+    const [newCustPhone, setNewCustPhone] = useState('')
+    const [newCustSaving, setNewCustSaving] = useState(false)
+    const custTO = useRef()
+
+    useEffect(() => {
+        clearTimeout(custTO.current)
+        if (!noCustomerDebt || custSearch.length < 3) { setCustResults([]); return }
+        custTO.current = setTimeout(async () => {
+            setCustSearching(true)
+            try {
+                const r = await api.get('/api/v1/customers', { params: { search: custSearch, size: 10 } })
+                setCustResults(r.data.content || r.data || [])
+            } catch {}
+            finally { setCustSearching(false) }
+        }, 300)
+    }, [custSearch, noCustomerDebt])
+
+    const linkCustomer = async (customer) => {
+        if (!sale?.id) return
+        setCustLinking(true)
+        try {
+            const r = await api.patch(`/api/v1/sales/${sale.id}/customer`, null, { params: { customerId: customer.id } })
+            onCustomerSet(r.data, customer)
+            setCustSearch(''); setCustResults([])
+        } catch (e) {
+            setError(e.response?.data?.message || 'Mijoz biriktirishda xatolik')
+        } finally { setCustLinking(false) }
+    }
+
+    const createAndLinkCustomer = async () => {
+        if (!newCustName.trim()) return setError('Ism kiritish shart')
+        if (!newCustPhone.trim()) return setError('Telefon kiritish shart')
+        setNewCustSaving(true); setError('')
+        try {
+            const r = await api.post('/api/v1/customers', { name: newCustName.trim(), phone: newCustPhone.trim() })
+            await linkCustomer(r.data)
+            setShowNewCust(false); setNewCustName(''); setNewCustPhone('')
+        } catch (e) {
+            setError(e.response?.data?.message || 'Mijoz yaratishda xatolik')
+        } finally { setNewCustSaving(false) }
+    }
+
     const handle = async () => {
-        if (payments.some(p => p.method === 'DEBT' && parseNum(p.amount) > 0) && !sale.customerId)
-            return setError('Nasiya uchun mijoz tanlanishi kerak')
+        if (noCustomerDebt)
+            return setError('Nasiya uchun mijoz tanlanishi kerak. Modalni yoping va o\'ng paneldan mijoz tanlang.')
         if (limitWarning?.strict)
             return setError(`Mijozning qarz limiti (${fmt(limitWarning.debtLimit)} UZS) to'ldi. Nasiya berib bo'lmaydi.`)
         setLoading(true); setError('')
@@ -228,13 +281,85 @@ function PaymentModal({ sale, onClose, onCompleted }) {
                 <div className="pos-mh">To'lov <button onClick={onClose} className="pos-modal-close"><X size={18} /></button></div>
                 <div className="pos-mb">
                     {error && <div className="pos-alert">{error}</div>}
-                    {limitWarning && !limitWarning.strict && (
-                        <div className="pos-limit-warn">
-                            ⚠ Diqqat! Bu mijozning qarz limiti ({fmt(limitWarning.debtLimit)} UZS) oshib ketmoqda.
-                            Qolgan limit: {fmt(Math.max(0, limitWarning.remaining))} UZS
+                    {noCustomerDebt && (
+                        <div className="pos-no-cust-block">
+                            <div className="pos-no-cust-header">
+                                <div className="pos-no-cust-title">⚠ Nasiya uchun mijoz tanlang</div>
+                                <button
+                                    className={`pos-no-cust-new-btn${showNewCust ? ' active' : ''}`}
+                                    onClick={() => { setShowNewCust(v => !v); setCustSearch(''); setCustResults([]) }}
+                                >
+                                    <Plus size={13} /> Yangi mijoz
+                                </button>
+                            </div>
+
+                            {showNewCust ? (
+                                <div className="pos-no-cust-form">
+                                    <input className="pos-input" placeholder="Ism familiya *" autoFocus
+                                           value={newCustName} onChange={e => setNewCustName(e.target.value)}
+                                           onKeyDown={e => e.key === 'Enter' && createAndLinkCustomer()} />
+                                    <input className="pos-input" placeholder="Telefon *" type="tel"
+                                           value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)}
+                                           onKeyDown={e => e.key === 'Enter' && createAndLinkCustomer()} />
+                                    <div className="pos-no-cust-form-actions">
+                                        <button className="pos-btn-s pos-btn-s--sm" onClick={() => setShowNewCust(false)}>Bekor</button>
+                                        <button className="pos-btn-p pos-btn-p--sm" onClick={createAndLinkCustomer} disabled={newCustSaving}>
+                                            {newCustSaving ? 'Saqlanmoqda...' : 'Saqlash va biriktirish'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="pos-no-cust-search">
+                                        <User size={14} className="pos-no-cust-icon" />
+                                        <input
+                                            className="pos-input pos-no-cust-input"
+                                            placeholder="Ism yoki telefon (min 3 harf)..."
+                                            value={custSearch}
+                                            onChange={e => setCustSearch(e.target.value)}
+                                        />
+                                        {custSearch && (
+                                            <button className="pos-ss-clear" onClick={() => { setCustSearch(''); setCustResults([]) }}>
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {custSearching && <div className="pos-no-cust-hint">Qidirilmoqda...</div>}
+                                    {!custSearching && custSearch.length >= 3 && custResults.length === 0 && (
+                                        <div className="pos-no-cust-hint">Topilmadi — yuqoridagi "Yangi mijoz" tugmasini bosing</div>
+                                    )}
+                                    {custResults.length > 0 && (
+                                        <div className="pos-no-cust-list">
+                                            {custResults.map(c => (
+                                                <button key={c.id} className="pos-no-cust-item"
+                                                        disabled={custLinking} onClick={() => linkCustomer(c)}>
+                                                    <span className="pos-no-cust-name">{c.name || c.fullName}</span>
+                                                    <span className="pos-no-cust-phone">{c.phone}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     )}
-                    {limitWarning?.strict && (
+                    {!noCustomerDebt && debtInfo && debtInfo.hasLimit && !limitWarning && (
+                        <div className="pos-debt-info-card">
+                            <span>Mavjud qarz: <b>{fmt(debtInfo.currentDebt)} so'm</b></span>
+                            <span>Qolgan limit: <b>{fmt(Math.max(0, debtInfo.remaining))} so'm</b></span>
+                        </div>
+                    )}
+                    {!noCustomerDebt && limitWarning && !limitWarning.strict && (
+                        <div className="pos-limit-warn">
+                            ⚠ Qarz limiti oshib ketmoqda!
+                            <div className="pos-limit-warn-rows">
+                                <span>Limit: <b>{fmt(limitWarning.debtLimit)} so'm</b></span>
+                                <span>Mavjud qarz: <b>{fmt(limitWarning.currentDebt)} so'm</b></span>
+                                <span>Berish mumkin: <b>{fmt(Math.max(0, limitWarning.remaining))} so'm</b></span>
+                            </div>
+                        </div>
+                    )}
+                    {!noCustomerDebt && limitWarning?.strict && (
                         <div className="pos-limit-block">
                             🚫 Bu mijozning qarz limiti to'ldi ({fmt(limitWarning.debtLimit)} UZS). Nasiya berib bo'lmaydi!
                         </div>
@@ -280,8 +405,8 @@ function PaymentModal({ sale, onClose, onCompleted }) {
                 <div className="pos-mf">
                     <button className="pos-btn-s" onClick={onClose}>Bekor</button>
                     <button onClick={handle}
-                            disabled={loading || totalPaid === 0 || (limitWarning?.strict && debtAmount > 0)}
-                            className={`pos-btn-p${limitWarning?.strict && debtAmount > 0 ? ' pos-btn-p--disabled' : ''}`}>
+                            disabled={loading || totalPaid === 0 || noCustomerDebt || (limitWarning?.strict && debtAmount > 0)}
+                            className={`pos-btn-p${(noCustomerDebt || (limitWarning?.strict && debtAmount > 0)) ? ' pos-btn-p--disabled' : ''}`}>
                         {loading ? 'Saqlanmoqda...' : '✓ Tasdiqlash'}
                     </button>
                 </div>
@@ -348,6 +473,14 @@ function ReceiptModal({ sale, onClose }) {
         })
         if (sale.changeAmount > 0) row("Qaytim:", fmt(sale.changeAmount) + " so'm")
 
+        if (sale.debtAmount > 0) {
+            divider('=')
+            const dp = (sale.payments || []).find(p => p.paymentMethod === 'DEBT')
+            line('*** NASIYA ***', 10, true, 'center')
+            row('Nasiya miqdori:', fmt(sale.debtAmount) + " so'm")
+            if (dp?.dueDate) row('Muddat:', new Date(dp.dueDate + 'T00:00:00').toLocaleDateString('ru-RU'))
+        }
+
         divider('='); y += 2
         line('Rahmat! Yana keling :)', 9, false, 'center')
         doc.save('chek-' + sale.referenceNo + '.pdf')
@@ -360,34 +493,92 @@ function ReceiptModal({ sale, onClose }) {
                 </div>
                 <div className="pos-mb">
                     <div className="receipt">
-                        <div className="receipt-title">BUILDPOS — SOTUV CHEKI</div>
-                        <div className="receipt-div" />
+                        {/* ── Header ── */}
+                        <div className="receipt-store">BUILDPOS</div>
+                        <div className="receipt-subtitle">SOTUV CHEKI</div>
+                        <div className="receipt-div receipt-div--double" />
+
+                        {/* ── Meta ── */}
                         <div className="receipt-meta">
-                            <div>Chek: <b>{sale.referenceNo}</b></div>
-                            <div>Sana: {new Date(sale.completedAt||sale.createdAt).toLocaleString('ru-RU')}</div>
-                            <div>Kassir: {sale.cashierName||sale.sellerName||'—'}</div>
-                            {sale.customerName && <div>Mijoz: {sale.customerName}</div>}
+                            <div><span>Chek</span><b>{sale.referenceNo}</b></div>
+                            <div><span>Sana</span><span>{new Date(sale.completedAt||sale.createdAt).toLocaleString('ru-RU')}</span></div>
+                            <div><span>Kassir</span><span>{sale.cashierName||sale.sellerName||'—'}</span></div>
+                            {sale.customerName && <div><span>Mijoz</span><b>{sale.customerName}</b></div>}
                         </div>
                         <div className="receipt-div" />
+
+                        {/* ── Tovarlar ── */}
+                        <div className="receipt-section-label">TOVARLAR</div>
                         {(sale.items||[]).map((item,i) => (
                             <div key={i} className="receipt-item">
-                                <div className="receipt-item-name">{item.productName} <span>({item.unitSymbol})</span></div>
+                                <div className="receipt-item-name">{item.productName} <span className="receipt-item-unit">({item.unitSymbol})</span></div>
                                 <div className="receipt-item-row">
                                     <span className="receipt-item-qty">{item.quantity} × {fmt(item.salePrice)}</span>
                                     <b>{fmt(item.totalPrice)} so'm</b>
                                 </div>
                             </div>
                         ))}
-                        <div className="receipt-div" />
-                        {sale.discountAmount > 0 && <div className="receipt-discount"><span>Chegirma</span><span>-{fmt(sale.discountAmount)} so'm</span></div>}
-                        <div className="receipt-total"><span>JAMI</span><span>{fmt(sale.totalAmount)} so'm</span></div>
-                        <div className="receipt-div" />
+
+                        {/* ── Chegirma ── */}
+                        {sale.discountAmount > 0 && (
+                            <>
+                                <div className="receipt-div" />
+                                <div className="receipt-discount"><span>Chegirma</span><span>−{fmt(sale.discountAmount)} so'm</span></div>
+                            </>
+                        )}
+
+                        {/* ── JAMI ── */}
+                        <div className="receipt-div receipt-div--double" />
+                        <div className="receipt-total">
+                            <span>JAMI</span>
+                            <span>{fmt(sale.totalAmount)} so'm</span>
+                        </div>
+                        <div className="receipt-div receipt-div--double" />
+
+                        {/* ── To'lov ── */}
+                        <div className="receipt-section-label">TO'LOV</div>
                         {(sale.payments||[]).map((p,i) => {
                             const pm = PAYMENT_METHODS.find(m => m.value === p.paymentMethod)
-                            return <div key={i} className="receipt-payment"><span style={{ color: pm?.color }}>{pm?.label}</span><b>{fmt(p.amount)} so'm</b></div>
+                            return (
+                                <div key={i} className="receipt-payment">
+                                    <span style={{ color: pm?.color }}>{pm?.label}</span>
+                                    <b>{fmt(p.amount)} so'm</b>
+                                </div>
+                            )
                         })}
-                        {sale.changeAmount > 0 && <div className="receipt-change"><span>Qaytim</span><span>{fmt(sale.changeAmount)} so'm</span></div>}
-                        <div className="receipt-div" />
+                        {sale.changeAmount > 0 && (
+                            <div className="receipt-change"><span>Qaytim</span><span>{fmt(sale.changeAmount)} so'm</span></div>
+                        )}
+
+                        {/* ── Nasiya bloki ── */}
+                        {sale.debtAmount > 0 && (() => {
+                            const dp = (sale.payments || []).find(p => p.paymentMethod === 'DEBT')
+                            return (
+                                <>
+                                    <div className="receipt-div" />
+                                    <div className="receipt-debt-block">
+                                        <div className="receipt-debt-title">⚠ NASIYA YOZUVI</div>
+                                        {sale.customerName && (
+                                            <div className="receipt-debt-row">
+                                                <span>Mijoz</span><b>{sale.customerName}</b>
+                                            </div>
+                                        )}
+                                        <div className="receipt-debt-row">
+                                            <span>Summa</span><b>{fmt(sale.debtAmount)} so'm</b>
+                                        </div>
+                                        {dp?.dueDate && (
+                                            <div className="receipt-debt-row">
+                                                <span>To'lov muddati</span>
+                                                <b>{new Date(dp.dueDate + 'T00:00:00').toLocaleDateString('ru-RU')}</b>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )
+                        })()}
+
+                        {/* ── Footer ── */}
+                        <div className="receipt-div receipt-div--double" />
                         <div className="receipt-thanks">Rahmat! Yana keling 😊</div>
                     </div>
                 </div>
@@ -494,7 +685,8 @@ function CreateModal({ type, onClose, onCreated }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }
 
@@ -527,6 +719,190 @@ function UnitModal({ data, onSelect, onClose }) {
     )
 }
 
+// ─── ApprovePendingModal olib tashlandi — pending orders to'g'ridan cart ga yuklanadi (openPending)
+function ApprovePendingModal({ sale, onClose, onApproved }) {
+    const total = Number(sale?.totalAmount || 0)
+    const [payments, setPayments] = useState([{ method: 'CASH', amount: String(total), dueDate: '', notes: '' }])
+    const [discountType, setDiscountType] = useState('PERCENT')
+    const [discountValue, setDiscountValue] = useState('')
+    const [customerId, setCustomerId] = useState(sale?.customerId ? String(sale.customerId) : '')
+    const [customerSearch, setCustomerSearch] = useState(sale?.customerName || '')
+    const [customers, setCustomers] = useState(sale?.customerId ? [{ id: sale.customerId, name: sale.customerName, phone: sale.customerPhone }] : [])
+    const [notes, setNotes] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
+    const customerTO = useRef()
+
+    const discountAmount = (() => {
+        if (!discountValue) return 0
+        const v = parseNum(discountValue)
+        return discountType === 'PERCENT' ? total * v / 100 : Math.min(v, total)
+    })()
+    const finalTotal = total - discountAmount
+
+    const totalPaid = payments.reduce((s, p) => s + parseNum(p.amount), 0)
+    const change = totalPaid - finalTotal
+
+    const upd = (i, k, v) => setPayments(p => p.map((item, idx) => idx === i ? { ...item, [k]: v } : item))
+
+    const searchCustomers = (q) => {
+        clearTimeout(customerTO.current)
+        if (q.length < 2) { setCustomers([]); return }
+        customerTO.current = setTimeout(async () => {
+            const r = await api.get('/api/v1/customers', { params: { search: q, size: 10 } })
+            setCustomers(r.data.content || r.data || [])
+        }, 300)
+    }
+
+    const handle = async () => {
+        if (totalPaid < finalTotal) return setError("To'lov yetarli emas")
+        setLoading(true); setError('')
+        try {
+            const payload = {
+                customerId: customerId ? Number(customerId) : null,
+                discountType: discountValue ? discountType : null,
+                discountValue: discountValue ? parseNum(discountValue) : null,
+                notes: notes || null,
+                payments: payments.map(p => ({
+                    paymentMethod: p.method,
+                    amount: parseNum(p.amount),
+                    dueDate: p.dueDate || null,
+                    notes: p.notes || null
+                }))
+            }
+            const r = await salesApi.approvePending(sale.id, payload)
+            onApproved(r.data)
+        } catch (e) {
+            setError(e.response?.data?.message || 'Xatolik')
+        } finally { setLoading(false) }
+    }
+
+    return ReactDOM.createPortal(
+        <div className="pos-overlay">
+            <div className="pos-modal pos-modal--lg">
+                <div className="pos-mh">
+                    Buyurtmani tasdiqlash — {sale.referenceNo}
+                    <button onClick={onClose} className="pos-modal-close"><X size={18} /></button>
+                </div>
+                <div className="pos-mb">
+                    {error && <div className="pos-alert">{error}</div>}
+
+                    {/* Mahsulotlar (read-only) */}
+                    <div className="pos-approve-items">
+                        {(sale.items || []).map(item => (
+                            <div key={item.id} className="pos-approve-item">
+                                <span className="pos-approve-item-name">{item.productName}</span>
+                                <span className="pos-approve-item-qty">{item.quantity} {item.unitSymbol}</span>
+                                <span className="pos-approve-item-price">{fmt(item.totalPrice)} so'm</span>
+                            </div>
+                        ))}
+                        <div className="pos-approve-subtotal">
+                            Jami (chegirmadan oldin): <b>{fmt(total)} so'm</b>
+                        </div>
+                    </div>
+
+                    {/* Mijoz */}
+                    <div className="pos-fg">
+                        <label className="pos-label">Mijoz (ixtiyoriy)</label>
+                        <div style={{ position: 'relative' }}>
+                            <input className="pos-input"
+                                placeholder="Qidirish..."
+                                value={customers.find(c => String(c.id) === customerId)
+                                    ? customers.find(c => String(c.id) === customerId).name
+                                    : customerSearch}
+                                readOnly={!!customerId}
+                                onChange={e => { setCustomerSearch(e.target.value); setCustomerId(''); searchCustomers(e.target.value) }}
+                            />
+                            {customerId && <button onClick={() => { setCustomerId(''); setCustomerSearch('') }}
+                                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <X size={14} />
+                            </button>}
+                            {!customerId && customerSearch.length >= 2 && customers.length > 0 && (
+                                <div className="pos-ss-dropdown">
+                                    {customers.map(c => (
+                                        <div key={c.id} className="pos-ss-item" onClick={() => { setCustomerId(String(c.id)); setCustomerSearch('') }}>
+                                            <div className="pos-ss-item-name">{c.name}</div>
+                                            {c.phone && <div className="pos-ss-item-sub">{c.phone}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Chegirma */}
+                    <div className="pos-fg">
+                        <label className="pos-label">Chegirma (ixtiyoriy)</label>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <select className="pos-select" style={{ width: 120 }} value={discountType} onChange={e => setDiscountType(e.target.value)}>
+                                <option value="PERCENT">%</option>
+                                <option value="AMOUNT">so'm</option>
+                            </select>
+                            <input className="pos-input" type="text" inputMode="numeric" placeholder="0"
+                                value={fmtPrice(discountValue)} onChange={e => setDiscountValue(e.target.value.replace(/\D/g, ''))} />
+                        </div>
+                        {discountAmount > 0 && <div style={{ color: '#22c55e', fontSize: 13, marginTop: 4 }}>
+                            −{fmt(discountAmount)} so'm → Jami: {fmt(finalTotal)} so'm
+                        </div>}
+                    </div>
+
+                    {/* To'lov */}
+                    <div className="pos-fg">
+                        <label className="pos-label">To'lov usuli</label>
+                        {payments.map((p, i) => (
+                            <div key={i} className="pos-pay-row">
+                                <select className="pos-select pos-pay-method"
+                                    value={p.method}
+                                    onChange={e => upd(i, 'method', e.target.value)}>
+                                    {PAYMENT_METHODS.map(m => (
+                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                    ))}
+                                </select>
+                                <input className="pos-input pos-pay-amount"
+                                    type="text" inputMode="numeric"
+                                    value={fmtPrice(p.amount)}
+                                    onChange={e => upd(i, 'amount', e.target.value.replace(/\D/g, ''))} />
+                                {p.method === 'DEBT' && (
+                                    <input className="pos-input" type="date"
+                                        value={p.dueDate} onChange={e => upd(i, 'dueDate', e.target.value)} />
+                                )}
+                                {payments.length > 1 && (
+                                    <button className="pos-pay-remove" onClick={() => setPayments(p => p.filter((_, idx) => idx !== i))}>
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button className="pos-pay-add" onClick={() => setPayments(p => [...p, { method: 'CASH', amount: '', dueDate: '', notes: '' }])}>
+                            + To'lov qo'shish
+                        </button>
+                    </div>
+
+                    {/* Qaytim */}
+                    {change > 0 && (
+                        <div className="pos-change-row">
+                            Qaytim: <b style={{ color: '#22c55e' }}>{fmt(change)} so'm</b>
+                        </div>
+                    )}
+
+                    {/* Izoh */}
+                    <div className="pos-fg">
+                        <label className="pos-label">Izoh (ixtiyoriy)</label>
+                        <textarea className="pos-input" rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
+                    </div>
+                </div>
+                <div className="pos-mf">
+                    <button className="pos-btn-s" onClick={onClose}>Bekor</button>
+                    <button className="pos-btn-p" onClick={handle} disabled={loading || totalPaid < finalTotal}>
+                        {loading ? 'Saqlanmoqda...' : `✓ Tasdiqlash — ${fmt(finalTotal)} so'm`}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    )
+}
+
 // ─── ASOSIY KOMPONENT ─────────────────────────
 export default function CashierPage() {
     const [shift, setShift] = useState(null)
@@ -540,16 +916,20 @@ export default function CashierPage() {
     const [searchResults, setSearchResults] = useState([])
     const [searching, setSearching] = useState(false)
     const [showDrop, setShowDrop] = useState(false)
+    const [dropIdx, setDropIdx] = useState(-1) // dropdown keyboard navigation
     const searchRef = useRef()
     const searchTO = useRef()
     const scannerBuffer = useRef('')      // barcode scanner bufer
     const scannerTimer = useRef(null)     // scanner timeout
 
     const { user } = useAuth()
+    const navigate = useNavigate()
     const isAdmin = ['ADMIN', 'OWNER', 'ROLE_ADMIN', 'ROLE_OWNER'].includes(user?.role)
     const [priceInfoId, setPriceInfoId] = React.useState(null)
     const [holdSales, setHoldSales] = React.useState([])
     const [showHoldList, setShowHoldList] = React.useState(false)
+    const [holdTab, setHoldTab] = React.useState('hold')  // 'hold' | 'pending'
+    const [myPendingOrders, setMyPendingOrders] = React.useState([])
     const [confirmCancel, setConfirmCancel] = React.useState(null)  // { id, referenceNo }
     const [warehouseModal, setWarehouseModal] = React.useState(null)  // { items: [{productUnitId, warehouses}] }
     const [warehouseSelections, setWarehouseSelections] = React.useState({})  // { productUnitId: warehouseId }
@@ -606,10 +986,15 @@ export default function CashierPage() {
         setTimeout(() => setToast(null), 3000)
     }
 
+    // Pending orders (ega uchun)
+    const [pendingOrders, setPendingOrders] = useState([])
+    const [showPendingPanel, setShowPendingPanel] = useState(false)
+
     // Modals
     const [unitModal, setUnitModal] = useState(null)
     const [createModal, setCreateModal] = useState(null) // 'customer' | 'partner'
     const [currentSale, setCurrentSale] = useState(null)
+    const currentSaleRef = useRef(null) // stale closure dan himoya
     const [lastSale, setLastSale] = useState(null)
     const [showPayment, setShowPayment] = useState(false)
     const [completedSale, setCompletedSale] = useState(null)
@@ -640,10 +1025,17 @@ export default function CashierPage() {
     useEffect(() => {
         loadShift()
         loadHoldSales()
+        loadMyPending()
+        if (isAdmin) loadPendingOrders()
         api.get('/api/v1/warehouses?size=100&active=true').then(r => setWarehouses(r.data.content || r.data || []))
-        // customers lazy yuklanadi — qidiruv orqali
-        // partners lazy yuklanadi — qidiruv orqali
     }, [])
+
+    // Polling: har 20 soniyada PENDING statusni tekshirish
+    useEffect(() => {
+        if (isAdmin) return  // admin o'z paneliga ega
+        const interval = setInterval(() => loadMyPending(true), 20000)
+        return () => clearInterval(interval)
+    }, [isAdmin])
 
     const loadShift = async () => {
         setShiftLoading(true)
@@ -775,7 +1167,7 @@ export default function CashierPage() {
             const hasModal = showPayment || completedSale || confirmCancel || warehouseModal
 
             if (e.key === 'Escape') {
-                setShowDrop(false); setSearch(''); searchRef.current?.blur()
+                setShowDrop(false); setSearch(''); setDropIdx(-1); searchRef.current?.blur()
                 return
             }
 
@@ -827,7 +1219,7 @@ export default function CashierPage() {
     // ── Qidiruv ─────────────────────
     useEffect(() => {
         clearTimeout(searchTO.current)
-        if (!search.trim()) { setSearchResults([]); setShowDrop(false); return }
+        if (!search.trim()) { setSearchResults([]); setShowDrop(false); setDropIdx(-1); return }
         searchTO.current = setTimeout(async () => {
             setSearching(true)
             try {
@@ -840,9 +1232,16 @@ export default function CashierPage() {
         }, 250)
     }, [search])
 
+    // ── Dropdown keyboard highlight → scroll into view ──
+    useEffect(() => {
+        if (dropIdx < 0) return
+        const el = document.querySelector('.pos-search-item--active')
+        el?.scrollIntoView({ block: 'nearest' })
+    }, [dropIdx])
+
     // ── Mahsulot tanlash ────────────
     const selectProduct = async (product) => {
-        setSearch(''); setShowDrop(false)
+        setSearch(''); setShowDrop(false); setDropIdx(-1)
         try {
             const r = await api.get(`/api/v1/products/${product.id}`)
             const full = r.data
@@ -876,19 +1275,24 @@ export default function CashierPage() {
         setUnitModal(null)
     }
 
-    const updateQty = (id, delta) => setCart(prev => {
-        const updated = prev.map(c => {
+    const updateQty = (id, delta) => {
+        const updated = cart.map(c => {
             if (c.productUnitId !== id) return c
-            const newQty = Math.round((c.quantity + delta) * 1000) / 1000  // float tozalash
-            if (newQty <= 0) return { ...c, quantity: 0 }  // o'chirish uchun belgi
+            const newQty = Math.round((c.quantity + delta) * 1000) / 1000
+            if (newQty <= 0) return { ...c, quantity: 0 }
             if (delta > 0 && c.availableStock != null && newQty > c.availableStock) {
                 showToast(`Omborda faqat ${c.availableStock} ${c.unitSymbol} bor`, 'error')
                 return c
             }
             return { ...c, quantity: newQty }
-        })
-        return updated.filter(c => c.quantity > 0)  // 0 bo'lganlarni o'chirish
-    })
+        }).filter(c => c.quantity > 0)
+
+        if (updated.length === 0) {
+            clearCart()  // oxirgi mahsulot 0 ga tushdi — DRAFTni ham bekor qilamiz
+        } else {
+            setCart(updated)
+        }
+    }
     const updatePrice = (id, val) => {
         // onChange: faqat saqlaymiz, tekshirmaymiz
         const price = parseNum(val)
@@ -906,7 +1310,14 @@ export default function CashierPage() {
             return { ...c, editPrice: false }
         }))
     }
-    const removeItem = (id) => setCart(prev => prev.filter(c => c.productUnitId !== id))
+    const removeItem = (id) => {
+        const next = cart.filter(c => c.productUnitId !== id)
+        if (next.length === 0) {
+            clearCart()  // oxirgi mahsulot o'chirildi — DRAFTni ham bekor qilamiz
+        } else {
+            setCart(next)
+        }
+    }
 
     // ── Hisob ───────────────────────
     const subtotal = cart.reduce((s, c) => s + Math.round(Number(c.salePrice) * c.quantity), 0)
@@ -923,6 +1334,11 @@ export default function CashierPage() {
     const handlePay = async () => {
         if (!cart.length) return showToast('Savat bo\'sh', 'error')
         if (!shift) return showToast('Avval smena oching', 'error')
+        // Agar DRAFT allaqachon mavjud bo'lsa — yangisini yaratmasdan to'lov modalini ochamiz
+        if (currentSale?.id) {
+            setShowPayment(true)
+            return
+        }
         setSaving(true)
         try {
             // Har bir tovar uchun ombor tekshiramiz
@@ -966,6 +1382,7 @@ export default function CashierPage() {
                 payments: []
             })
             setCurrentSale(r.data)
+            currentSaleRef.current = r.data
             setShowPayment(true)
         } catch (e) {
             showToast(e.response?.data?.message || 'Xatolik', 'error')
@@ -990,6 +1407,14 @@ export default function CashierPage() {
         setSaving(false)
     }
 
+    // ── Pending orders ───────────────
+    const loadPendingOrders = async () => {
+        try {
+            const r = await salesApi.getPending({ size: 50 })
+            setPendingOrders(r.data.content || [])
+        } catch { /* ruxsat yo'q bo'lsa — jim */ }
+    }
+
     // ── Hold ────────────────────────
     const loadHoldSales = async () => {
         try {
@@ -998,6 +1423,30 @@ export default function CashierPage() {
         } catch (e) {
             console.error('Hold load error:', e.response?.status, e.response?.data)
         }
+    }
+
+    const loadMyPending = async (silent = false) => {
+        try {
+            const r = await salesApi.getMyPending({ size: 50 })
+            const newOrders = r.data.content || []
+            if (silent) {
+                // Polling: status o'zgarganlarni aniqlash
+                setMyPendingOrders(prev => {
+                    const prevIds = new Set(prev.map(o => o.id))
+                    const newIds = new Set(newOrders.map(o => o.id))
+                    prev.forEach(o => {
+                        if (!newIds.has(o.id)) {
+                            // Bu buyurtma PENDING dan chiqdi — tasdiqlandi yoki rad etildi
+                            // Notes da "Rad etildi" bor bo'lsa — rejected
+                            showToast(`📋 #${o.referenceNo} — admin ko'rib chiqdi`, 'info')
+                        }
+                    })
+                    return newOrders
+                })
+            } else {
+                setMyPendingOrders(newOrders)
+            }
+        } catch { /* ruxsat yo'q bo'lsa — jim */ }
     }
 
     const resumeHold = async (sale) => {
@@ -1022,10 +1471,57 @@ export default function CashierPage() {
             })))
             if (s.customerId) { setCustomerId(String(s.customerId)); setCustomerSearch(s.customerName || '') }
             setCurrentSale(s)
+            currentSaleRef.current = s
             setShowHoldList(false)
             await loadHoldSales()
             showToast('Savatcha qaytarildi')
         } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
+    }
+
+    const openPending = async (order) => {
+        try {
+            await salesApi.takePending(order.id)
+            clearCart()
+            const r = await api.get(`/api/v1/sales/${order.id}`)
+            const s = r.data
+            setCart((s.items || []).map(item => ({
+                productUnitId: item.productUnitId,
+                productName: item.productName,
+                unitSymbol: item.unitSymbol,
+                barcode: item.barcode || '',
+                artikul: item.artikul || '',
+                image: item.imageUrl || null,
+                salePrice: Math.round(Number(item.salePrice || 0)),
+                originalPrice: Math.round(Number(item.salePrice || 0)),
+                minPrice: Math.round(Number(item.minPrice || 0)),
+                costPrice: Math.round(Number(item.costPrice || 0)),
+                availableStock: item.availableStock ?? null,
+                quantity: Number(item.quantity),
+            })))
+            if (s.customerId) { setCustomerId(String(s.customerId)); setCustomerSearch(s.customerName || '') }
+            setCurrentSale(s)
+            currentSaleRef.current = s
+            setShowPendingPanel(false)
+            loadPendingOrders()
+            showToast(`📋 #${s.referenceNo} savatchaga olindi`)
+        } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
+    }
+
+    const handleSubmitPending = async () => {
+        if (!cart.length || !shift) return
+        setSaving(true)
+        try {
+            const r = await salesApi.createDraft({
+                warehouseId: shift.warehouseId,
+                customerId: customerId ? Number(customerId) : null,
+                items: cart.map(c => ({ productUnitId: c.productUnitId, warehouseId: shift.warehouseId, quantity: c.quantity, salePrice: c.salePrice })),
+                payments: []
+            })
+            await api.patch(`/api/v1/sales/${r.data.id}/submit`)
+            clearCart()
+            showToast('Buyurtma adminga yuborildi', 'success')
+        } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
+        finally { setSaving(false) }
     }
 
     const handleHold = async () => {
@@ -1049,8 +1545,9 @@ export default function CashierPage() {
     const cancelOpenSale = async (saleId) => {
         try {
             await api.patch(`/api/v1/sales/${saleId}/cancel`)
-            if (currentSale?.id === saleId) {
+            if (currentSaleRef.current?.id === saleId) {
                 setCurrentSale(null)
+                currentSaleRef.current = null
                 clearCart(false)  // resetSale=false — cancel allaqachon yuborildi
             }
             setConfirmCancel(null)
@@ -1076,8 +1573,12 @@ export default function CashierPage() {
 
     const clearCart = (resetSale = true) => {
         // Agar DRAFT savatcha mavjud bo'lsa — backend da ham bekor qilish kerak
-        if (resetSale && currentSale?.id) {
-            api.patch(`/api/v1/sales/${currentSale.id}/cancel`).catch(console.error)
+        if (resetSale && currentSaleRef.current?.id) {
+            const saleId = currentSaleRef.current.id
+            currentSaleRef.current = null
+            api.patch(`/api/v1/sales/${saleId}/cancel`)
+                .then(() => loadHoldSales())
+                .catch(e => { console.error(e); showToast('Savatcha bekor qilishda xatolik', 'error') })
         }
         setCart([]); setCustomerId(''); setCustomerSearch('')
         localStorage.removeItem('pos_cart'); localStorage.removeItem('pos_ref')
@@ -1174,6 +1675,9 @@ export default function CashierPage() {
 
                 {/* ── Topbar ── */}
                 <div className="pos-topbar">
+                    <button className="pos-back-btn" onClick={() => navigate('/')} title="Bosh sahifa">
+                        <Home size={18} />
+                    </button>
                     <div className="pos-search-wrap">
                         <Search size={16} className="pos-search-icon" />
                         <input ref={searchRef} className="pos-search"
@@ -1183,8 +1687,24 @@ export default function CashierPage() {
                                onFocus={() => search && setShowDrop(true)}
                                onBlur={() => setTimeout(() => setShowDrop(false), 150)}
                                onKeyDown={e => {
-                                   if (e.key === 'Enter' && search.trim()) {
+                                   if (e.key === 'ArrowDown' && showDrop && searchResults.length > 0) {
                                        e.preventDefault()
+                                       setDropIdx(i => Math.min(i + 1, searchResults.length - 1))
+                                       return
+                                   }
+                                   if (e.key === 'ArrowUp' && showDrop && searchResults.length > 0) {
+                                       e.preventDefault()
+                                       setDropIdx(i => Math.max(i - 1, -1))
+                                       return
+                                   }
+                                   if (e.key === 'Enter') {
+                                       e.preventDefault()
+                                       // Dropdown da highlight bo'lgan element bo'lsa — uni tanla
+                                       if (showDrop && dropIdx >= 0 && searchResults[dropIdx]) {
+                                           selectProduct(searchResults[dropIdx])
+                                           return
+                                       }
+                                       if (!search.trim()) return
                                        const q = search.trim()
                                        // Agar bitta natija bo'lsa — darhol tanlash
                                        if (searchResults.length === 1) {
@@ -1237,7 +1757,7 @@ export default function CashierPage() {
                                 <span className="pos-search-hint">Scan yoki yoz</span>
                             </div>
                         )}
-                        {search && <button onClick={() => { setSearch(''); setShowDrop(false) }}
+                        {search && <button onClick={() => { setSearch(''); setShowDrop(false); setDropIdx(-1) }}
                                            className="pos-search-clear">
                             <X size={14} /></button>}
 
@@ -1248,8 +1768,8 @@ export default function CashierPage() {
                                     ? <div className="pos-ss-hint">Qidirilmoqda...</div>
                                     : searchResults.length === 0
                                         ? <div className="pos-ss-hint">Topilmadi</div>
-                                        : searchResults.map(p => (
-                                            <div key={p.id} className="pos-search-item" onMouseDown={() => selectProduct(p)}>
+                                        : searchResults.map((p, idx) => (
+                                            <div key={p.id} className={`pos-search-item${dropIdx === idx ? ' pos-search-item--active' : ''}`} onMouseDown={() => selectProduct(p)}>
                                                 <div className="pos-search-img">
                                                     {p.imageUrl
                                                         ? <img src={p.imageUrl} alt="" className="pos-search-item-img" />
@@ -1275,7 +1795,24 @@ export default function CashierPage() {
                         </div>
                     )}
 
-                    {shift && <button className="pos-tbtn pos-tbtn-danger" onClick={() => setShowCloseShift(true)}>Smena yopish</button>}
+                    <button className="pos-tbtn pos-hold-open-btn" onClick={() => { if (!showHoldList) loadHoldSales(); setShowHoldList(v => !v) }}>
+                        <Clock size={15} />
+                        {holdSales.length > 0 && <span className="pos-pending-badge">{holdSales.length}</span>}
+                    </button>
+
+                    {isAdmin && (
+                        <button className="pos-tbtn pos-pending-btn" onClick={() => { setShowPendingPanel(true); loadPendingOrders() }}>
+                            <Bell size={15} />
+                            {pendingOrders.length > 0 && <span className="pos-pending-badge">{pendingOrders.length}</span>}
+                        </button>
+                    )}
+
+                    {shift && (
+                        <button className="pos-tbtn pos-tbtn-danger" onClick={() => setShowCloseShift(true)}>
+                            <ShiftClose size={15} />
+                            <span className="pos-tbtn-text">Smena yopish</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* ── Main ── */}
@@ -1434,37 +1971,79 @@ export default function CashierPage() {
                     <div className={`pos-hold-drawer${showHoldList ? ' open' : ''}`}>
                         <div className="pos-hold-drawer-inner">
                             <div className="pos-hold-drawer-header">
-                                <span className="pos-hold-drawer-title">Ochiq savatchalar</span>
+                                <span className="pos-hold-drawer-title">Savatchalar</span>
                                 <button className="pos-hold-drawer-close" onClick={() => setShowHoldList(false)}>
                                     <X size={16} />
                                 </button>
                             </div>
+
+                            {/* Tabs */}
+                            <div className="pos-hold-tabs">
+                                <button className={`pos-hold-tab${holdTab === 'hold' ? ' active' : ''}`}
+                                        onClick={() => setHoldTab('hold')}>
+                                    Kechiktirilgan
+                                    {holdSales.length > 0 && <span className="pos-hold-tab-badge">{holdSales.length}</span>}
+                                </button>
+                                <button className={`pos-hold-tab${holdTab === 'pending' ? ' active' : ''}`}
+                                        onClick={() => { setHoldTab('pending'); loadMyPending() }}>
+                                    Yuborilgan
+                                    {myPendingOrders.length > 0 && <span className="pos-hold-tab-badge pending">{myPendingOrders.length}</span>}
+                                </button>
+                            </div>
+
                             <div className="pos-hold-drawer-body">
-                                {holdSales.length === 0 ? (
-                                    <div className="pos-hold-drawer-empty">Kechiktirilgan savat yo'q</div>
-                                ) : holdSales.map(s => (
-                                    <div key={s.id} className="pos-hold-item" onClick={() => resumeHold(s)}>
-                                        <div className="pos-hold-item-info">
-                                            <div className="pos-hold-item-ref-row">
-                                                <span className="pos-hold-item-ref">#{s.referenceNo}</span>
-                                                <span className={`pos-hold-status-badge ${s.status === 'HOLD' ? 'hold' : 'draft'}`}>
-                                                    {s.status === 'HOLD' ? 'Kechiktirilgan' : 'Aktiv'}
-                                                </span>
+                                {holdTab === 'hold' ? (
+                                    holdSales.length === 0 ? (
+                                        <div className="pos-hold-drawer-empty">Kechiktirilgan savat yo'q</div>
+                                    ) : holdSales.map(s => (
+                                        <div key={s.id} className="pos-hold-item" onClick={() => resumeHold(s)}>
+                                            <div className="pos-hold-item-info">
+                                                <div className="pos-hold-item-ref-row">
+                                                    <span className="pos-hold-item-ref">#{s.referenceNo}</span>
+                                                    <span className={`pos-hold-status-badge ${s.status === 'HOLD' ? 'hold' : 'draft'}`}>
+                                                        {s.status === 'HOLD' ? 'Kechiktirilgan' : 'Aktiv'}
+                                                    </span>
+                                                </div>
+                                                <div className="pos-hold-item-seller">{s.sellerName}</div>
+                                                <div className="pos-hold-item-meta">
+                                                    {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
+                                                </div>
+                                                <div className="pos-hold-item-date">
+                                                    {new Date(s.createdAt).toLocaleString('ru-RU')}
+                                                </div>
                                             </div>
-                                            <div className="pos-hold-item-seller">{s.sellerName}</div>
-                                            <div className="pos-hold-item-meta">
-                                                {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
-                                            </div>
-                                            <div className="pos-hold-item-date">
-                                                {new Date(s.createdAt).toLocaleString('ru-RU')}
+                                            <div className="pos-hold-item-actions">
+                                                <span className="pos-hold-item-btn">Ochish</span>
+                                                <span className="pos-hold-item-cancel" onClick={e => { e.stopPropagation(); setConfirmCancel({ id: s.id, referenceNo: s.referenceNo }) }}>✕</span>
                                             </div>
                                         </div>
-                                        <div className="pos-hold-item-actions">
-                                            <span className="pos-hold-item-btn">Ochish</span>
-                                            <span className="pos-hold-item-cancel" onClick={e => { e.stopPropagation(); setConfirmCancel({ id: s.id, referenceNo: s.referenceNo }) }}>✕</span>
+                                    ))
+                                ) : (
+                                    myPendingOrders.length === 0 ? (
+                                        <div className="pos-hold-drawer-empty">Yuborilgan buyurtma yo'q</div>
+                                    ) : myPendingOrders.map(s => (
+                                        <div key={s.id} className="pos-hold-item pos-hold-item-pending">
+                                            <div className="pos-hold-item-info">
+                                                <div className="pos-hold-item-ref-row">
+                                                    <span className="pos-hold-item-ref">#{s.referenceNo}</span>
+                                                    <span className="pos-hold-status-badge pending">Admin kutmoqda</span>
+                                                </div>
+                                                <div className="pos-hold-item-meta">
+                                                    {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
+                                                </div>
+                                                {s.notes?.includes('Rad etildi') && (
+                                                    <div className="pos-hold-item-rejected">{s.notes.split('\n').find(l => l.includes('Rad etildi'))}</div>
+                                                )}
+                                                <div className="pos-hold-item-date">
+                                                    {new Date(s.createdAt).toLocaleString('ru-RU')}
+                                                </div>
+                                            </div>
+                                            <div className="pos-hold-item-actions">
+                                                <span className="pos-hold-item-cancel" onClick={e => { e.stopPropagation(); setConfirmCancel({ id: s.id, referenceNo: s.referenceNo }) }}>✕</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1477,7 +2056,9 @@ export default function CashierPage() {
                             <div className="pos-fg">
                                 <div className="pos-sec-label">
                                     Mijoz
-                                    <span className="pos-sec-link" onClick={() => setCreateModal('customer')}>Yaratish</span>
+                                    <button className="pos-sec-create-btn" onClick={() => setCreateModal('customer')}>
+                                        <Plus size={11} /> Yangi
+                                    </button>
                                 </div>
                                 <SearchSelect
                                     placeholder="Mijozning ismi yoki raqami"
@@ -1497,7 +2078,9 @@ export default function CashierPage() {
                             <div className="pos-fg">
                                 <div className="pos-sec-label">
                                     Hamkor
-                                    <span className="pos-sec-link" onClick={() => setCreateModal('partner')}>Yaratish</span>
+                                    <button className="pos-sec-create-btn" onClick={() => setCreateModal('partner')}>
+                                        <Plus size={11} /> Yangi
+                                    </button>
                                 </div>
                                 <SearchSelect
                                     placeholder="Hamkor nomi yoki raqami"
@@ -1559,18 +2142,20 @@ export default function CashierPage() {
                             <button className="pos-pay-btn" onClick={handlePay} disabled={!cart.length || saving}>
                                 <div className="pos-pay-btn-inner">
                                     <span className="pos-pay-btn-label">TO'LASH</span>
-                                    <span className="pos-pay-btn-kbd">Ctrl+P</span>
                                 </div>
                                 <span className="pos-pay-btn-sum">{fmt(totalAmount)} UZS</span>
                             </button>
-                            <div className="pos-hold-row">
-                                <button className="pos-hold-btn pos-hold-btn-flex" onClick={handleHold} disabled={!cart.length || saving}>
-                                    Kechiktirish <span className="pos-kbd">O</span>
+                            <div className="pos-secondary-row">
+                                <button className="pos-sec-btn" onClick={handleHold} disabled={!cart.length || saving}>
+                                    <PauseCircle size={15} />
+                                    Kechiktirish
                                 </button>
-                                <button className={`pos-hold-count-btn${holdSales.length > 0 ? ' has-items' : ''}`}
-                                        onClick={() => { loadHoldSales(); setShowHoldList(true) }}>
-                                    {holdSales.length}
-                                </button>
+                                {!isAdmin && (
+                                    <button className="pos-sec-btn pos-sec-btn-amber" onClick={handleSubmitPending} disabled={!cart.length || saving}>
+                                        <Bell size={15} />
+                                        Adminga yuborish
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1614,7 +2199,81 @@ export default function CashierPage() {
                     </button>
                 </div>
             </div>
-            {showPayment && currentSale?.id && <PaymentModal sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null }} onClose={() => setShowPayment(false)} onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); setLastSale(s); setCurrentSale(null); clearCart(false) }} />}
+            {/* ── Pending panel ── */}
+            {showPendingPanel && ReactDOM.createPortal(
+                <div className="pos-overlay" onClick={() => setShowPendingPanel(false)}>
+                    <div className="pos-modal pos-modal--lg" onClick={e => e.stopPropagation()}>
+                        <div className="pos-mh">
+                            <Bell size={16} /> Kutilayotgan buyurtmalar
+                            <button onClick={() => setShowPendingPanel(false)} className="pos-modal-close"><X size={18} /></button>
+                        </div>
+                        <div className="pos-mb">
+                            {pendingOrders.length === 0 ? (
+                                <div className="pos-ss-hint" style={{ padding: 32, textAlign: 'center' }}>
+                                    Hozircha kutilayotgan buyurtma yo'q
+                                </div>
+                            ) : pendingOrders.map(order => (
+                                <div key={order.id} className="pos-pending-row">
+                                    <div className="pos-pending-info">
+                                        <div className="pos-pending-ref">{order.referenceNo}</div>
+                                        <div className="pos-pending-seller">{order.sellerName} · {order.items?.length || 0} ta mahsulot</div>
+                                        {order.notes && <div className="pos-pending-note">💬 {order.notes}</div>}
+                                    </div>
+                                    <div className="pos-pending-amount">{fmt(order.totalAmount)} so'm</div>
+                                    <div className="pos-pending-actions">
+                                        <button className="pos-pending-approve"
+                                            onClick={() => openPending(order)}>
+                                            <CheckCircle size={16} /> Ochish
+                                        </button>
+                                        <button className="pos-pending-return"
+                                            title="Kassirga qaytarish"
+                                            onClick={async () => {
+                                                const reason = window.prompt(`#${order.referenceNo} — qaytarish sababi (ixtiyoriy):`)
+                                                if (reason === null) return
+                                                await salesApi.rejectPending(order.id, reason || undefined)
+                                                loadPendingOrders()
+                                                showToast('Buyurtma kassirga qaytarildi')
+                                            }}>
+                                            <CornerUpLeft size={15} />
+                                        </button>
+                                        <button className="pos-pending-reject"
+                                            title="Bekor qilish"
+                                            onClick={async () => {
+                                                if (!window.confirm(`#${order.referenceNo} ni butunlay bekor qilasizmi?`)) return
+                                                await salesApi.cancel(order.id)
+                                                loadPendingOrders()
+                                                showToast('Buyurtma bekor qilindi')
+                                            }}>
+                                            <XCircle size={15} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="pos-mf">
+                            <button className="pos-btn-s" onClick={() => { loadPendingOrders() }}>
+                                <RefreshCw size={14} /> Yangilash
+                            </button>
+                            <button className="pos-btn-p" onClick={() => setShowPendingPanel(false)}>Yopish</button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ── Approve modal ── */}
+
+            {showPayment && currentSale?.id && <PaymentModal
+                sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null, customerName: customers.find(c => c.id === Number(customerId))?.name || currentSale.customerName }}
+                onClose={() => setShowPayment(false)}
+                onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); setLastSale(s); setCurrentSale(null); currentSaleRef.current = null; clearCart(false) }}
+                onCustomerSet={(updatedSale, customer) => {
+                    setCurrentSale(updatedSale)
+                    currentSaleRef.current = updatedSale
+                    setCustomers(prev => prev.find(c => c.id === customer.id) ? prev : [customer, ...prev])
+                    setCustomerId(String(customer.id))
+                }}
+            />}
             {completedSale && <ReceiptModal sale={completedSale} onClose={() => setCompletedSale(null)} />}
         </>
     )

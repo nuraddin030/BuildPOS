@@ -503,7 +503,10 @@
 @media (max-width: 768px) {
     .topbar { padding: 0 16px; }
     .topbar-title { display: none; }
-    .page-content { padding: 16px; }
+    .page-content {
+        padding: 16px;
+        overflow-x: hidden; /* Sahifa gorizontal scroll bo'lmasin */
+    }
 
     .exchange-rate-widget .rate-value { display: none; }
 

@@ -509,6 +509,27 @@
     gap: 2px;
 }
 
+/* ── Header right — view toggle + export buttons ─────────────── */
+.nasiya-header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ── Aging buckets grid ────────────────────────────────────────── */
+.aging-buckets-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 1024px) {
+    .aging-buckets-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .debt-tree-header {
         flex-wrap: wrap;
@@ -520,8 +541,45 @@
         padding-left: 32px;
     }
 
+    /* Tab — to'liq kenglikka */
+    .nasiya-tabs {
+        width: 100%;
+    }
+
+    .nasiya-tab {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
     .view-toggle-group {
         width: 100%;
         justify-content: center;
+    }
+
+    .nasiya-header-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .nasiya-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Status filter tugmalari — wrap */
+    .nasiya-status-filters {
+        width: 100%;
+    }
+
+    .nasiya-status-filters .btn-outline {
+        flex: 1 1 calc(50% - 3px);
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .aging-buckets-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }

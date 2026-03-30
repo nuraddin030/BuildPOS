@@ -1614,7 +1614,7 @@ export default function DebtsPage() {
                     </div>
                 </div>
                 {/* View toggle */}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div className="nasiya-header-right">
                     <div className="view-toggle-group">
                         <button className={`view-toggle-btn${viewMode === 'tree' ? ' active' : ''}`}
                                 onClick={() => setViewMode('tree')} title="Daraxt ko'rinishi">
@@ -1907,7 +1907,7 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Bucket kartalar */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            <div className="aging-buckets-grid">
                 {buckets.map((b, idx) => {
                     const bucketKey = ['0-30', '31-60', '61-90', '90+'][idx]
                     const isActive = activeBucket === bucketKey

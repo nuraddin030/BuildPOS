@@ -16,6 +16,9 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
     // Kassirning ochiq smenasi
     Optional<Shift> findByCashierIdAndStatus(Long cashierId, ShiftStatus status);
 
+    // Istalgan ochiq smena (admin tomonidan ochilgan bo'lsa)
+    Optional<Shift> findFirstByStatus(ShiftStatus status);
+
     // O'z smenalari
     Page<Shift> findAllByCashierIdOrderByOpenedAtDesc(Long cashierId, Pageable pageable);
 

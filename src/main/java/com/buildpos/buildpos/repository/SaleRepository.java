@@ -5,6 +5,7 @@ import com.buildpos.buildpos.entity.enums.SaleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,6 +16,10 @@ import java.util.List;
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     boolean existsByReferenceNo(String referenceNo);
+
+    @Modifying
+    @Query("UPDATE Sale s SET s.status = :status WHERE s.id = :id")
+    void updateStatus(@Param("id") Long id, @Param("status") SaleStatus status);
 
     // Kassir barcha DRAFT savatchalarni ko'radi
     Page<Sale> findAllByStatusOrderByCreatedAtDesc(SaleStatus status, Pageable pageable);
@@ -82,6 +87,9 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             @Param("statuses") List<String> statuses,
             Pageable pageable);
 
+    // PENDING buyurtmalar — owner panel uchun
+    Page<Sale> findAllByStatusOrderBySubmittedAtDesc(SaleStatus status, Pageable pageable);
+
     // Smena bo'yicha sotuvlar
     List<Sale> findAllByShiftId(Long shiftId);
 
@@ -91,9 +99,9 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     @Query(value = """
     SELECT
-        COUNT(s.id)                      AS saleCount,
-        COALESCE(SUM(s.total_amount), 0) AS totalAmount,
-        COALESCE(SUM(s.discount_amount), 0) AS totalDiscount,
+        COUNT(CASE WHEN s.status = 'COMPLETED' THEN 1 END) AS saleCount,
+        COALESCE(SUM(CASE WHEN s.status = 'COMPLETED' THEN s.total_amount ELSE 0 END), 0) AS totalAmount,
+        COALESCE(SUM(CASE WHEN s.status = 'COMPLETED' THEN s.discount_amount ELSE 0 END), 0) AS totalDiscount,
         COUNT(CASE WHEN s.status = 'CANCELLED' THEN 1 END) AS cancelledCount,
         COUNT(CASE WHEN s.status = 'RETURNED'  THEN 1 END) AS returnedCount
     FROM sales s
@@ -119,6 +127,19 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             @Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfDay")   LocalDateTime endOfDay,
             @Param("method")     String method
+    );
+
+    @Query(value = """
+        SELECT COALESCE(SUM(si.sale_price * si.returned_quantity), 0)
+        FROM sale_items si
+        JOIN sales s ON s.id = si.sale_id
+        WHERE si.returned_quantity > 0
+          AND s.created_at >= :startOfDay
+          AND s.created_at <  :endOfDay
+    """, nativeQuery = true)
+    BigDecimal sumReturnedAmount(
+            @Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfDay")   LocalDateTime endOfDay
     );
 
     // ─────────────────────────────────────────────────────────────────
