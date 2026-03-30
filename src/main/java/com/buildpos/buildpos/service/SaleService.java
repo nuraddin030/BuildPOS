@@ -1,5 +1,6 @@
 package com.buildpos.buildpos.service;
 
+import com.buildpos.buildpos.dto.request.ApprovePendingRequest;
 import com.buildpos.buildpos.dto.request.ReturnRequest;
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
@@ -204,6 +205,8 @@ public class SaleService {
                     .paymentMethod(paymentReq.getPaymentMethod())
                     .amount(paymentReq.getAmount())
                     .notes(paymentReq.getNotes())
+                    .dueDate(paymentReq.getPaymentMethod() == PaymentMethod.DEBT
+                            ? paymentReq.getDueDate() : null)
                     .build();
             sale.getPayments().add(payment);
 
@@ -271,12 +274,203 @@ public class SaleService {
     }
 
     // ─────────────────────────────────────────
+    // MIJOZ BIRIKTIRISH
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse setCustomer(Long saleId, Long customerId) {
+        Sale sale = findById(saleId);
+        if (sale.getStatus() != SaleStatus.DRAFT && sale.getStatus() != SaleStatus.PENDING) {
+            throw new BadRequestException("Faqat DRAFT yoki PENDING savatchaga mijoz biriktirish mumkin");
+        }
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new NotFoundException("Mijoz topilmadi: " + customerId));
+        sale.setCustomer(customer);
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // TASDIQLASHGA YUBORISH (DRAFT → PENDING)
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse submitPending(Long id, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.DRAFT) {
+            throw new BadRequestException("Faqat DRAFT statusdagi savatchani yuborish mumkin");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + username));
+        boolean isAdminOrOwner = "ADMIN".equals(user.getRole().getName())
+                || "OWNER".equals(user.getRole().getName());
+        if (!isAdminOrOwner && !sale.getSeller().getId().equals(user.getId())) {
+            throw new BadRequestException("Faqat o'z savatchasini yuborish mumkin");
+        }
+        sale.setStatus(SaleStatus.PENDING);
+        sale.setSubmittedAt(LocalDateTime.now());
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // PENDING BUYURTMANI TASDIQLASH (PENDING → COMPLETED)
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse approvePending(Long id, ApprovePendingRequest request, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.PENDING) {
+            throw new BadRequestException("Faqat PENDING statusdagi buyurtmani tasdiqlash mumkin");
+        }
+
+        // Mijoz: ega o'zgartirsa yoki birinchi marta belgilasa
+        if (request.getCustomerId() != null) {
+            Customer customer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new NotFoundException("Mijoz topilmadi"));
+            sale.setCustomer(customer);
+        }
+
+        // Ega chegirma bersa — subtotal asosida qayta hisoblash
+        if (request.getDiscountType() != null && request.getDiscountValue() != null
+                && request.getDiscountValue().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discountAmount = calculateDiscount(
+                    sale.getSubtotal(), BigDecimal.ONE,
+                    request.getDiscountType(), request.getDiscountValue());
+            sale.setDiscountType(request.getDiscountType());
+            sale.setDiscountValue(request.getDiscountValue());
+            sale.setDiscountAmount(discountAmount);
+            sale.setTotalAmount(sale.getSubtotal().subtract(discountAmount));
+        }
+
+        if (request.getNotes() != null && !request.getNotes().isBlank()) {
+            sale.setNotes(request.getNotes());
+        }
+
+        // To'lov
+        boolean hasDebt = request.getPayments().stream()
+                .anyMatch(p -> p.getPaymentMethod() == PaymentMethod.DEBT);
+        if (hasDebt && sale.getCustomer() == null) {
+            throw new BadRequestException("Nasiya sotuvda mijoz ko'rsatilishi shart");
+        }
+
+        BigDecimal totalPaid = BigDecimal.ZERO;
+        BigDecimal debtAmount = BigDecimal.ZERO;
+        LocalDate debtDueDate = null;
+
+        for (SaleRequest.SalePaymentRequest paymentReq : request.getPayments()) {
+            SalePayment payment = SalePayment.builder()
+                    .sale(sale)
+                    .paymentMethod(paymentReq.getPaymentMethod())
+                    .amount(paymentReq.getAmount())
+                    .notes(paymentReq.getNotes())
+                    .dueDate(paymentReq.getPaymentMethod() == PaymentMethod.DEBT
+                            ? paymentReq.getDueDate() : null)
+                    .build();
+            sale.getPayments().add(payment);
+
+            if (paymentReq.getPaymentMethod() == PaymentMethod.DEBT) {
+                debtAmount = debtAmount.add(paymentReq.getAmount());
+                if (paymentReq.getDueDate() != null) debtDueDate = paymentReq.getDueDate();
+            } else {
+                totalPaid = totalPaid.add(paymentReq.getAmount());
+            }
+        }
+
+        BigDecimal allPaid = totalPaid.add(debtAmount);
+        if (allPaid.compareTo(sale.getTotalAmount()) < 0) {
+            throw new BadRequestException(
+                    "To'lov yetarli emas. Kerak: " + sale.getTotalAmount() + ", To'langan: " + allPaid);
+        }
+
+        BigDecimal changeAmount = allPaid.subtract(sale.getTotalAmount());
+        sale.setPaidAmount(totalPaid);
+        sale.setDebtAmount(debtAmount);
+        sale.setChangeAmount(changeAmount.compareTo(BigDecimal.ZERO) > 0 ? changeAmount : BigDecimal.ZERO);
+
+        User cashier = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Kassir topilmadi"));
+        sale.setCashier(cashier);
+
+        shiftRepository.findByCashierIdAndStatus(cashier.getId(), ShiftStatus.OPEN)
+                .ifPresent(sale::setShift);
+
+        // Stock DRAFT da allaqachon kamaytgan — faqat SALE_OUT movement
+        for (SaleItem item : sale.getItems()) {
+            stockMovementRepository.save(StockMovement.builder()
+                    .productUnit(item.getProductUnit())
+                    .movementType(StockMovementType.SALE_OUT)
+                    .fromWarehouse(item.getWarehouse())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getSalePrice())
+                    .totalPrice(item.getTotalPrice())
+                    .referenceType("SALE")
+                    .referenceId(sale.getId())
+                    .build());
+        }
+
+        if (debtAmount.compareTo(BigDecimal.ZERO) > 0) {
+            CustomerDebt debt = CustomerDebt.builder()
+                    .customer(sale.getCustomer())
+                    .sale(sale)
+                    .amount(debtAmount)
+                    .paidAmount(BigDecimal.ZERO)
+                    .isPaid(false)
+                    .dueDate(debtDueDate)
+                    .build();
+            customerDebtRepository.save(debt);
+        }
+
+        if (sale.getShift() != null) {
+            updateShiftReport(sale.getShift(), sale, request.getPayments());
+        }
+
+        sale.setStatus(SaleStatus.COMPLETED);
+        sale.setCompletedAt(LocalDateTime.now());
+
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // PENDING BUYURTMALAR RO'YXATI
+    // ─────────────────────────────────────────
+    public Page<SaleResponse> getPendingOrders(Pageable pageable) {
+        return saleRepository.findAllByStatusOrderBySubmittedAtDesc(SaleStatus.PENDING, pageable)
+                .map(this::toResponse);
+    }
+
+    // ─────────────────────────────────────────
+    // RAD ETISH (PENDING → HOLD)
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse rejectPending(Long id, String reason) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.PENDING) {
+            throw new BadRequestException("Faqat PENDING statusdagi buyurtmani rad etish mumkin");
+        }
+        sale.setStatus(SaleStatus.HOLD);
+        if (reason != null && !reason.isBlank()) {
+            String existing = sale.getNotes() != null ? sale.getNotes() + "\n" : "";
+            sale.setNotes(existing + "Rad etildi: " + reason);
+        }
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // O'Z PENDING BUYURTMALARI
+    // ─────────────────────────────────────────
+    public Page<SaleResponse> getMyPendingOrders(String username, Pageable pageable) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + username));
+        return saleRepository.findAllBySellerIdAndStatusOrderByCreatedAtDesc(
+                user.getId(), SaleStatus.PENDING, pageable)
+                .map(this::toResponse);
+    }
+
+    // ─────────────────────────────────────────
     // BEKOR QILISH
     // ─────────────────────────────────────────
     @Transactional
     public SaleResponse cancel(Long id) {
         Sale sale = findById(id);
-        if (sale.getStatus() != SaleStatus.DRAFT && sale.getStatus() != SaleStatus.HOLD) {
+        if (sale.getStatus() != SaleStatus.DRAFT
+                && sale.getStatus() != SaleStatus.HOLD
+                && sale.getStatus() != SaleStatus.PENDING) {
             throw new BadRequestException("Faqat ochiq savatchani bekor qilish mumkin");
         }
         returnStockForSale(sale, "CANCEL");
@@ -302,13 +496,20 @@ public class SaleService {
                     .orElseThrow(() -> new NotFoundException(
                             "Sotuv itemı topilmadi: " + returnItem.getSaleItemId()));
 
-            if (returnItem.getQuantity().compareTo(saleItem.getQuantity()) > 0) {
+            BigDecimal alreadyReturned = saleItem.getReturnedQuantity() != null
+                    ? saleItem.getReturnedQuantity() : BigDecimal.ZERO;
+            BigDecimal remaining = saleItem.getQuantity().subtract(alreadyReturned);
+
+            if (returnItem.getQuantity().compareTo(remaining) > 0) {
                 throw new BadRequestException(
                         saleItem.getProductUnit().getProduct().getName()
-                                + ": qaytarish miqdori sotilgan miqdordan oshib ketdi. "
-                                + "Sotilgan: " + saleItem.getQuantity()
+                                + ": qaytarish miqdori oshib ketdi. "
+                                + "Qaytarish mumkin: " + remaining
                                 + ", Qaytarilmoqchi: " + returnItem.getQuantity());
             }
+
+            // returnedQuantity yangilash — cascade orqali saqlanadi
+            saleItem.setReturnedQuantity(alreadyReturned.add(returnItem.getQuantity()));
 
             // Stock qaytarish
             WarehouseStock stock = warehouseStockRepository
@@ -335,13 +536,20 @@ public class SaleService {
                     .build());
         }
 
-        sale.setStatus(SaleStatus.RETURNED);
-        sale.setNotes(
-                (sale.getNotes() != null ? sale.getNotes() + " | " : "")
-                        + "Qaytarildi: " + (request.getReason() != null ? request.getReason() : "")
-        );
+        // Barcha itemlar to'liq qaytarilgandagina RETURNED status
+        boolean allReturned = sale.getItems().stream().allMatch(item -> {
+            BigDecimal returned = item.getReturnedQuantity() != null
+                    ? item.getReturnedQuantity() : BigDecimal.ZERO;
+            return returned.compareTo(item.getQuantity()) >= 0;
+        });
+        if (allReturned) {
+            // @Modifying query — cascade/orphanRemoval dan chetlab o'tib faqat status yangilanadi
+            saleRepository.updateStatus(sale.getId(), SaleStatus.RETURNED);
+        }
+        // items dirty-tracking orqali @Transactional commit da saqlanadi
 
-        return toResponse(saleRepository.save(sale));
+        return toResponse(saleRepository.findById(sale.getId())
+                .orElseThrow(() -> new NotFoundException("Sale topilmadi")));
     }
 
     // ─────────────────────────────────────────
@@ -361,10 +569,11 @@ public class SaleService {
         long cancelled      = row[3] != null ? ((Number) row[3]).longValue() : 0L;
         long returned       = row[4] != null ? ((Number) row[4]).longValue() : 0L;
 
-        BigDecimal cash     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CASH"));
-        BigDecimal card     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CARD"));
-        BigDecimal transfer = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "TRANSFER"));
-        BigDecimal debt     = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "DEBT"));
+        BigDecimal cash           = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CASH"));
+        BigDecimal card           = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "CARD"));
+        BigDecimal transfer       = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "TRANSFER"));
+        BigDecimal debt           = orZero(saleRepository.sumTodayByPaymentMethod(startOfDay, endOfDay, "DEBT"));
+        BigDecimal returnedAmount = orZero(saleRepository.sumReturnedAmount(startOfDay, endOfDay));
 
         return TodayStatsResponse.builder()
                 .saleCount(saleCount)
@@ -372,6 +581,7 @@ public class SaleService {
                 .totalDiscount(discount)
                 .cancelledCount(cancelled)
                 .returnedCount(returned)
+                .returnedAmount(returnedAmount)
                 .totalCash(cash)
                 .totalCard(card)
                 .totalTransfer(transfer)
@@ -388,6 +598,16 @@ public class SaleService {
             throw new BadRequestException("Faqat DRAFT statusdagi savatchani kechiktirish mumkin");
         }
         sale.setStatus(SaleStatus.HOLD);
+        return toResponse(saleRepository.save(sale));
+    }
+
+    @Transactional
+    public SaleResponse takePending(Long id, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.PENDING) {
+            throw new BadRequestException("Faqat PENDING statusdagi buyurtmani olish mumkin");
+        }
+        sale.setStatus(SaleStatus.DRAFT);
         return toResponse(saleRepository.save(sale));
     }
 
@@ -601,6 +821,7 @@ public class SaleService {
                 .debtAmount(sale.getDebtAmount())
                 .changeAmount(sale.getChangeAmount())
                 .notes(sale.getNotes())
+                .submittedAt(sale.getSubmittedAt())
                 .completedAt(sale.getCompletedAt())
                 .createdAt(sale.getCreatedAt())
                 .items(sale.getItems().stream().map(item -> {
@@ -625,6 +846,8 @@ public class SaleService {
                             .discountValue(item.getDiscountValue())
                             .discountAmount(item.getDiscountAmount())
                             .totalPrice(item.getTotalPrice())
+                            .returnedQuantity(item.getReturnedQuantity() != null
+                                    ? item.getReturnedQuantity() : BigDecimal.ZERO)
                             .availableStock(stock)
                             .build();
                 }).toList())
@@ -634,6 +857,7 @@ public class SaleService {
                                 .paymentMethod(p.getPaymentMethod())
                                 .amount(p.getAmount())
                                 .notes(p.getNotes())
+                                .dueDate(p.getDueDate())
                                 .build()).toList())
                 .build();
     }
@@ -647,10 +871,11 @@ public class SaleService {
         long cancelled      = row[3] != null ? ((Number) row[3]).longValue() : 0L;
         long returned       = row[4] != null ? ((Number) row[4]).longValue() : 0L;
 
-        BigDecimal cash     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CASH"));
-        BigDecimal card     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CARD"));
-        BigDecimal transfer = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "TRANSFER"));
-        BigDecimal debt     = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "DEBT"));
+        BigDecimal cash           = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CASH"));
+        BigDecimal card           = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "CARD"));
+        BigDecimal transfer       = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "TRANSFER"));
+        BigDecimal debt           = orZero(saleRepository.sumTodayByPaymentMethod(from, to, "DEBT"));
+        BigDecimal returnedAmount = orZero(saleRepository.sumReturnedAmount(from, to));
 
         return TodayStatsResponse.builder()
                 .saleCount(saleCount)
@@ -658,6 +883,7 @@ public class SaleService {
                 .totalDiscount(discount)
                 .cancelledCount(cancelled)
                 .returnedCount(returned)
+                .returnedAmount(returnedAmount)
                 .totalCash(cash)
                 .totalCard(card)
                 .totalTransfer(transfer)

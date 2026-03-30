@@ -88,6 +88,7 @@ public class Sale {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    private LocalDateTime submittedAt;  // yordamchi egaga yuborganda
     private LocalDateTime completedAt;
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)

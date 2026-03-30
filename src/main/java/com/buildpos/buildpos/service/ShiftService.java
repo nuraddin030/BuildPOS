@@ -92,7 +92,9 @@ public class ShiftService {
     // ─────────────────────────────────────────
     public ShiftResponse getCurrentShift(String username) {
         User cashier = findByUsername(username);
+        // Avval o'z smenasini qidiradi, topilmasa — istalgan ochiq smenani oladi
         Shift shift = shiftRepository.findByCashierIdAndStatus(cashier.getId(), ShiftStatus.OPEN)
+                .or(() -> shiftRepository.findFirstByStatus(ShiftStatus.OPEN))
                 .orElseThrow(() -> new NotFoundException("Ochiq smena topilmadi"));
         return toResponse(shift);
     }

@@ -144,7 +144,8 @@
 
 .pos-search-item:last-child { border-bottom: none; }
 
-.pos-search-item:hover {
+.pos-search-item:hover,
+.pos-search-item--active {
     background: linear-gradient(90deg, var(--pos-primary-light) 0%, transparent 100%);
 }
 
@@ -733,32 +734,6 @@
     transform: none;
 }
 
-.pos-hold-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: var(--pos-primary);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.15s ease;
-}
-
-.pos-hold-btn:hover {
-    color: #0284c7;
-    text-decoration: underline;
-}
-
-.pos-hold-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 /* Modals — Premium Design */
 .pos-overlay {
@@ -960,10 +935,11 @@
 @media (max-width: 768px) {
     .pos-topbar {
         padding: 10px 16px;
-        gap: 10px;
+        gap: 8px;
     }
 
     .pos-smena-badge { display: none; }
+    .pos-last-sale { display: none; }
 
     .pos-main {
         flex-direction: column;
@@ -1016,6 +992,8 @@
     .pos-cart-item { gap: 10px; padding: 12px 14px; }
     .pos-qty-btn { width: 26px; height: 26px; }
     .pos-price-input { width: 90px; font-size: 13px; }
+    .pos-tbtn-text { display: none; }
+    .pos-tbtn { padding: 10px 12px; }
 }
 
 /* Cart item — Premium Design */
@@ -1085,7 +1063,6 @@ textarea:focus-visible {
 
 .pos-mb {
     display: block !important;
-    padding: 0 !important;
 }
 
 /* Chek stili */
@@ -1115,13 +1092,43 @@ textarea:focus-visible {
    PRINT — 80mm Termal Printer
    react-to-print bu @page ni ishlatadi
    =========================== */
+/* ── Back button (mobile only) ──────────────────────────────── */
+.pos-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--pos-border);
+    border-radius: 10px;
+    background: var(--pos-surface);
+    color: var(--pos-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.pos-back-btn:hover {
+    border-color: var(--pos-primary);
+    color: var(--pos-primary);
+    background: var(--pos-primary-light);
+}
+
 @media print {
-    /* Faqat .receipt-print chiqsin, qolgan hamma narsa yashirinsin */
-    body > *                { display: none !important; }
-    #react-to-print-content { display: block !important; }
-
-
-
+    /* Faqat .receipt ko'rinsin, hamma narsa yashirinsin */
+    body * { visibility: hidden !important; }
+    .receipt, .receipt * { visibility: visible !important; }
+    .receipt {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        border: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 4mm !important;
+        background: #fff !important;
+        border-radius: 0 !important;
+    }
 }
 
 @page {
@@ -1186,6 +1193,53 @@ textarea:focus-visible {
 .pos-hold-drawer-close:hover {
     background: var(--pos-border);
 }
+
+.pos-hold-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--pos-border);
+    flex-shrink: 0;
+}
+
+.pos-hold-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pos-text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s ease;
+}
+
+.pos-hold-tab:hover { color: var(--pos-text); }
+
+.pos-hold-tab.active {
+    color: var(--pos-primary);
+    border-bottom-color: var(--pos-primary);
+}
+
+.pos-hold-tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #0ea5e9;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.pos-hold-tab-badge.pending { background: #f59e0b; }
 
 .pos-hold-drawer-body {
     flex: 1;
@@ -1266,23 +1320,6 @@ textarea:focus-visible {
     }
 }
 
-.pos-hold-count-btn {
-    background: #e2e8f0;
-    color: #94a3b8;
-    border: none;
-    border-radius: 10px;
-    padding: 0 12px;
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 13px;
-    min-width: 36px;
-    transition: background 0.15s, color 0.15s;
-}
-
-.pos-hold-count-btn.has-items {
-    background: #f59e0b;
-    color: #fff;
-}
 
 .pos-hold-item-ref-row {
     display: flex;
@@ -1313,6 +1350,20 @@ textarea:focus-visible {
 .pos-hold-status-badge.draft {
     background: #dcfce7;
     color: #16a34a;
+}
+
+.pos-hold-status-badge.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.pos-hold-item-pending { opacity: 0.85; }
+
+.pos-hold-item-rejected {
+    font-size: 11px;
+    color: #dc2626;
+    font-weight: 500;
+    margin-top: 2px;
 }
 
 .pos-hold-item-actions {
@@ -1649,18 +1700,48 @@ textarea:focus-visible {
 
 /* ── Chek ─────────────────────────────────────────────────────── */
 .pos-mh--success { color: #16a34a; }
-.receipt-item      { margin-bottom: 6px; }
-.receipt-item-name { font-weight: 600; }
-.receipt-item-name span { color: #888; font-weight: 400; }
-.receipt-item-row  { display: flex; justify-content: space-between; }
+
+/* Header */
+.receipt-store    { text-align: center; font-weight: 900; font-size: 17px; letter-spacing: 2px; margin-bottom: 2px; }
+.receipt-subtitle { text-align: center; font-size: 11px; color: #888; letter-spacing: 1px; margin-bottom: 8px; }
+
+/* Dividers */
+.receipt-div         { border-top: 1px dashed #ccc; margin: 6px 0; }
+.receipt-div--double { border-top: 2px solid #333; margin: 8px 0; }
+
+/* Meta */
+.receipt-meta     { font-size: 11px; color: #555; margin-bottom: 4px; }
+.receipt-meta div { display: flex; justify-content: space-between; padding: 1px 0; }
+
+/* Section label */
+.receipt-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    color: #888; text-transform: uppercase; margin: 4px 0 6px;
+}
+
+/* Items */
+.receipt-item      { margin-bottom: 7px; }
+.receipt-item-name { font-weight: 600; font-size: 12px; }
+.receipt-item-unit { color: #888; font-weight: 400; }
+.receipt-item-row  { display: flex; justify-content: space-between; font-size: 11px; }
 .receipt-item-qty  { color: #555; }
-.receipt-discount  { display: flex; justify-content: space-between; color: #ef4444; }
-.receipt-total     { display: flex; justify-content: space-between; font-weight: 800; font-size: 15px; }
-.receipt-payment   { display: flex; justify-content: space-between; font-size: 12px; }
-.receipt-change    { display: flex; justify-content: space-between; color: #22c55e; font-weight: 700; font-size: 12px; }
-.receipt-thanks    { text-align: center; color: #888; font-size: 12px; }
-.receipt-title     { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-.receipt-meta      { font-size: 12px; color: #555; margin-bottom: 6px; }
+
+/* Chegirma */
+.receipt-discount  { display: flex; justify-content: space-between; color: #ef4444; font-size: 12px; }
+
+/* JAMI — eng muhim qism */
+.receipt-total {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 900; font-size: 18px;
+    padding: 4px 0;
+}
+
+/* To'lov */
+.receipt-payment   { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.receipt-change    { display: flex; justify-content: space-between; color: #22c55e; font-weight: 700; font-size: 12px; padding: 2px 0; }
+
+/* Footer */
+.receipt-thanks    { text-align: center; color: #888; font-size: 12px; padding: 4px 0; }
 .pos-btn-icon      { display: flex; align-items: center; gap: 6px; }
 
 /* ── Cart item ichki elementlar ───────────────────────────────── */
@@ -1714,6 +1795,49 @@ textarea:focus-visible {
 .pos-pay-btn-sum   { font-weight: 800; font-size: 18px; }
 .pos-hold-row      { display: flex; gap: 6px; }
 .pos-hold-btn-flex { flex: 1; }
+
+/* ── Ikkilamchi tugmalar qatori ───────────────────────────────── */
+.pos-secondary-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.pos-sec-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 11px 12px;
+    border: 1.5px solid var(--pos-border);
+    border-radius: 10px;
+    background: var(--pos-surface);
+    color: var(--pos-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.pos-sec-btn:hover {
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+    background: rgba(14, 165, 233, 0.06);
+}
+
+.pos-sec-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.pos-sec-btn-amber:hover {
+    border-color: #f59e0b;
+    color: #d97706;
+    background: rgba(245, 158, 11, 0.06);
+}
+
 
 /* ── Price popover ────────────────────────────────────────────── */
 .pos-popover {
@@ -1772,7 +1896,7 @@ textarea:focus-visible {
 .pos-note-btn--mb { margin-bottom: 14px; }
 
 /* pos-overlay yuqori z-index */
-.pos-overlay--top { z-index: 1100; }
+.pos-overlay--top { z-index: 10000 !important; }
 
 /* pos-confirm-btn-ok ko'k */
 .pos-confirm-btn-ok--blue { background: #0ea5e9 !important; }
@@ -1839,3 +1963,202 @@ textarea:focus-visible {
 }
 .pos-toast--success { background: #22c55e; }
 .pos-toast--error   { background: #ef4444; }
+/* Nasiya info card (PaymentModal) */
+.pos-debt-info-card {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    padding: 10px 14px; border-radius: 8px;
+    background: rgba(37,99,235,0.06);
+    border: 1.5px solid rgba(37,99,235,0.18);
+    color: #1e40af; font-size: 13px;
+    margin-bottom: 4px;
+}
+
+/* Receipt nasiya bloki */
+.receipt-debt-block {
+    margin: 8px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(245,158,11,0.10);
+    border: 1.5px solid #f59e0b;
+}
+.receipt-debt-title {
+    text-align: center; font-weight: 800;
+    font-size: 13px; color: #d97706;
+    letter-spacing: 1px; margin-bottom: 6px;
+}
+.receipt-debt-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: #92400e; padding: 2px 0;
+}
+
+.pos-limit-warn-rows {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-top: 4px; font-size: 12px;
+}
+
+/* PaymentModal — mijoz qidiruv bloki */
+.pos-no-cust-block {
+    border: 1.5px solid #f59e0b;
+    border-radius: 10px;
+    background: rgba(245,158,11,0.06);
+    padding: 12px 14px;
+    margin-bottom: 4px;
+}
+.pos-no-cust-title {
+    font-size: 13px; font-weight: 700;
+    color: #b45309; margin-bottom: 10px;
+}
+.pos-no-cust-search {
+    position: relative; display: flex; align-items: center;
+}
+.pos-no-cust-icon {
+    position: absolute; left: 10px; color: #9ca3af; pointer-events: none;
+}
+.pos-no-cust-input { padding-left: 32px !important; }
+.pos-no-cust-hint { font-size: 12px; color: #9ca3af; padding: 6px 2px; }
+.pos-no-cust-list {
+    margin-top: 6px; border: 1px solid #e8eaed;
+    border-radius: 8px; overflow: hidden;
+    max-height: 160px; overflow-y: auto;
+}
+.pos-no-cust-item {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; padding: 9px 12px; border: none;
+    background: #fff; cursor: pointer; text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background .12s;
+}
+.pos-no-cust-item:last-child { border-bottom: none; }
+.pos-no-cust-item:hover { background: #fffbeb; }
+.pos-no-cust-name { font-size: 13px; font-weight: 600; color: #0f172a; }
+.pos-no-cust-phone { font-size: 12px; color: #6b7280; }
+
+/* PaymentModal — yangi mijoz inline form */
+.pos-no-cust-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+}
+.pos-no-cust-new-btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 5px 10px; border-radius: 6px; border: 1.5px solid #2563eb;
+    background: #fff; color: #2563eb; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .12s;
+}
+.pos-no-cust-new-btn:hover, .pos-no-cust-new-btn.active {
+    background: #2563eb; color: #fff;
+}
+.pos-no-cust-form {
+    display: flex; flex-direction: column; gap: 8px;
+}
+.pos-no-cust-form-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+.pos-btn-s--sm, .pos-btn-p--sm {
+    padding: 6px 14px; font-size: 12px;
+}
+
+/* Mijoz/Hamkor yonidagi "Yangi" tugmasi */
+.pos-sec-create-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px;
+    border: none;
+    background: var(--primary, #2563eb); color: #fff;
+    font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+    line-height: 1;
+}
+.pos-sec-create-btn:hover {
+    background: var(--primary-hover, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+.pos-sec-create-btn:active {
+    transform: translateY(0);
+}
+
+/* ─── Pending orders ─── */
+.pos-hold-open-btn {
+    position: relative;
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    display: flex; align-items: center; gap: 6px;
+}
+.pos-hold-open-btn:hover { background: #e0f2fe; }
+
+.pos-pending-btn {
+    position: relative;
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #fed7aa;
+    display: flex; align-items: center; gap: 6px;
+}
+.pos-pending-btn:hover { background: #ffedd5; }
+.pos-pending-badge {
+    position: absolute; top: -6px; right: -6px;
+    background: #ef4444; color: #fff;
+    font-size: 10px; font-weight: 700;
+    min-width: 18px; height: 18px;
+    border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+}
+.pos-pending-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: 8px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    margin-bottom: 8px;
+}
+.pos-pending-info { flex: 1; }
+.pos-pending-ref { font-weight: 600; font-size: 14px; color: #1e293b; }
+.pos-pending-seller { font-size: 12px; color: #64748b; margin-top: 2px; }
+.pos-pending-note { font-size: 12px; color: #f59e0b; margin-top: 4px; }
+.pos-pending-amount { font-weight: 700; font-size: 15px; color: #1e293b; white-space: nowrap; }
+.pos-pending-actions { display: flex; gap: 6px; }
+.pos-pending-approve {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 6px;
+    background: #22c55e; color: #fff; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+}
+.pos-pending-approve:hover { background: #16a34a; }
+.pos-pending-return {
+    display: flex; align-items: center;
+    padding: 7px; border-radius: 6px;
+    background: #fef3c7; color: #d97706; border: none;
+    cursor: pointer; transition: background .15s;
+}
+.pos-pending-return:hover { background: #fde68a; }
+
+.pos-pending-reject {
+    display: flex; align-items: center;
+    padding: 7px; border-radius: 6px;
+    background: #fee2e2; color: #ef4444; border: none;
+    cursor: pointer; transition: background .15s;
+}
+.pos-pending-reject:hover { background: #fecaca; }
+
+/* ─── Approve pending modal ─── */
+.pos-approve-items {
+    background: #f8fafc; border-radius: 8px;
+    border: 1px solid #e2e8f0; padding: 12px;
+    margin-bottom: 12px;
+}
+.pos-approve-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid #f1f5f9;
+}
+.pos-approve-item:last-child { border-bottom: none; }
+.pos-approve-item-name { flex: 1; font-size: 13px; color: #1e293b; }
+.pos-approve-item-qty { font-size: 12px; color: #64748b; white-space: nowrap; }
+.pos-approve-item-price { font-weight: 600; font-size: 13px; white-space: nowrap; }
+.pos-approve-subtotal {
+    padding-top: 8px; margin-top: 4px;
+    border-top: 2px solid #e2e8f0;
+    font-size: 14px; text-align: right; color: #1e293b;
+}
+.pos-change-row {
+    padding: 8px 12px; background: #f0fdf4;
+    border-radius: 6px; border: 1px solid #bbf7d0;
+    font-size: 14px; color: #166534;
+}

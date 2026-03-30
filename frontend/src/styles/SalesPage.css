@@ -6,7 +6,7 @@
 /* ── Statistika kartochkalari ─────────────────────────────────── */
 .sales-stats-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 12px;
     margin-bottom: 16px;
 }
@@ -83,6 +83,7 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .sale-meta-grid {
@@ -196,6 +197,53 @@
     margin-top: 4px;
 }
 
+/* ── Sales list — qisman qaytarildi badge ─────────────────────── */
+.sale-partial-return-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 3px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(124,58,237,0.1);
+    color: #7c3aed;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ── Sale detail — qaytarishlar bloki ────────────────────────── */
+.sale-item-returned {
+    font-size: 11px;
+    color: #dc2626;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.sale-return-block {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+.sale-return-block .sale-section-title {
+    color: #dc2626;
+    margin-bottom: 8px;
+}
+.sale-return-list { display: flex; flex-direction: column; gap: 6px; }
+.sale-return-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+}
+.sale-return-name { flex: 1; color: var(--text-primary); }
+.sale-return-qty  { color: #dc2626; font-weight: 600; white-space: nowrap; }
+.sale-return-sum  { color: #dc2626; font-weight: 700; white-space: nowrap; min-width: 110px; text-align: right; }
+.sale-return-total {
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px dashed #fca5a5;
+    padding-top: 8px; margin-top: 4px;
+    font-size: 13px; font-weight: 700;
+    color: #dc2626;
+}
+
 /* ── Qaytarish modal ──────────────────────────────────────────── */
 .return-item {
     display: flex;
@@ -291,17 +339,40 @@
 /* ── Detail modal padding ─────────────────────────────────────── */
 .sale-detail-modal .modal-header {
     padding: 24px 28px 20px;
+    flex-shrink: 0;
 }
 
 .sale-detail-modal .modal-body {
     padding: 0 28px 24px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.sale-detail-modal .modal-body > * {
+    flex-shrink: 0;
 }
 
 .sale-detail-modal .modal-footer {
     padding: 16px 28px;
+    flex-shrink: 0;
+}
+
+/* ── Jadval — qaytarilgan summa ───────────────────────────────── */
+.sale-row-returned-amount {
+    font-size: 12px;
+    font-weight: 600;
+    color: #dc2626;
+    margin-top: 2px;
 }
 
 /* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 1400px) {
+    .sales-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 1200px) {
     .sales-stats-grid {
         grid-template-columns: repeat(3, 1fr);

@@ -60,6 +60,10 @@ public class SaleItem {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal totalPrice;      // (salePrice - discountAmount) * quantity
 
+    @Column(nullable = false, precision = 18, scale = 3)
+    @Builder.Default
+    private BigDecimal returnedQuantity = BigDecimal.ZERO;  // necha dona qaytarildi
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

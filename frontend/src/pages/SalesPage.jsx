@@ -115,7 +115,14 @@ const PaymentBadges = ({ payments }) => {
 // SaleDetailModal
 // ════════════════════════════════════════════════════════════════
 function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, hasPermission }) {
-    const canReturn = sale.status === 'COMPLETED' && hasPermission('SALES_RETURN')
+    const returnedItems = (sale.items || []).filter(i => Number(i.returnedQuantity || 0) > 0)
+    const totalReturnedAmount = returnedItems.reduce(
+        (s, i) => s + Math.round(Number(i.salePrice) * Number(i.returnedQuantity || 0)), 0
+    )
+    const hasReturnableItems = (sale.items || []).some(
+        i => Number(i.returnedQuantity || 0) < Number(i.quantity)
+    )
+    const canReturn = sale.status === 'COMPLETED' && hasReturnableItems && hasPermission('SALES_RETURN')
     const canCancel = (sale.status === 'DRAFT' || sale.status === 'HOLD') && hasPermission('SALES_CANCEL')
 
     // PDF chek (jsPDF CDN orqali)
@@ -203,7 +210,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                     </div>
                 </div>
 
-                <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', gap: 16 }}>
+                <div className="modal-body" style={{ gap: 16 }}>
 
                     {/* Meta ma'lumotlar */}
                     <div className="sale-meta-grid">
@@ -259,6 +266,11 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                                         <td className="th-right cell-price">{fmt(item.salePrice)} UZS</td>
                                         <td className="th-center">
                                             {item.quantity} <span className="cell-muted">{item.unitSymbol}</span>
+                                            {Number(item.returnedQuantity || 0) > 0 && (
+                                                <div className="sale-item-returned">
+                                                    -{item.returnedQuantity} qaytarildi
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="th-right">
                                             {item.discountAmount > 0
@@ -326,6 +338,32 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                         </div>
                     </div>
 
+                    {/* Qaytarishlar bloki */}
+                    {returnedItems.length > 0 && (
+                        <div className="sale-return-block">
+                            <div className="sale-section-title">
+                                <CornerUpLeft size={14} /> Qaytarilgan mahsulotlar
+                            </div>
+                            <div className="sale-return-list">
+                                {returnedItems.map(item => (
+                                    <div key={item.id} className="sale-return-row">
+                                        <span className="sale-return-name">{item.productName}</span>
+                                        <span className="sale-return-qty">
+                                            {item.returnedQuantity} {item.unitSymbol}
+                                        </span>
+                                        <span className="sale-return-sum">
+                                            -{fmt(Math.round(Number(item.salePrice) * Number(item.returnedQuantity)))} UZS
+                                        </span>
+                                    </div>
+                                ))}
+                                <div className="sale-return-total">
+                                    <span>Jami qaytarildi</span>
+                                    <span>-{fmt(totalReturnedAmount)} UZS</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Izoh */}
                     {sale.notes && (
                         <div style={{
@@ -374,7 +412,13 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
 // ════════════════════════════════════════════════════════════════
 function ReturnModal({ sale, onClose, onDone }) {
     const [items, setItems] = useState(
-        (sale.items || []).map(i => ({ ...i, checked: false, returnQty: i.quantity }))
+        (sale.items || [])
+            .map(i => {
+                const returned = Number(i.returnedQuantity || 0)
+                const remaining = Number(i.quantity) - returned
+                return { ...i, returned, remaining, checked: false, returnQty: remaining }
+            })
+            .filter(i => i.remaining > 0) // to'liq qaytarilganlarni ko'rsatma
     )
     const [reason, setReason] = useState('')
     const [saving, setSaving] = useState(false)
@@ -390,7 +434,7 @@ function ReturnModal({ sale, onClose, onDone }) {
         if (!checkedItems.length) { setError('Kamida bitta mahsulot tanlang'); return }
         for (const i of checkedItems) {
             if (!i.returnQty || Number(i.returnQty) <= 0) { setError('Miqdor 0 dan katta bo\'lishi kerak'); return }
-            if (Number(i.returnQty) > Number(i.quantity)) { setError(`"${i.productName}" uchun miqdor ${i.quantity} dan oshmasligi kerak`); return }
+            if (Number(i.returnQty) > i.remaining) { setError(`"${i.productName}" uchun qaytarish mumkin: ${i.remaining} ${i.unitSymbol}`); return }
         }
         setSaving(true); setError('')
         try {
@@ -440,7 +484,8 @@ function ReturnModal({ sale, onClose, onDone }) {
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 600, fontSize: 14 }}>{item.productName}</div>
                                 <div className="cell-muted" style={{ fontSize: 12 }}>
-                                    Sotilgan: {item.quantity} {item.unitSymbol} · {fmt(item.salePrice)} UZS
+                                    Qaytarish mumkin: {item.remaining} {item.unitSymbol} · {fmt(item.salePrice)} UZS
+                                    {item.returned > 0 && ` · allaqachon qaytarildi: ${item.returned}`}
                                 </div>
                             </div>
                             {item.checked && (
@@ -448,7 +493,7 @@ function ReturnModal({ sale, onClose, onDone }) {
                                     <input
                                         type="number" className="form-input-sm"
                                         style={{ width: 80, textAlign: 'right' }}
-                                        min={0.001} max={item.quantity} step="any"
+                                        min={0.001} max={item.remaining} step="any"
                                         value={item.returnQty}
                                         onChange={e => setQty(item.id, e.target.value)}
                                     />
@@ -749,9 +794,16 @@ export default function SalesPage() {
                 <StatCard
                     label="Nasiya"
                     value={todayStats ? `${fmt(todayStats.totalDebt)} UZS` : '—'}
-                    sub={todayStats && todayStats.returnedCount > 0 ? `${todayStats.returnedCount} ta qaytarilgan` : ''}
                     icon={Clock}
                     color="#f59e0b"
+                    loading={statsLoading}
+                />
+                <StatCard
+                    label="Qaytarilgan"
+                    value={todayStats ? `${fmt(todayStats.returnedAmount)} UZS` : '—'}
+                    sub={todayStats && todayStats.returnedCount > 0 ? `${todayStats.returnedCount} ta sotuv` : ''}
+                    icon={CornerUpLeft}
+                    color="#dc2626"
                     loading={statsLoading}
                 />
             </div>
@@ -908,13 +960,24 @@ export default function SalesPage() {
                                             <PaymentBadges payments={s.payments} />
                                         </td>
                                         <td className="th-right">
-                                        <span className="cell-price" style={{ fontWeight: 700 }}>
-                                            {fmt(s.totalAmount)}
-                                        </span>
+                                            <span className="cell-price" style={{ fontWeight: 700 }}>
+                                                {fmt(s.totalAmount)}
+                                            </span>
                                             <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                            {(() => {
+                                                const ret = (s.items||[]).reduce(
+                                                    (acc, i) => acc + Math.round(Number(i.salePrice) * Number(i.returnedQuantity||0)), 0
+                                                )
+                                                return ret > 0
+                                                    ? <div className="sale-row-returned-amount">−{fmt(ret)} UZS</div>
+                                                    : null
+                                            })()}
                                         </td>
                                         <td className="th-center">
                                             <StatusBadge status={s.status} />
+                                            {s.status === 'COMPLETED' && (s.items||[]).some(i => Number(i.returnedQuantity||0) > 0) && (
+                                                <div className="sale-partial-return-badge">Qisman qaytarilgan</div>
+                                            )}
                                         </td>
                                         <td onClick={e => e.stopPropagation()}>
                                             <div className="action-group">

@@ -1,5 +1,6 @@
 package com.buildpos.buildpos.controller;
 
+import com.buildpos.buildpos.dto.request.ApprovePendingRequest;
 import com.buildpos.buildpos.dto.request.ReturnRequest;
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
@@ -53,6 +54,65 @@ public class SaleController {
         return ResponseEntity.ok(saleService.complete(id, payments, username));
     }
 
+    // ── MIJOZ BIRIKTIRISH ────────────────────────────────────────
+    @PatchMapping("/{id}/customer")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_CREATE')")
+    @Operation(summary = "DRAFT savatchaga mijoz biriktirish (PaymentModal ichidan)")
+    public ResponseEntity<SaleResponse> setCustomer(
+            @PathVariable Long id,
+            @RequestParam Long customerId) {
+        return ResponseEntity.ok(saleService.setCustomer(id, customerId));
+    }
+
+    // ── TASDIQLASHGA YUBORISH (DRAFT → PENDING) ─────────────────────
+    @PatchMapping("/{id}/submit")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER', 'ASSISTANT') or hasAuthority('SALES_SUBMIT')")
+    @Operation(summary = "Savatchani tasdiqlashga yuborish (DRAFT → PENDING)")
+    public ResponseEntity<SaleResponse> submit(@PathVariable Long id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.submitPending(id, username));
+    }
+
+    // ── PENDING BUYURTMANI TASDIQLASH (PENDING → COMPLETED) ─────────
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SALES_APPROVE')")
+    @Operation(summary = "Kutilayotgan buyurtmani tasdiqlash va yakunlash (PENDING → COMPLETED)")
+    public ResponseEntity<SaleResponse> approvePending(
+            @PathVariable Long id,
+            @Valid @RequestBody ApprovePendingRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.approvePending(id, request, username));
+    }
+
+    // ── PENDING BUYURTMANI RAD ETISH (PENDING → HOLD) ───────────────
+    @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SALES_APPROVE')")
+    @Operation(summary = "Kutilayotgan buyurtmani rad etish (PENDING → HOLD)")
+    public ResponseEntity<SaleResponse> rejectPending(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason) {
+        return ResponseEntity.ok(saleService.rejectPending(id, reason));
+    }
+
+    // ── PENDING BUYURTMALAR RO'YXATI ─────────────────────────────────
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SALES_APPROVE')")
+    @Operation(summary = "Barcha kutilayotgan buyurtmalar (owner panel uchun)")
+    public ResponseEntity<Page<SaleResponse>> getPendingOrders(
+            @PageableDefault(size = 50) Pageable pageable) {
+        return ResponseEntity.ok(saleService.getPendingOrders(pageable));
+    }
+
+    // ── O'Z PENDING BUYURTMALARIM ────────────────────────────────────
+    @GetMapping("/my-pending")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER', 'ASSISTANT') or hasAuthority('SALES_SUBMIT')")
+    @Operation(summary = "O'zim yuborgan va hali kutilayotgan buyurtmalar")
+    public ResponseEntity<Page<SaleResponse>> getMyPendingOrders(
+            @PageableDefault(size = 50) Pageable pageable) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.getMyPendingOrders(username, pageable));
+    }
+
     // ── BEKOR QILISH ─────────────────────────────────────────────────
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_CANCEL')")
@@ -87,6 +147,14 @@ public class SaleController {
     public ResponseEntity<SaleResponse> unhold(@PathVariable Long id) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(saleService.unholdSale(id, username));
+    }
+
+    @PatchMapping("/{id}/take")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SALES_APPROVE')")
+    @Operation(summary = "Pending buyurtmani qabul qilib, savatchaga olish (PENDING → DRAFT)")
+    public ResponseEntity<SaleResponse> takePending(@PathVariable Long id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.takePending(id, username));
     }
 
     // ── OMBOR TEKSHIRISH ────────────────────────────────────────────

@@ -9,6 +9,15 @@ export const salesApi = {
     unhold:       (id)            => api.patch(`/api/v1/sales/${id}/unhold`),
     checkWarehouses: (ids)        => api.post('/api/v1/sales/check-warehouses', ids),
 
+    // ── PENDING ORDER ─────────────────────────────────────────────────
+    submitPending:  (id)          => api.patch(`/api/v1/sales/${id}/submit`),
+    approvePending: (id, data)    => api.post(`/api/v1/sales/${id}/approve`, data),
+    rejectPending:  (id, reason)  => api.patch(`/api/v1/sales/${id}/reject`, null, { params: { reason } }),
+    takePending:    (id)          => api.patch(`/api/v1/sales/${id}/take`),
+    getPending:     (params)      => api.get('/api/v1/sales/pending', { params }),
+    getMyPending:   (params)      => api.get('/api/v1/sales/my-pending', { params }),
+    setCustomer:    (id, customerId) => api.patch(`/api/v1/sales/${id}/customer`, null, { params: { customerId } }),
+
     // ── QAYTARISH ─────────────────────────────────────────────────────
     returnSale:   (id, data)      => api.post(`/api/v1/sales/${id}/return`, data),
 

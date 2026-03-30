@@ -8,6 +8,7 @@
    =========================== */
 .products-wrapper {
     animation: fadeIn 0.3s ease;
+    overflow-x: hidden;
 }
 
 to   { opacity: 1; transform: translateY(0); }
@@ -248,6 +249,7 @@ to   { opacity: 1; transform: translateY(0); }
 /* ---- Table ---- */
 .ptable {
     width: 100%;
+    min-width: 600px;
     border-collapse: collapse;
 }
 
@@ -1000,6 +1002,34 @@ to   { opacity: 1; transform: translateY(0); }
         flex-direction: column;
         gap: 3px;
     }
+}
+
+/* ===========================
+   RESPONSIVE — Products table ustunlari
+   Mobilda: # | Rasm | Kategoriya | Shtrix-kod — yashiriladi
+   Ko'rinadi: Nom | Narx | Qoldiq | Status | Amallar
+   =========================== */
+@media (max-width: 768px) {
+    /* Yashirilgan ustunlar bilan jadval scroll kerak emas */
+    .products-ptable {
+        min-width: auto;
+    }
+
+    .products-ptable th:nth-child(1),
+    .products-ptable td:nth-child(1),
+    .products-ptable th:nth-child(3),
+    .products-ptable td:nth-child(3),
+    .products-ptable th:nth-child(4),
+    .products-ptable td:nth-child(4),
+    .products-ptable th:nth-child(5),
+    .products-ptable td:nth-child(5) {
+        display: none;
+    }
+
+    /* Ko'rinadigan ustunlar kenglik bo'lsinlar */
+    .products-ptable th:nth-child(2) { width: 40%; }
+    .products-ptable th:nth-child(6) { width: 20%; }
+    .products-ptable th:nth-child(7) { width: 15%; }
 }
 
 /* ===========================

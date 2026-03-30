@@ -13,6 +13,7 @@ public class TodayStatsResponse {
     private BigDecimal totalDiscount; // jami chegirma
     private Long cancelledCount;      // bekor qilinganlar
     private Long returnedCount;       // qaytarilganlar
+    private BigDecimal returnedAmount; // qaytarilgan jami summa
 
     // To'lov usullari
     private BigDecimal totalCash;
