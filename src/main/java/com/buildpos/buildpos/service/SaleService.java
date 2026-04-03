@@ -230,11 +230,12 @@ public class SaleService {
         sale.setDebtAmount(debtAmount);
         sale.setChangeAmount(changeAmount.compareTo(BigDecimal.ZERO) > 0 ? changeAmount : BigDecimal.ZERO);
 
-        User cashier = userRepository.findByUsername(cashierUsername)
+        // To'lovni yakunlayotgan foydalanuvchi (admin yoki kassir) — smena uchun kerak
+        User completingUser = userRepository.findByUsername(cashierUsername)
                 .orElseThrow(() -> new NotFoundException("Kassir topilmadi"));
-        sale.setCashier(cashier);
+        // sale.setCashier() — o'zgartirilmaydi: original sotuvchi saqlanadi
 
-        shiftRepository.findByCashierIdAndStatus(cashier.getId(), ShiftStatus.OPEN)
+        shiftRepository.findByCashierIdAndStatus(completingUser.getId(), ShiftStatus.OPEN)
                 .ifPresent(sale::setShift);
 
         // Stock DRAFT da allaqachon kamaygаn — faqat SALE_OUT movement yozamiz

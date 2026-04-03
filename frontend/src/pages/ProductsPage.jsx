@@ -10,8 +10,9 @@ import api from '../api/api'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
     Unlock, Trash2, X, Upload, ImageIcon, ChevronLeft,
-    ChevronRight, Zap, AlertCircle, Loader2, Minus, PackagePlus
+    ChevronRight, Zap, AlertCircle, Loader2, Minus, PackagePlus, Camera
 } from 'lucide-react'
+import CameraScanner from '../components/CameraScanner'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 
@@ -67,6 +68,7 @@ export default function ProductsPage() {
     const [showModal, setShowModal] = useState(false)
     const [editId, setEditId] = useState(null)
     const [form, setForm] = useState(EMPTY_FORM)
+    const [cameraUnitIdx, setCameraUnitIdx] = useState(null) // qaysi unit uchun kamera
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState(null)
     const showToast = (msg, type = 'error') => {
@@ -259,6 +261,15 @@ export default function ProductsPage() {
 
     return (
         <>
+            {cameraUnitIdx !== null && (
+                <CameraScanner
+                    onDetected={(code) => {
+                        setUnit(cameraUnitIdx, 'barcode', code)
+                        setCameraUnitIdx(null)
+                    }}
+                    onClose={() => setCameraUnitIdx(null)}
+                />
+            )}
             <div className="products-wrapper">
                 {/* Header */}
                 <div className="products-header">
@@ -590,6 +601,11 @@ export default function ProductsPage() {
                                                         <input className="form-input form-input-sm" value={u.barcode}
                                                                onChange={e => setUnit(i, 'barcode', e.target.value)}
                                                                placeholder="Avtomatik" />
+                                                        <button className="input-action-btn" type="button"
+                                                                onClick={() => setCameraUnitIdx(i)}
+                                                                title="Kamera bilan skanerlash">
+                                                            <Camera size={12} />
+                                                        </button>
                                                         <button className="input-action-btn" type="button"
                                                                 onClick={() => setUnit(i, 'barcode', genBarcode())}
                                                                 title="Avtomatik yaratish">

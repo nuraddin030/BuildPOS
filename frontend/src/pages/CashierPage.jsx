@@ -4,7 +4,7 @@ import {
     Search, X, Plus, Minus, Trash2, User, CreditCard,
     Banknote, ArrowLeftRight, Clock, RefreshCw,
     Download, PauseCircle, Package, ShoppingCart, Printer,
-    Calendar, ArrowUpDown, History, Bell, CheckCircle, XCircle, CornerUpLeft, Home, LogOut as ShiftClose
+    Calendar, ArrowUpDown, History, Bell, CheckCircle, XCircle, CornerUpLeft, Home, LogOut as ShiftClose, Camera
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -13,9 +13,34 @@ import { salesApi } from '../api/sales'
 import { shiftsApi } from '../api/shifts'
 import api from '../api/api'
 import '../styles/CashierPage.css'
+import CameraScanner from '../components/CameraScanner'
 
 // ─── Helpers ─────────────────────────────────
 const fmt = (n) => n == null ? '0' : Number(n).toLocaleString('ru-RU')
+
+// ─── Favorites (localStorage) ─────────────────────
+const FAV_KEY = 'pos_favorites'
+const getFavs = () => { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') } catch { return {} } }
+const saveFav = (productId, name, price, imageUrl) => {
+    const favs = getFavs()
+    const existing = favs[productId] || { productId, name, price, imageUrl, count: 0 }
+    existing.count += 1
+    existing.name = name
+    existing.price = price
+    existing.imageUrl = imageUrl
+    favs[productId] = existing
+    localStorage.setItem(FAV_KEY, JSON.stringify(favs))
+}
+const getTopFavs = (limit = 10) => {
+    const favs = getFavs()
+    return Object.values(favs).sort((a, b) => b.count - a.count).slice(0, limit)
+}
+const UZ_MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentyabr','oktyabr','noyabr','dekabr']
+const fmtShiftDate = (iso) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    return `${d.getDate()}-${UZ_MONTHS[d.getMonth()]}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
 const fmtPrice = (val) => {
     if (val === '' || val == null) return ''
     const num = String(val).replace(/\D/g, '')
@@ -691,7 +716,7 @@ function CreateModal({ type, onClose, onCreated }) {
 }
 
 // ─── Unit tanlash ─────────────────────────────
-function UnitModal({ data, onSelect, onClose }) {
+function UnitModal({ data, onSelect, onClose, warehouseId }) {
     return ReactDOM.createPortal(
         <div className="pos-overlay">
             <div className="pos-modal pos-modal--sm">
@@ -701,16 +726,30 @@ function UnitModal({ data, onSelect, onClose }) {
                 <div className="pos-mb">
                     <p className="pos-unit-hint">O'lchov birligini tanlang:</p>
                     <div className="pos-unit-list">
-                        {data.units.map(u => (
-                            <button key={u.id} onClick={() => onSelect(data.product, u)}
-                                    className="pos-unit-item">
-                                <div>
-                                    <div className="pos-unit-symbol">{u.unitSymbol}</div>
-                                    {u.barcode && <div className="pos-unit-barcode">{u.barcode}</div>}
-                                </div>
-                                <div className="pos-unit-price">{fmt(u.salePrice)} so'm</div>
-                            </button>
-                        ))}
+                        {data.units.map(u => {
+                            const ws = warehouseId
+                                ? (u.warehouseStocks || []).find(w => w.warehouseId === warehouseId)
+                                : null
+                            const stock = ws ? Number(ws.quantity) : null
+                            const oos = stock !== null && stock <= 0
+                            return (
+                                <button key={u.id} onClick={() => onSelect(data.product, u)}
+                                        className={`pos-unit-item${oos ? ' pos-unit-item--oos' : ''}`}>
+                                    <div>
+                                        <div className="pos-unit-symbol">{u.unitSymbol}</div>
+                                        {u.barcode && <div className="pos-unit-barcode">{u.barcode}</div>}
+                                    </div>
+                                    <div className="pos-unit-right">
+                                        <div className="pos-unit-price">{fmt(u.salePrice)} so'm</div>
+                                        {stock !== null && (
+                                            <div className={`pos-stock-badge${oos ? ' pos-stock-badge--oos' : ' pos-stock-badge--ok'}`}>
+                                                {oos ? 'Stokda yo\'q' : `${stock} ta`}
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            )
+                        })}
                     </div>
                 </div>
             </div>
@@ -908,6 +947,7 @@ export default function CashierPage() {
     const [shift, setShift] = useState(null)
     const [shiftLoading, setShiftLoading] = useState(true)
     const [showCloseShift, setShowCloseShift] = useState(false)
+    const [staleShift, setStaleShift] = useState(false)
     const [warehouses, setWarehouses] = useState([])
     const [customers, setCustomers] = useState([])
 
@@ -930,6 +970,8 @@ export default function CashierPage() {
     const [showHoldList, setShowHoldList] = React.useState(false)
     const [holdTab, setHoldTab] = React.useState('hold')  // 'hold' | 'pending'
     const [myPendingOrders, setMyPendingOrders] = React.useState([])
+    const [favorites, setFavorites] = React.useState(() => getTopFavs())
+    const [showCamera, setShowCamera] = React.useState(false)
     const [confirmCancel, setConfirmCancel] = React.useState(null)  // { id, referenceNo }
     const [warehouseModal, setWarehouseModal] = React.useState(null)  // { items: [{productUnitId, warehouses}] }
     const [warehouseSelections, setWarehouseSelections] = React.useState({})  // { productUnitId: warehouseId }
@@ -988,7 +1030,6 @@ export default function CashierPage() {
 
     // Pending orders (ega uchun)
     const [pendingOrders, setPendingOrders] = useState([])
-    const [showPendingPanel, setShowPendingPanel] = useState(false)
 
     // Modals
     const [unitModal, setUnitModal] = useState(null)
@@ -1039,83 +1080,67 @@ export default function CashierPage() {
 
     const loadShift = async () => {
         setShiftLoading(true)
-        try { const r = await shiftsApi.getCurrent(); setShift(r.data) }
+        try {
+            const r = await shiftsApi.getCurrent()
+            setShift(r.data)
+            // Smena bugun ochilganmi? Yo'q bo'lsa — ogohlantirish
+            const openedAt = new Date(r.data.openedAt)
+            const today = new Date()
+            const isStale = openedAt.toDateString() !== today.toDateString()
+            setStaleShift(isStale)
+        }
         catch { setShift(null) }
         finally { setShiftLoading(false) }
     }
 
-    // ── Barcode scanner detector ────────────────────────────────
-    // Scanner har bir belgini ~5-10ms ichida yozadi, Enter bilan tugatadi
-    // Standart barcode uzunliklari: EAN-8(8), UPC-A(12), EAN-13(13), Code128(variable)
-    useEffect(() => {
-        const BARCODE_LENGTHS = [8, 12, 13] // standart barcode uzunliklari
+    // ── Barcode/QR qidiruv (scanner + kamera uchun umumiy) ──────
+    const searchByBarcode = (code) => {
+        api.get('/api/v1/products/barcode/' + encodeURIComponent(code))
+            .then(r => { if (r.data) selectProduct(r.data) })
+            .catch(() => {
+                api.get('/api/v1/products', { params: { search: code, size: 5, active: true } })
+                    .then(r => {
+                        const list = r.data.content || r.data || []
+                        if (list.length === 1) selectProduct(list[0])
+                        else if (list.length > 1) {
+                            const exact = list.find(p =>
+                                p.units?.some(u => u.barcode === code) || p.defaultBarcode === code)
+                            if (exact) selectProduct(exact)
+                            else { setSearchResults(list); setSearch(code); setShowDrop(true) }
+                        } else showToast('Barcode topilmadi: ' + code, 'error')
+                    })
+                    .catch(() => showToast('Xatolik yuz berdi', 'error'))
+            })
+    }
 
+    // ── Barcode scanner detector ────────────────────────────────
+    useEffect(() => {
+        const BARCODE_LENGTHS = [8, 12, 13]
         const handleScannerKey = (e) => {
             const hasModal = showPayment || completedSale || confirmCancel || warehouseModal
             if (hasModal) return
-
             if (e.key === 'Enter') {
-                // Enter bilan tugagan — scanner dan keldi
                 const buf = scannerBuffer.current.trim()
                 scannerBuffer.current = ''
                 clearTimeout(scannerTimer.current)
-                if (buf.length >= 4) {
-                    doScannerSearch(buf)
-                }
+                if (buf.length >= 4) searchByBarcode(buf)
                 return
             }
-
             if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
                 scannerBuffer.current += e.key
                 clearTimeout(scannerTimer.current)
-
-                // Standart barcode uzunligiga yetdi — Enter kutmay avtomatik qidirish
                 const buf = scannerBuffer.current.trim()
                 if (BARCODE_LENGTHS.includes(buf.length) && /^\d+$/.test(buf)) {
-                    // 80ms kuting — scanner ba'zan checksum belgisini qo'shadi
                     scannerTimer.current = setTimeout(() => {
                         const finalBuf = scannerBuffer.current.trim()
                         scannerBuffer.current = ''
-                        if (finalBuf.length >= 4) doScannerSearch(finalBuf)
+                        if (finalBuf.length >= 4) searchByBarcode(finalBuf)
                     }, 80)
                 } else {
-                    // 400ms ichida Enter kelmasa — oddiy klaviatura, buferni tozalaymiz
-                    scannerTimer.current = setTimeout(() => {
-                        scannerBuffer.current = ''
-                    }, 400)
+                    scannerTimer.current = setTimeout(() => { scannerBuffer.current = '' }, 400)
                 }
             }
         }
-
-        const doScannerSearch = (code) => {
-            // 1. Avval barcode endpoint
-            api.get('/api/v1/products/barcode/' + encodeURIComponent(code))
-                .then(r => {
-                    if (r.data) selectProduct(r.data)
-                })
-                .catch(() => {
-                    // 2. Search endpoint orqali (barcode ham qidiriladi)
-                    api.get('/api/v1/products', { params: { search: code, size: 5, active: true } })
-                        .then(r => {
-                            const list = r.data.content || r.data || []
-                            if (list.length === 1) {
-                                selectProduct(list[0])
-                            } else if (list.length > 1) {
-                                // Aniq barcode mosligini topamiz
-                                const exact = list.find(p =>
-                                    p.units?.some(u => u.barcode === code) ||
-                                    p.defaultBarcode === code
-                                )
-                                if (exact) selectProduct(exact)
-                                else { setSearchResults(list); setSearch(code); setShowDrop(true) }
-                            } else {
-                                showToast('Barcode topilmadi: ' + code, 'error')
-                            }
-                        })
-                        .catch(() => showToast('Xatolik yuz berdi', 'error'))
-                })
-        }
-
         window.addEventListener('keydown', handleScannerKey, true)
         return () => window.removeEventListener('keydown', handleScannerKey, true)
     }, [showPayment, completedSale, confirmCancel, warehouseModal])
@@ -1255,6 +1280,13 @@ export default function CashierPage() {
     const addUnitToCart = (product, unit) => {
         const ws = (unit.warehouseStocks || []).find(w => w.warehouseId === shift?.warehouseId)
         const stock = Number(ws?.quantity ?? unit.warehouseStocks?.[0]?.quantity ?? 0)
+        if (stock <= 0) {
+            showToast(`${product.name} (${unit.unitSymbol}) — stokda yo'q`, 'error')
+            return
+        }
+        // Favorites tracking
+        saveFav(product.id, product.name, Math.round(Number(unit.salePrice || 0)), product.imageUrl || null)
+        setFavorites(getTopFavs())
         setCart(prev => {
             const ex = prev.find(c => c.productUnitId === unit.id)
             if (ex) return prev.map(c => c.productUnitId === unit.id ? { ...c, quantity: c.quantity + 1 } : c)
@@ -1335,7 +1367,8 @@ export default function CashierPage() {
         if (!cart.length) return showToast('Savat bo\'sh', 'error')
         if (!shift) return showToast('Avval smena oching', 'error')
         // Agar DRAFT allaqachon mavjud bo'lsa — yangisini yaratmasdan to'lov modalini ochamiz
-        if (currentSale?.id) {
+        // Ref ishlatiladi — React state async bo'lgani uchun (stale closure muammosi)
+        if (currentSaleRef.current?.id) {
             setShowPayment(true)
             return
         }
@@ -1501,7 +1534,7 @@ export default function CashierPage() {
             if (s.customerId) { setCustomerId(String(s.customerId)); setCustomerSearch(s.customerName || '') }
             setCurrentSale(s)
             currentSaleRef.current = s
-            setShowPendingPanel(false)
+            setShowHoldList(false)
             loadPendingOrders()
             showToast(`📋 #${s.referenceNo} savatchaga olindi`)
         } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
@@ -1599,8 +1632,9 @@ export default function CashierPage() {
             <div className="pos-root">
 
                 {/* Modals */}
-                {!shift && <OpenShiftModal warehouses={warehouses} onOpen={setShift} />}
+                {!shift && <OpenShiftModal warehouses={warehouses} onOpen={(s) => { setShift(s); setStaleShift(false) }} />}
                 {showCloseShift && <CloseShiftModal shift={shift} onClose={() => setShowCloseShift(false)} onClosed={() => { setShift(null); setShowCloseShift(false) }} />}
+                {showCamera && <CameraScanner onDetected={searchByBarcode} onClose={() => setShowCamera(false)} />}
                 {/* Toast */}
                 {toast && (
                     <div className={`pos-toast pos-toast--${toast.type}`}>
@@ -1609,7 +1643,7 @@ export default function CashierPage() {
                 )}
 
                 {createModal && <CreateModal type={createModal} onClose={() => setCreateModal(null)} onCreated={handleCreated} />}
-                {unitModal && <UnitModal data={unitModal} onSelect={addUnitToCart} onClose={() => setUnitModal(null)} />}
+                {unitModal && <UnitModal data={unitModal} onSelect={addUnitToCart} onClose={() => setUnitModal(null)} warehouseId={shift?.warehouseId} />}
 
                 {/* ── Ombor tanlash modal ── */}
                 {warehouseModal && (
@@ -1752,11 +1786,9 @@ export default function CashierPage() {
                                    }, 350)
                                }}
                         />
-                        {!search && (
-                            <div className="pos-search-actions">
-                                <span className="pos-search-hint">Scan yoki yoz</span>
-                            </div>
-                        )}
+                        <button className="pos-camera-btn" onClick={() => setShowCamera(true)} title="Kamera bilan skanerlash">
+                            <Camera size={16} />
+                        </button>
                         {search && <button onClick={() => { setSearch(''); setShowDrop(false); setDropIdx(-1) }}
                                            className="pos-search-clear">
                             <X size={14} /></button>}
@@ -1768,20 +1800,33 @@ export default function CashierPage() {
                                     ? <div className="pos-ss-hint">Qidirilmoqda...</div>
                                     : searchResults.length === 0
                                         ? <div className="pos-ss-hint">Topilmadi</div>
-                                        : searchResults.map((p, idx) => (
-                                            <div key={p.id} className={`pos-search-item${dropIdx === idx ? ' pos-search-item--active' : ''}`} onMouseDown={() => selectProduct(p)}>
-                                                <div className="pos-search-img">
-                                                    {p.imageUrl
-                                                        ? <img src={p.imageUrl} alt="" className="pos-search-item-img" />
-                                                        : <Package size={18} style={{ color: '#d1d5db' }} />}
+                                        : searchResults.map((p, idx) => {
+                                            const stock = p.totalStock != null ? Number(p.totalStock) : null
+                                            const oos = stock !== null && stock <= 0
+                                            return (
+                                                <div key={p.id}
+                                                     className={`pos-search-item${dropIdx === idx ? ' pos-search-item--active' : ''}${oos ? ' pos-search-item--oos' : ''}`}
+                                                     onMouseDown={() => selectProduct(p)}>
+                                                    <div className="pos-search-img">
+                                                        {p.imageUrl
+                                                            ? <img src={p.imageUrl} alt="" className="pos-search-item-img" />
+                                                            : <Package size={18} style={{ color: '#d1d5db' }} />}
+                                                    </div>
+                                                    <div className="pos-search-item-info">
+                                                        <div className="pos-search-item-name">{p.name}</div>
+                                                        <div className="pos-search-item-code">{p.defaultBarcode || p.sku}</div>
+                                                    </div>
+                                                    <div className="pos-search-item-right">
+                                                        <div className="pos-search-item-price">{fmt(p.defaultSalePrice)} so'm</div>
+                                                        {stock !== null && (
+                                                            <div className={`pos-stock-badge${oos ? ' pos-stock-badge--oos' : ' pos-stock-badge--ok'}`}>
+                                                                {oos ? 'Stokda yo\'q' : `${stock} ta`}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="pos-search-item-info">
-                                                    <div className="pos-search-item-name">{p.name}</div>
-                                                    <div className="pos-search-item-code">{p.defaultBarcode || p.sku}</div>
-                                                </div>
-                                                <div className="pos-search-item-price">{fmt(p.defaultSalePrice)} so'm</div>
-                                            </div>
-                                        ))
+                                            )
+                                        })
                                 }
                             </div>
                         )}
@@ -1795,15 +1840,24 @@ export default function CashierPage() {
                         </div>
                     )}
 
-                    <button className="pos-tbtn pos-hold-open-btn" onClick={() => { if (!showHoldList) loadHoldSales(); setShowHoldList(v => !v) }}>
-                        <Clock size={15} />
-                        {holdSales.length > 0 && <span className="pos-pending-badge">{holdSales.length}</span>}
-                    </button>
-
-                    {isAdmin && (
-                        <button className="pos-tbtn pos-pending-btn" onClick={() => { setShowPendingPanel(true); loadPendingOrders() }}>
+                    {isAdmin ? (
+                        <button className="pos-tbtn pos-pending-btn" onClick={() => {
+                            setHoldTab('pending')
+                            loadPendingOrders()
+                            loadHoldSales()
+                            setShowHoldList(v => !v)
+                        }}>
                             <Bell size={15} />
                             {pendingOrders.length > 0 && <span className="pos-pending-badge">{pendingOrders.length}</span>}
+                        </button>
+                    ) : (
+                        <button className="pos-tbtn pos-hold-open-btn" onClick={() => {
+                            setHoldTab('hold')
+                            if (!showHoldList) loadHoldSales()
+                            setShowHoldList(v => !v)
+                        }}>
+                            <Clock size={15} />
+                            {holdSales.length > 0 && <span className="pos-pending-badge">{holdSales.length}</span>}
                         </button>
                     )}
 
@@ -1815,11 +1869,49 @@ export default function CashierPage() {
                     )}
                 </div>
 
+                {/* ── Kechagi smena ogohlantirishi ── */}
+                {staleShift && shift && (
+                    <div className="pos-stale-shift-banner">
+                        <span className="pos-stale-shift-icon">⚠</span>
+                        <span className="pos-stale-shift-text">
+                            Smena {fmtShiftDate(shift.openedAt)} da ochilgan va yopilmagan
+                        </span>
+                        <div className="pos-stale-shift-actions">
+                            <button className="pos-stale-btn pos-stale-btn-close" onClick={() => setShowCloseShift(true)}>
+                                Yopish va yangi ochish
+                            </button>
+                            <button className="pos-stale-btn pos-stale-btn-continue" onClick={() => setStaleShift(false)}>
+                                Davom etish
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Main ── */}
                 <div className="pos-main">
 
                     {/* ── CHAP: Savatcha ── */}
                     <div className={`pos-left${activeTab === 'cart' ? ' pos-tab-visible' : ''}`}>
+
+                        {/* ── Tezkor mahsulotlar ── */}
+                        {favorites.length > 0 && (
+                            <div className="pos-favs-wrap">
+                                <div className="pos-favs-scroll">
+                                    {favorites.map(f => (
+                                        <button key={f.productId} className="pos-fav-chip"
+                                                onMouseDown={() => selectProduct({ id: f.productId, name: f.name, imageUrl: f.imageUrl })}>
+                                            {f.imageUrl
+                                                ? <img src={f.imageUrl} alt="" className="pos-fav-img" />
+                                                : <span className="pos-fav-dot" />}
+                                            <span className="pos-fav-name">{f.name.length > 14 ? f.name.slice(0, 13) + '…' : f.name}</span>
+                                            <span className="pos-fav-price">{fmt(f.price)}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="pos-favs-fade" />
+                            </div>
+                        )}
+
                         <div className="pos-cart-header">
                             <div className="pos-cart-header-left">
                                 <span className="pos-cart-title">Savatcha</span>
@@ -1979,16 +2071,29 @@ export default function CashierPage() {
 
                             {/* Tabs */}
                             <div className="pos-hold-tabs">
-                                <button className={`pos-hold-tab${holdTab === 'hold' ? ' active' : ''}`}
-                                        onClick={() => setHoldTab('hold')}>
-                                    Kechiktirilgan
-                                    {holdSales.length > 0 && <span className="pos-hold-tab-badge">{holdSales.length}</span>}
-                                </button>
-                                <button className={`pos-hold-tab${holdTab === 'pending' ? ' active' : ''}`}
-                                        onClick={() => { setHoldTab('pending'); loadMyPending() }}>
-                                    Yuborilgan
-                                    {myPendingOrders.length > 0 && <span className="pos-hold-tab-badge pending">{myPendingOrders.length}</span>}
-                                </button>
+                                {isAdmin ? (<>
+                                    <button className={`pos-hold-tab${holdTab === 'pending' ? ' active' : ''}`}
+                                            onClick={() => { setHoldTab('pending'); loadPendingOrders() }}>
+                                        Kutilmoqda
+                                        {pendingOrders.length > 0 && <span className="pos-hold-tab-badge pending">{pendingOrders.length}</span>}
+                                    </button>
+                                    <button className={`pos-hold-tab${holdTab === 'hold' ? ' active' : ''}`}
+                                            onClick={() => { setHoldTab('hold'); loadHoldSales() }}>
+                                        Kechiktirilgan
+                                        {holdSales.length > 0 && <span className="pos-hold-tab-badge">{holdSales.length}</span>}
+                                    </button>
+                                </>) : (<>
+                                    <button className={`pos-hold-tab${holdTab === 'hold' ? ' active' : ''}`}
+                                            onClick={() => setHoldTab('hold')}>
+                                        Kechiktirilgan
+                                        {holdSales.length > 0 && <span className="pos-hold-tab-badge">{holdSales.length}</span>}
+                                    </button>
+                                    <button className={`pos-hold-tab${holdTab === 'pending' ? ' active' : ''}`}
+                                            onClick={() => { setHoldTab('pending'); loadMyPending() }}>
+                                        Yuborilgan
+                                        {myPendingOrders.length > 0 && <span className="pos-hold-tab-badge pending">{myPendingOrders.length}</span>}
+                                    </button>
+                                </>)}
                             </div>
 
                             <div className="pos-hold-drawer-body">
@@ -2018,7 +2123,50 @@ export default function CashierPage() {
                                             </div>
                                         </div>
                                     ))
+                                ) : isAdmin ? (
+                                    // Admin — kutilmoqda (pending orders)
+                                    pendingOrders.length === 0 ? (
+                                        <div className="pos-hold-drawer-empty">Kutilayotgan buyurtma yo'q</div>
+                                    ) : pendingOrders.map(order => (
+                                        <div key={order.id} className="pos-hold-item">
+                                            <div className="pos-hold-item-info">
+                                                <div className="pos-hold-item-ref-row">
+                                                    <span className="pos-hold-item-ref">#{order.referenceNo}</span>
+                                                    <span className="pos-hold-status-badge pending">{order.sellerName}</span>
+                                                </div>
+                                                <div className="pos-hold-item-meta">
+                                                    {order.items?.length || 0} ta • {fmt(order.totalAmount)} so'm
+                                                </div>
+                                                <div className="pos-hold-item-date">
+                                                    {new Date(order.createdAt).toLocaleString('ru-RU')}
+                                                </div>
+                                            </div>
+                                            <div className="pos-hold-item-actions">
+                                                <span className="pos-hold-item-btn" onClick={() => openPending(order)}>Ochish</span>
+                                                <span className="pos-hold-item-btn pos-hold-item-btn-return"
+                                                      title="Kassirga qaytarish"
+                                                      onClick={async e => {
+                                                          e.stopPropagation()
+                                                          const reason = window.prompt('Qaytarish sababi (ixtiyoriy):')
+                                                          if (reason === null) return
+                                                          await salesApi.rejectPending(order.id, reason || undefined)
+                                                          loadPendingOrders()
+                                                          showToast('Kassirga qaytarildi')
+                                                      }}>↩</span>
+                                                <span className="pos-hold-item-cancel"
+                                                      title="Bekor qilish"
+                                                      onClick={async e => {
+                                                          e.stopPropagation()
+                                                          if (!window.confirm(`#${order.referenceNo} bekor qilinsinmi?`)) return
+                                                          await salesApi.cancel(order.id)
+                                                          loadPendingOrders()
+                                                          showToast('Bekor qilindi')
+                                                      }}>✕</span>
+                                            </div>
+                                        </div>
+                                    ))
                                 ) : (
+                                    // Kassir — yuborilgan (my pending)
                                     myPendingOrders.length === 0 ? (
                                         <div className="pos-hold-drawer-empty">Yuborilgan buyurtma yo'q</div>
                                     ) : myPendingOrders.map(s => (
@@ -2199,71 +2347,10 @@ export default function CashierPage() {
                     </button>
                 </div>
             </div>
-            {/* ── Pending panel ── */}
-            {showPendingPanel && ReactDOM.createPortal(
-                <div className="pos-overlay" onClick={() => setShowPendingPanel(false)}>
-                    <div className="pos-modal pos-modal--lg" onClick={e => e.stopPropagation()}>
-                        <div className="pos-mh">
-                            <Bell size={16} /> Kutilayotgan buyurtmalar
-                            <button onClick={() => setShowPendingPanel(false)} className="pos-modal-close"><X size={18} /></button>
-                        </div>
-                        <div className="pos-mb">
-                            {pendingOrders.length === 0 ? (
-                                <div className="pos-ss-hint" style={{ padding: 32, textAlign: 'center' }}>
-                                    Hozircha kutilayotgan buyurtma yo'q
-                                </div>
-                            ) : pendingOrders.map(order => (
-                                <div key={order.id} className="pos-pending-row">
-                                    <div className="pos-pending-info">
-                                        <div className="pos-pending-ref">{order.referenceNo}</div>
-                                        <div className="pos-pending-seller">{order.sellerName} · {order.items?.length || 0} ta mahsulot</div>
-                                        {order.notes && <div className="pos-pending-note">💬 {order.notes}</div>}
-                                    </div>
-                                    <div className="pos-pending-amount">{fmt(order.totalAmount)} so'm</div>
-                                    <div className="pos-pending-actions">
-                                        <button className="pos-pending-approve"
-                                            onClick={() => openPending(order)}>
-                                            <CheckCircle size={16} /> Ochish
-                                        </button>
-                                        <button className="pos-pending-return"
-                                            title="Kassirga qaytarish"
-                                            onClick={async () => {
-                                                const reason = window.prompt(`#${order.referenceNo} — qaytarish sababi (ixtiyoriy):`)
-                                                if (reason === null) return
-                                                await salesApi.rejectPending(order.id, reason || undefined)
-                                                loadPendingOrders()
-                                                showToast('Buyurtma kassirga qaytarildi')
-                                            }}>
-                                            <CornerUpLeft size={15} />
-                                        </button>
-                                        <button className="pos-pending-reject"
-                                            title="Bekor qilish"
-                                            onClick={async () => {
-                                                if (!window.confirm(`#${order.referenceNo} ni butunlay bekor qilasizmi?`)) return
-                                                await salesApi.cancel(order.id)
-                                                loadPendingOrders()
-                                                showToast('Buyurtma bekor qilindi')
-                                            }}>
-                                            <XCircle size={15} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="pos-mf">
-                            <button className="pos-btn-s" onClick={() => { loadPendingOrders() }}>
-                                <RefreshCw size={14} /> Yangilash
-                            </button>
-                            <button className="pos-btn-p" onClick={() => setShowPendingPanel(false)}>Yopish</button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
 
             {/* ── Approve modal ── */}
 
-            {showPayment && currentSale?.id && <PaymentModal
+            {showPayment && currentSaleRef.current?.id && <PaymentModal
                 sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null, customerName: customers.find(c => c.id === Number(customerId))?.name || currentSale.customerName }}
                 onClose={() => setShowPayment(false)}
                 onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); setLastSale(s); setCurrentSale(null); currentSaleRef.current = null; clearCart(false) }}

@@ -379,14 +379,36 @@ src/
 ---
 
 ## ⏳ Qolgan vazifalar
-| # | Vazifa | Izoh |
-|---|--------|------|
-| 1 | ~~**Sotuv → Nasiya zanjiri**~~ ✅ | Tugallandi (2026-03-26) |
-| 2 | ~~**Pending Order tizimi**~~ ✅ | Tugallandi (2026-03-30): submit/reject/my-pending + 2 tab drawer + polling |
-| 3 | **Qaytarish moduli UI** | Backend tayyor (V22, endpoint), faqat frontend kerak |
-| 4 | **P&L Hisobotlar** | Keyingi bosqich |
-| 5 | **Docker + Flyway** | Loyiha oxirida |
-| 6 | **Telegram Bot + Cloudflare Tunnel** | Masofadan kirish va bildirishnomalar |
+
+### ✅ Yakunlangan
+| Vazifa | Sana |
+|--------|------|
+| ~~Sotuv → Nasiya zanjiri~~ | 2026-03-26 |
+| ~~Pending Order tizimi~~ (submit/reject/my-pending + 2 tab drawer + polling) | 2026-03-30 |
+| ~~Kassir nomi bug fix~~ (`sale.setCashier()` olib tashlandi) | 2026-04-02 |
+
+### 🔴 Muhim — kun tartibiga ta'sir qiladi
+| # | Vazifa | Qiyinlik | Izoh |
+|---|--------|----------|------|
+| 1 | **Smena kechagi ogohlantirishi** | ✅ Tugallandi (2026-04-02) | Banner + yopish/davom etish |
+| 2 | **Real-time stok ko'rsatish** | Oson | Qidiruvda stok miqdori, 0 bo'lsa bloklash |
+| 3 | **Qaytarish moduli UI** | O'rta | Backend tayyor (V22), SalesPage da modal |
+
+### 🟡 Foydali — tezlik va qulaylik
+| # | Vazifa | Qiyinlik | Izoh |
+|---|--------|----------|------|
+| 4 | **Shtrix/QR skaneri (kamera)** | O'rta | `html5-qrcode` — telefon kamerasi |
+| 5 | **Tezkor mahsulotlar (Favorites)** | Oson | Ko'p sotilgan 10 mahsulot — 1 bosishda savatga |
+| 6 | **Buyurtmaga izoh (assistant_note)** | Oson | Adminga yuborishda izoh maydoni |
+| 7 | **Yordamchiga smena ruxsati** | Oson | SELLER roli smena ocholmaydi |
+
+### 🟢 Keyingi bosqich
+| # | Vazifa | Qiyinlik | Izoh |
+|---|--------|----------|------|
+| 8 | **P&L Hisobotlar** | Qiyin | Daromad/zarar hisoboti |
+| 9 | **Hisob-faktura PDF (A4)** | O'rta | B2B mijozlar uchun |
+| 10 | **Docker + backup** | O'rta | Loyiha oxirida |
+| 11 | **Telegram Bot + Cloudflare** | Qiyin | Masofadan kirish va bildirishnomalar |
 
 ---
 
@@ -427,6 +449,38 @@ src/
 #### Holat
 - Backend: tayyor (endpoint, DTO, V22 migration)
 - Frontend: UI sahifasi hali yo'q (rejalashtirilgan)
+
+---
+
+## Session: 2026-04-02 — Kassir nomi bug fix + Pending UX yaxshilanishlari
+
+### Bajarilgan ishlar
+
+#### Bug: Admin pending buyurtmani yakunlasa "Kassir: Admin" ko'rinardi
+- **Sabab:** `SaleService.complete()` ichida `sale.setCashier(cashier)` qatori bor edi
+- `cashierUsername` = to'lovni bajargan foydalanuvchi (admin) → original sotuvchi (Sardor) o'chirilardi
+- **Fix:** `sale.setCashier(cashier)` qatori o'chirildi
+- `completingUser` o'zgaruvchisi faqat smena topish uchun saqlanib qoldi
+- Natija: Sardor yaratgan savatcha, admin yakunlasa ham tarixda "Kassir: Sardor" ko'rinadi ✅
+
+#### Pending drawer UX — Ochish tugmasi vs butun qator
+- Admin "Ochish" tugmasini bosishi kerak — butun qator bosilganda ochilmaydi
+- Bu to'g'ri UX: 3 ta tugma bor (Ochish / Qaytarish / Bekor qilish), tasodifan bosib ketmaslik uchun
+- O'zgartirish talab qilinmadi — hozirgi holat saqlanib qolindi
+
+### Texnik eslatma
+```java
+// SaleService.complete() — o'zgarish
+// Avval:
+User cashier = userRepository.findByUsername(cashierUsername)...;
+sale.setCashier(cashier);  // ← original sotuvchini o'chirardi
+
+// Hozir:
+User completingUser = userRepository.findByUsername(cashierUsername)...;
+// sale.setCashier() chaqirilmaydi — original seller saqlanadi
+shiftRepository.findByCashierIdAndStatus(completingUser.getId(), ShiftStatus.OPEN)
+        .ifPresent(sale::setShift);
+```
 
 ---
 
@@ -521,28 +575,29 @@ Polling: har 20s — status o'zgarganda kassirga toast
 
 ---
 
-### Vazifalar ro'yxati — ustuvorlik tartibi (sodda → murakkab)
+### Vazifalar ro'yxati — aniq holat (2026-04-02 tekshiruvi)
 
-| # | Vazifa | Qiyinlik | Izoh |
-|---|--------|----------|------|
-| 1 | **Qaytim kalkulyatori** | Juda oson | CashierPage to'lov modalida "Mijoz berdi" maydoni |
-| 2 | **Do'kon smenasi (per-warehouse)** | Oson | shifts jadvali o'zgarishi, V22 migration |
-| 3 | **Yordamchiga smena ochish ruxsati** | Oson | SHIFT_OPEN permission — ega yo'q bo'lganda |
-| 4 | **Nasiya muddati eslatmasi (Dashboard)** | Oson | Dashboard widget + `/api/v1/debts/overdue` endpoint |
-| 5 | **Buyurtmaga izoh (assistant_note)** | Oson | sales jadvaliga maydon + yordamchi UI |
-| 6 | **Pending Order — ikki bosqichli sotuv** | O'rta | ASOSIY o'zgarish — V23 migration + yangi endpointlar |
-| 7 | **Real-time stok ko'rsatish (yordamchi)** | Oson | Qidiruvda stok miqdori + stokda yo'q bloklash |
-| 8 | **Yordamchi buyurtma natijasini ko'radi** | Oson | Yordamchi UI da holat: yakunlandi/bekor |
-| 9 | **Yordamchilar uchun mobile interfeys** | O'rta | Yangi `/assistant` sahifa — mobil optimallashgan |
-| 10 | **Ovoz bildirishnomasi (SSE/WebSocket)** | O'rta | Yordamchi yuborsa egada ovoz + badge yangilanadi |
-| 11 | **Tezkor mahsulotlar (Favorites)** | Oson | Eng ko'p sotilgan 10 mahsulot — 1 bosishda savatga |
-| 12 | **Shtrix kod skaneri (kamera)** | O'rta | html5-qrcode — yordamchi telefonida |
-| 13 | **Mijozni buyurtmaga biriktirish (yordamchi)** | Oson | Yordamchi UI da mijoz tanlash (ixtiyoriy) |
-| 14 | **Bo'lingan to'lov (Split payment)** | O'rta | V24 migration + to'lov modal yangilanishi |
-| 15 | **Hisob-faktura PDF (A4)** | O'rta-qiyin | B2B mijozlar uchun — iTextPDF yoki JasperReports |
-| 16 | **Avtomatik backup** | O'rta | pg_dump + rclone → Google Drive (Docker cron) |
-| 17 | **Telegram Bot — bildirishnomalar** | Qiyin | Buyurtma/nasiya/smena yopish bildirishnomalari |
-| 18 | **Cloudflare Tunnel + Telegram Mini App** | Qiyin | Masofadan to'liq kirish — egasi uchun |
+| # | Vazifa | Holat | Izoh |
+|---|--------|-------|------|
+| 1 | **Qaytim kalkulyatori** | ✅ Bor | `change > 0 → "Qaytim"` ko'rinadi (PaymentModal) |
+| 2 | **Do'kon smenasi (per-warehouse)** | ✅ Qisman | Kassir admin smenasini ko'radi; `cashier_id` nullable qilinmagan |
+| 3 | **Yordamchiga smena ochish ruxsati** | ⏳ Qilinmagan | SELLER roli smena ocholmaydi |
+| 4 | **Nasiya muddati eslatmasi (Dashboard)** | ✅ Bor | `overdueDebtCount > 0` sariq banner ko'rinadi |
+| 5 | **Buyurtmaga izoh (assistant_note)** | ⏳ Qilinmagan | Adminga yuborishda izoh maydoni yo'q |
+| 6 | **Pending Order tizimi** | ✅ Tugallandi | Submit/take/reject + 2 tab drawer + polling |
+| 7 | **Real-time stok ko'rsatish** | ⏳ Qilinmagan | Qidiruvda stok miqdori ko'rinmaydi |
+| 8 | **Yordamchi natijani ko'radi** | ✅ Bor | "Yuborilgan" tab + polling toast |
+| 9 | **Yordamchi mobile interfeys** | ✅ Qisman | CashierPage responsive; alohida `/assistant` sahifa yo'q |
+| 10 | **Ovoz/bildirishnoma** | ✅ Qisman | Polling + toast (WebSocket/SSE yo'q) |
+| 11 | **Tezkor mahsulotlar (Favorites)** | ⏳ Qilinmagan | Tez qo'shish tugmalari yo'q |
+| 12 | **Shtrix/QR skaneri (kamera)** | ⏳ Qilinmagan | Telefon kamerasi orqali qidiruv yo'q |
+| 13 | **Mijoz biriktirish** | ✅ Bor | CashierPage + PaymentModal da mijoz tanlash mavjud |
+| 14 | **Bo'lingan to'lov** | ✅ Bor | Bir necha to'lov usuli qo'shish mumkin |
+| 15 | **Qaytarish moduli UI** | ⏳ Qilinmagan | Backend tayyor (V22), SalesPage da modal kerak |
+| 16 | **Hisob-faktura PDF (A4)** | ⏳ Qilinmagan | 80mm chek bor, A4 invoice yo'q |
+| 17 | **Avtomatik backup** | ⏳ Qilinmagan | Docker bilan birga |
+| 18 | **Telegram Bot** | ⏳ Qilinmagan | — |
+| 19 | **Cloudflare Tunnel** | ⏳ Qilinmagan | — |
 
 ---
 
