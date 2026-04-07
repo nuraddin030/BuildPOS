@@ -481,7 +481,42 @@ src/
 
 ---
 
-#### 2. Edit rejimida yangi birlik qo'shish — to'liq fix (`#3 vazifa`)
+#### 2. Purchase → multi-unit fix (`#2 vazifa`)
+
+**Muammo:** Xarid qilganda non-base birlik (masalan Pochka) tanlansa, stock asosiy birlikka (Metr) qo'shilmay, Pochka ga to'g'ridan-to'g'ri yozilardi.
+
+**Backend `PurchaseService.receiveItem()` — to'liq qayta yozildi:**
+```java
+ProductUnit purchasedUnit = item.getProductUnit();
+ProductUnit stockUnit = purchasedUnit;
+BigDecimal effectiveQty = qty;
+
+if (!Boolean.TRUE.equals(purchasedUnit.getIsBaseUnit())) {
+    stockUnit = productUnitRepository
+            .findByProductIdAndIsBaseUnitTrue(purchasedUnit.getProduct().getId())
+            .orElse(purchasedUnit);
+    BigDecimal cf = purchasedUnit.getConversionFactor();
+    if (cf != null && cf.compareTo(BigDecimal.ONE) != 0) {
+        effectiveQty = qty.multiply(cf);  // 10 Dona × 4 = 40 Metr
+    }
+}
+// WarehouseStock asosiy birlik (stockUnit) ga qo'shiladi
+stock = warehouseStockRepository.findByWarehouseIdAndProductUnitId(warehouse.getId(), stockUnit.getId())
+```
+- StockMovement ham `stockUnit` va `effectiveQty` bilan yoziladi
+
+**Frontend `PurchaseNewPage.jsx` — birlik tanlash qo'shildi:**
+- `EMPTY_FORM` ga `availableUnits: []` field
+- `selectProduct()`: barcha birliklarni saqlaydi, asosiy birlik default tanlangan
+- `selectUnit()` funksiyasi — birlik o'zgartirilganda narx va birlik yangilanadi
+- UI: bir nechta birlik bo'lsa chip tugmalar (tanlangan — ko'k), bitta bo'lsa yashirin
+- Clear tugmasi `availableUnits` ham tozalaydi
+
+**Test natijasi:** 10 Dona xarid → `10 × 4 = 40 Metr` asosiy stokga to'g'ri qo'shildi ✅
+
+---
+
+#### 3. Edit rejimida yangi birlik qo'shish — to'liq fix (`#3 vazifa`)
 
 **Muammo:** Mahsulotni tahrirlashda "+" bilan yangi birlik qo'shilganda `id=null` bo'lgani uchun backend `continue` qilib o'tib ketardi — saqlanmadi.
 
