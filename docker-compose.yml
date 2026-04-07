@@ -43,6 +43,7 @@ services:
       APP_UPLOAD_DIR: /app/uploads
     volumes:
       - uploads_data:/app/uploads   # Rasmlar saqlanadi
+      - maven_cache:/root/.m2       # Maven dependency cache
     networks:
       - internal
       - proxy
@@ -111,6 +112,7 @@ services:
 volumes:
   postgres_data:                    # DB ma'lumotlari
   uploads_data:                     # Yuklangan rasmlar
+  maven_cache:                      # Maven dependency cache (build tezlashtirish)
 
 # ================================
 # Networks
