@@ -1,7 +1,7 @@
 import {useState, useEffect, useCallback} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink} from 'lucide-react'
-import {getCustomers, createCustomer, updateCustomer} from '../api/customers'
+import {getCustomers, createCustomer, updateCustomer} from '../api/Customers'
 import '../styles/ProductsPage.css'
 import {useAuth} from '../context/AuthContext'
 

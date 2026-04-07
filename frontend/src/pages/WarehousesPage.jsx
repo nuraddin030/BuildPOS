@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Warehouse, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, Star } from 'lucide-react'
-import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, toggleWarehouseStatus, setDefaultWarehouse } from '../api/warehouses'
+import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, toggleWarehouseStatus, setDefaultWarehouse } from '../api/Warehouses'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
 

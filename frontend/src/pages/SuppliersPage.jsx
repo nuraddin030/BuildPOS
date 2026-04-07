@@ -6,7 +6,7 @@ import {
 import {
     getSuppliers, createSupplier, updateSupplier,
     deleteSupplier, getSupplierDebts
-} from '../api/suppliers'
+} from '../api/Suppliers'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Ruler, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search } from 'lucide-react'
-import { getUnits, createUnit, updateUnit, deleteUnit, toggleUnitStatus } from '../api/units'
+import { getUnits, createUnit, updateUnit, deleteUnit, toggleUnitStatus } from '../api/Units'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
 

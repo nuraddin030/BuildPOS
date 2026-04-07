@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { createPurchase } from '../api/purchases'
 import { getProducts, getProductById, getWarehouses, getExchangeRate, getUnits, getCategories, createProduct } from '../api/products'
-import { getSuppliers, createSupplier } from '../api/suppliers'
+import { getSuppliers, createSupplier } from '../api/Suppliers'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')

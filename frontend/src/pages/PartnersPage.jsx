@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import {
     getPartners, createPartner, updatePartner, togglePartnerStatus
-} from '../api/partners'
+} from '../api/Partners'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 
