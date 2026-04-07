@@ -11,7 +11,11 @@ ALTER TABLE categories ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DE
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS created_by BIGINT;
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS updated_by BIGINT;
 
-ALTER TABLE categories ADD CONSTRAINT IF NOT EXISTS uq_categories_slug UNIQUE (slug);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_categories_slug') THEN
+    ALTER TABLE categories ADD CONSTRAINT uq_categories_slug UNIQUE (slug);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories (parent_id);
 CREATE INDEX IF NOT EXISTS idx_categories_status ON categories (status);
