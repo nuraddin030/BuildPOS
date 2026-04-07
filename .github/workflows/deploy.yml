@@ -2,7 +2,7 @@ name: BuildPOS — Deploy to VPS
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   deploy:
@@ -24,7 +24,7 @@ jobs:
             cd /opt/buildpos
 
             echo ">>> Kod yangilanmoqda..."
-            git pull origin main
+            git pull origin master
 
             echo ">>> Docker build va restart..."
             docker compose up --build -d
