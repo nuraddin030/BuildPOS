@@ -1,5 +1,80 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-07 — VPS Deploy, SSL, Production ishga tushirish
+
+### Bajarilgan ishlar
+
+#### 1. VPS sotib olindi va sozlandi
+- **Provider:** Eskiz.uz
+- **OS:** Ubuntu 24.04 LTS
+- **O'rnatildi:** Docker, Docker Compose, UFW (firewall), Fail2ban (brute-force himoya)
+
+#### 2. SSL sertifikat va DNS
+- **Let's Encrypt** — bepul SSL sertifikat (`certbot`)
+- **Domen:** `primestroy.uz` → VPS IP ga DNS sozlandi
+- HTTPS to'liq ishlayapti: `https://primestroy.uz` ✅
+
+#### 3. Kod deploy qilindi
+```bash
+git clone https://github.com/nuraddin030/BuildPOS.git /opt/buildpos
+cd /opt/buildpos/buildpos
+docker compose up --build -d
+```
+
+#### 4. Production bugfixlar (deploy jarayonida aniqlandi)
+
+| Muammo | Fix |
+|--------|-----|
+| `@vitejs/plugin-basic-ssl` yo'q | `vite.config.js` dan olib tashlandi |
+| `outDir: '../src/main/resources/static'` — Docker da noto'g'ri | `outDir: 'dist'` ga o'zgartirildi |
+| `import '../src/styles/...'` — noto'g'ri yo'l | `'./styles/...'` ga tuzatildi |
+| Linux case-sensitive: `api/auth` → `api/Auth` | 7 ta fayl tuzatildi |
+| `dashboardpage.css` → `DashboardPage.css` | `git mv` bilan renamed |
+| `app.jwt.secret` → `jwt.secret` | `application-prod.properties` tuzatildi |
+| `ADD CONSTRAINT IF NOT EXISTS` PostgreSQL sintaksis xatosi | `DO $$ BEGIN ... END $$` workaround |
+| `idx_categories_status` — ustun yo'q xatosi | V6 `CREATE TABLE` → `ALTER TABLE` ga o'zgartirildi |
+| `supplier_payments.paid_at` va `paid_by` ustunlari yo'q | V25 migration yaratildi |
+| `/actuator/health` 403 berardi | `SecurityConfig` da `permitAll()` qo'shildi |
+| Backend `healthcheck` wget yo'q → unhealthy loop | healthcheck olib tashlandi |
+| `server_names_hash_bucket_size` xatosi | `nginx.conf` ga qo'shildi |
+| V6 checksum mismatch (Flyway) | `flyway_schema_history` dan o'chirib, `out-of-order=true` bilan qayta bajarildi |
+
+#### 5. Admin foydalanuvchi yaratildi
+- V3 migratsiyasi ishlab `admin` foydalanuvchisi yaratilgan, lekin hash noto'g'ri edi
+- SQL orqali bcrypt hash yangilandi → `admin` / vaqtinchalik parol bilan kirish ta'minlandi
+- **Keyingi qadam:** dastur ichida kuchli parolga o'zgartirish
+
+#### 6. Qo'shimcha o'zgarishlar
+
+**`docker-compose.yml`:**
+- `maven_cache:/root/.m2` — Maven dependency cache (build tezlashtirish)
+- `node_cache:/app/node_modules` — npm cache (build tezlashtirish)
+
+**`application-prod.properties`:**
+- `jwt.secret`, `jwt.expiration` — to'g'ri property nomlari
+- `springdoc.swagger-ui.enabled=false` — Swagger production da o'chirildi
+
+---
+
+### Production muhiti
+```
+Server:  Eskiz.uz VPS (Ubuntu 24.04)
+Domen:   https://primestroy.uz
+Deploy:  Docker Compose
+DB:      PostgreSQL 16 (Docker volume)
+Proxy:   Nginx (SSL termination + reverse proxy)
+SSL:     Let's Encrypt (auto-renew)
+```
+
+### Keyingi muhim vazifalar
+| # | Vazifa | Izoh |
+|---|--------|------|
+| 1 | **GitHub Actions avtodeploy** | Push qilganda VPS da avtomatik `git pull && docker compose up --build` |
+| 2 | **Parol o'zgartirish UI** | Admin dastur ichida parolini o'zgartirsin |
+| 3 | **Kunlik DB backup cron** | PostgreSQL dump → xavfsiz joyga yuborish |
+
+---
+
 ## Loyiha haqida
 - **Nomi:** BuildPOS — Qurilish Mollari Do'koni Boshqaruv Tizimi
 - **Backend:** Java 17 + Spring Boot 3 + PostgreSQL 16 + Flyway
@@ -424,11 +499,11 @@ src/
 ---
 
 ## Deployment muhiti
-- Server: bitta lokal kompyuter (Docker)
-- Internet: bor (do'kon WiFi), lekin dastur lokal ishlaydi
-- Klientlar: telefonlar WiFi orqali kompyuter IP ga ulanadi
-- Masofadan kirish: hozircha yo'q (Cloudflare Tunnel rejalashtirilgan)
-- UPS tavsiya etiladi (elektr uzilishiga qarshi)
+- **Server:** Eskiz.uz VPS — Ubuntu 24.04 LTS ✅ ISHLAMOQDA
+- **Domen:** https://primestroy.uz (SSL — Let's Encrypt) ✅
+- **Deploy:** Docker Compose (backend + frontend + nginx + postgres)
+- **Klientlar:** Internet orqali istalgan qurilmadan kirish mumkin
+- **Lokal:** Do'kon ichida ham WiFi orqali ishlaydi
 
 ---
 
