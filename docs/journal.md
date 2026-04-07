@@ -41,7 +41,7 @@
 | V3 | init_users | roles (OWNER/ADMIN/CASHIER/STOREKEEPER), users |
 | V4 | init_suppliers | suppliers, supplier_products, supplier_debts |
 | V5 | create_supplier_payments | supplier_payments |
-| V6 | create_category_table | (tozalash migratsiyasi) |
+| V6 | create_category_table | categories jadvaliga ustunlar qo'shish (slug, status, is_deleted va boshqalar) — ALTER TABLE |
 | V7 | init_products_professional | product_units, warehouse_stock |
 | V8 | init_purchases | purchases, purchase_items, purchase_payments |
 | V9 | init_sales | customers, shifts, sales, sale_items, sale_payments, customer_debts, customer_debt_payments |
@@ -672,6 +672,28 @@ jwt.expiration=900000
 
 ---
 
+#### 7. V6 migration — CREATE TABLE → ALTER TABLE
+
+**Muammo:** `V6__create_category_table.sql` da `CREATE TABLE IF NOT EXISTS categories` yozilgan edi. Lekin V1 da jadval allaqachon yaratilgan — shuning uchun V6 **hech narsa qilmagan** (IF NOT EXISTS — jadval bor, o'tib ketadi). Natijada `slug`, `status`, `is_deleted` va boshqa ustunlar hech qachon qo'shilmagan, lekin `idx_categories_status` index yaratmoqchi — `status` ustuni yo'q bo'lgani uchun xato beradi.
+
+**Yechim:**
+- V6 → `ALTER TABLE` ga o'zgartirildi (`IF NOT EXISTS` bilan — xavfsiz)
+- Lokal DB da `DELETE FROM flyway_schema_history WHERE version = '6'` bajariladi
+- Spring Boot restart → V6 qayta bajariladi → ustunlar qo'shiladi
+
+**Flyway qoidasi eslatmasi:**
+```
+Yugurilgan migration faylini o'zgartirish → checksum xatosi!
+Yechim: flyway_schema_history dan o'chirish → qayta bajarish
+Faqat lokal DB da qabul qilinadi. Production da HECH QACHON qilma.
+```
+
+**V25 o'chirildi:** V25 ham xuddi shu ishni qilardi (ALTER TABLE categories). V6 to'g'irlangandan keyin V25 keraksiz — o'chirildi.
+
+**Joriy migration versiya: V24** (V25 o'chirildi)
+
+---
+
 ### Fayl o'zgarishlari (2026-04-07)
 - **Yangilandi:** `ProductFormPage.jsx` (conversionFactor yo'nalishi, yangi unit fix)
 - **Yangilandi:** `ProductService.java` (yangi unit create, barcode check, non-base WarehouseStock o'chirildi)
@@ -681,6 +703,8 @@ jwt.expiration=900000
 - **Yangilandi:** `src/main.jsx` (import yo'llari tuzatildi)
 - **Yangilandi:** `context/AuthContext.jsx`, `CustomersPage.jsx`, `PartnersPage.jsx`, `PurchaseNewPage.jsx`, `SuppliersPage.jsx`, `UnitsPage.jsx`, `WarehousesPage.jsx` (api/ import case-fix)
 - **Yangilandi:** `src/main/resources/application-prod.properties` (jwt property nomlari)
+- **Yangilandi:** `V6__create_category_table.sql` (CREATE TABLE → ALTER TABLE)
+- **O'chirildi:** `V25__categories_add_columns.sql` (V6 bilan birlashtrildi)
 - **Renamed:** `styles/dashboardpage.css` → `styles/DashboardPage.css`
 
 ---
