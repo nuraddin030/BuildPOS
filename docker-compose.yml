@@ -71,6 +71,8 @@ services:
       dockerfile: Dockerfile
     container_name: buildpos-frontend
     restart: unless-stopped
+    volumes:
+      - node_cache:/app/node_modules  # npm install cache (build tezlashtirish)
     networks:
       - proxy
     depends_on:
@@ -113,6 +115,7 @@ volumes:
   postgres_data:                    # DB ma'lumotlari
   uploads_data:                     # Yuklangan rasmlar
   maven_cache:                      # Maven dependency cache (build tezlashtirish)
+  node_cache:                       # npm node_modules cache (build tezlashtirish)
 
 # ================================
 # Networks
