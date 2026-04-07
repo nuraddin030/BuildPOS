@@ -644,12 +644,43 @@ build: { outDir: '../src/main/resources/static' }  // ❌ Docker da noto'g'ri
 
 ---
 
+#### 6. application-prod.properties — JWT property nomlari tuzatildi
+
+**Muammo:** `JwtUtil.java` `${jwt.secret}` va `${jwt.expiration}` o'qiydi, lekin prod faylida `app.jwt.secret` va `app.jwt.expiration` yozilgan edi — Spring boot bu property larni topa olmaydi, JWT ishlamaydi.
+
+**Tekshiruv natijasi (`@Value` vs properties):**
+| Property | `@Value` da | `dev.properties` | `prod.properties` (avval) | Fix |
+|---|---|---|---|---|
+| JWT secret | `${jwt.secret}` | `jwt.secret` ✅ | `app.jwt.secret` ❌ | `jwt.secret` ga o'zgartirildi |
+| JWT expiration | `${jwt.expiration}` | `jwt.expiration` ✅ | `app.jwt.expiration` ❌ | `jwt.expiration` ga o'zgartirildi |
+| `app.upload.dir` | `${app.upload.dir:uploads}` | yo'q (default) | `${APP_UPLOAD_DIR:/app/uploads}` ✅ | O'zgartirilmadi |
+| `server.port` | `${server.port:8080}` | yo'q | yo'q | Default `:8080` ishlaydi |
+| `app.cors.allowed-origins` | Hech qayerda `@Value` yo'q | — | mavjud | Foydalanilmaydi, xavfsiz |
+
+**Fix:**
+```properties
+# Avval:
+app.jwt.secret=${JWT_SECRET}
+app.jwt.expiration=900000
+
+# Endi:
+jwt.secret=${JWT_SECRET}
+jwt.expiration=900000
+```
+
+**Fayl:** `src/main/resources/application-prod.properties`
+
+---
+
 ### Fayl o'zgarishlari (2026-04-07)
 - **Yangilandi:** `ProductFormPage.jsx` (conversionFactor yo'nalishi, yangi unit fix)
 - **Yangilandi:** `ProductService.java` (yangi unit create, barcode check, non-base WarehouseStock o'chirildi)
+- **Yangilandi:** `PurchaseService.java` (receiveItem — multi-unit, effectiveQty)
+- **Yangilandi:** `PurchaseNewPage.jsx` (birlik tanlash chip UI)
 - **Yangilandi:** `vite.config.js` (basicSsl olib tashlandi, outDir=dist)
 - **Yangilandi:** `src/main.jsx` (import yo'llari tuzatildi)
 - **Yangilandi:** `context/AuthContext.jsx`, `CustomersPage.jsx`, `PartnersPage.jsx`, `PurchaseNewPage.jsx`, `SuppliersPage.jsx`, `UnitsPage.jsx`, `WarehousesPage.jsx` (api/ import case-fix)
+- **Yangilandi:** `src/main/resources/application-prod.properties` (jwt property nomlari)
 - **Renamed:** `styles/dashboardpage.css` → `styles/DashboardPage.css`
 
 ---
