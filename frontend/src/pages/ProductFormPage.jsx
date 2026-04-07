@@ -416,11 +416,12 @@ export default function ProductFormPage() {
 
                             {/* Asosiy birlik belgisi + Konversiya */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, padding: '10px 14px', background: u.isBaseUnit ? 'var(--primary-light, #eff6ff)' : 'var(--surface-secondary)', borderRadius: 8, border: `1px solid ${u.isBaseUnit ? 'var(--primary)' : 'var(--border)'}` }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: u.isBaseUnit ? 'var(--primary)' : 'var(--text-secondary)', userSelect: 'none' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: (isEdit && !u.id) ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, color: u.isBaseUnit ? 'var(--primary)' : 'var(--text-secondary)', userSelect: 'none', opacity: (isEdit && !u.id) ? 0.5 : 1 }}>
                                     <input
                                         type="radio"
                                         name={`baseUnit-${form.units.map((_, idx) => idx).join('-')}`}
                                         checked={u.isBaseUnit === true}
+                                        disabled={isEdit && !u.id}
                                         onChange={() => setForm(f => ({
                                             ...f,
                                             units: f.units.map((u2, idx2) => ({
@@ -432,6 +433,7 @@ export default function ProductFormPage() {
                                         style={{ accentColor: 'var(--primary)', width: 16, height: 16 }}
                                     />
                                     Asosiy birlik (stock shu yerda)
+                                    {(isEdit && !u.id) && <span style={{ fontSize: 11, fontWeight: 400, marginLeft: 4 }}>(yangi birlik — asosiy bo'lmaydi)</span>}
                                 </label>
                                 {!u.isBaseUnit && (() => {
                                     const baseUnit = form.units.find(u2 => u2.isBaseUnit)
@@ -507,24 +509,31 @@ export default function ProductFormPage() {
                             <div className="unit-stock-section">
                                 {(!isEdit || !u.id) ? (
                                     <div className="form-row">
-                                        <div className="form-group flex-1">
-                                            <label className="form-label-sm">{"Boshlang'ich zaxira"}</label>
-                                            <input type="number" className="form-input form-input-sm"
-                                                   value={u.initialStock}
-                                                   onChange={e => setUnit(i, 'initialStock', e.target.value)}
-                                                   placeholder="0" min="0" />
-                                        </div>
-                                        <div className="form-group flex-2">
-                                            <label className="form-label-sm">Omborxona</label>
-                                            <select className="form-input form-input-sm"
-                                                    value={u.warehouseId}
-                                                    onChange={e => setUnit(i, 'warehouseId', e.target.value)}>
-                                                <option value="">{'\u2014'} Tanlang {'\u2014'}</option>
-                                                {warehouses.map(w => (
-                                                    <option key={w.id} value={w.id}>{w.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        {/* Boshlang'ich zaxira faqat asosiy birlik uchun */}
+                                        {u.isBaseUnit ? (<>
+                                            <div className="form-group flex-1">
+                                                <label className="form-label-sm">{"Boshlang'ich zaxira"}</label>
+                                                <input type="number" className="form-input form-input-sm"
+                                                       value={u.initialStock}
+                                                       onChange={e => setUnit(i, 'initialStock', e.target.value)}
+                                                       placeholder="0" min="0" />
+                                            </div>
+                                            <div className="form-group flex-2">
+                                                <label className="form-label-sm">Omborxona</label>
+                                                <select className="form-input form-input-sm"
+                                                        value={u.warehouseId}
+                                                        onChange={e => setUnit(i, 'warehouseId', e.target.value)}>
+                                                    <option value="">{'\u2014'} Tanlang {'\u2014'}</option>
+                                                    {warehouses.map(w => (
+                                                        <option key={w.id} value={w.id}>{w.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </>) : (
+                                            <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 0' }}>
+                                                Zaxira asosiy birlik orqali hisoblanadi
+                                            </div>
+                                        )}
                                         <div className="form-group">
                                             <label className="form-label-sm">Minimal miqdor</label>
                                             <input type="number" className="form-input form-input-sm"

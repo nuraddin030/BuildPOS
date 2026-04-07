@@ -298,24 +298,31 @@ public class ProductService {
             for (ProductRequest.ProductUnitRequest unitReq : request.getUnits()) {
 
                 if (unitReq.getId() == null) {
-                    // ── Yangi unit qo'shish ──────────────────────────────────
+                    // ── Yangi unit qo'shish (edit orqali) ───────────────────
                     Unit unit = unitRepository.findById(unitReq.getUnitId())
                             .orElseThrow(() -> new NotFoundException("O'lchov birligi topilmadi: " + unitReq.getUnitId()));
 
-                    if (unitReq.getBarcode() != null &&
-                            productUnitRepository.existsByBarcodeAndIdNot(unitReq.getBarcode(), 0L)) {
-                        throw new AlreadyExistsException("Bu barcode allaqachon mavjud: " + unitReq.getBarcode());
+                    // Barcode: faqat boshqa mahsulotlarda yo'qligini tekshir
+                    // (o'sha mahsulotning o'z birliklarida bo'lsa — xatolik emas)
+                    if (unitReq.getBarcode() != null) {
+                        List<ProductUnit> existingUnits = productUnitRepository.findAllByProductId(product.getId());
+                        boolean usedByThisProduct = existingUnits.stream()
+                                .anyMatch(pu -> unitReq.getBarcode().equals(pu.getBarcode()));
+                        if (!usedByThisProduct
+                                && productUnitRepository.existsByBarcodeAndIdNot(unitReq.getBarcode(), 0L)) {
+                            throw new AlreadyExistsException("Bu barcode boshqa mahsulotda mavjud: " + unitReq.getBarcode());
+                        }
                     }
 
-                    boolean isBase = Boolean.TRUE.equals(unitReq.getIsBaseUnit());
+                    // Edit orqali qo'shiladigan birlik HECH QACHON asosiy birlik bo'lmaydi
                     BigDecimal cf = unitReq.getConversionFactor() != null ? unitReq.getConversionFactor() : BigDecimal.ONE;
 
                     ProductUnit newPu = ProductUnit.builder()
                             .product(product)
                             .unit(unit)
-                            .isDefault(Boolean.TRUE.equals(unitReq.getIsDefault()))
-                            .isBaseUnit(isBase)
-                            .conversionFactor(isBase ? BigDecimal.ONE : cf)
+                            .isDefault(false)
+                            .isBaseUnit(false)
+                            .conversionFactor(cf)
                             .barcode(unitReq.getBarcode())
                             .costPrice(unitReq.getCostPrice())
                             .salePrice(unitReq.getSalePrice())
@@ -323,50 +330,9 @@ public class ProductService {
                             .isActive(true)
                             .build();
 
-                    newPu = productUnitRepository.save(newPu);
-
-                    // Barcha omborlar uchun WarehouseStock yaratish
-                    List<Warehouse> warehouses = warehouseRepository.findAllByIsActiveTrue();
-                    for (Warehouse warehouse : warehouses) {
-                        BigDecimal qty = BigDecimal.ZERO;
-                        if (unitReq.getInitialStock() != null
-                                && unitReq.getWarehouseId() != null
-                                && warehouse.getId().equals(unitReq.getWarehouseId())) {
-                            qty = unitReq.getInitialStock();
-                        }
-                        WarehouseStock stock = WarehouseStock.builder()
-                                .warehouse(warehouse)
-                                .productUnit(newPu)
-                                .quantity(qty)
-                                .minStock(unitReq.getMinStock() != null ? unitReq.getMinStock() : BigDecimal.ZERO)
-                                .build();
-                        warehouseStockRepository.save(stock);
-                    }
-
-                    // Boshlang'ich zaxira StockMovement
-                    if (unitReq.getInitialStock() != null
-                            && unitReq.getInitialStock().compareTo(BigDecimal.ZERO) > 0
-                            && unitReq.getWarehouseId() != null) {
-                        final ProductUnit finalNewPu = newPu;
-                        warehouses.stream()
-                                .filter(w -> w.getId().equals(unitReq.getWarehouseId()))
-                                .findFirst()
-                                .ifPresent(warehouse -> {
-                                    StockMovement movement = StockMovement.builder()
-                                            .productUnit(finalNewPu)
-                                            .movementType(StockMovementType.ADJUSTMENT_IN)
-                                            .toWarehouse(warehouse)
-                                            .quantity(unitReq.getInitialStock())
-                                            .unitPrice(unitReq.getCostPrice())
-                                            .totalPrice(unitReq.getCostPrice() != null
-                                                    ? unitReq.getCostPrice().multiply(unitReq.getInitialStock())
-                                                    : null)
-                                            .notes("Boshlang'ich zaxira (edit)")
-                                            .referenceType("INITIAL_STOCK")
-                                            .build();
-                                    stockMovementRepository.save(movement);
-                                });
-                    }
+                    productUnitRepository.save(newPu);
+                    // Non-base unit: WarehouseStock yaratilmaydi
+                    // Zaxira asosiy birlik orqali hisoblanadi (baseStock / conversionFactor)
                     continue;
                 }
 
