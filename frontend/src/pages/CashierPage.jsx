@@ -715,6 +715,26 @@ function CreateModal({ type, onClose, onCreated }) {
     )
 }
 
+// ─── Bir birlik uchun ombordan stock hisoblash ─────────────────────────────
+// Non-base unit bo'lsa, base unit stock / conversionFactor qaytaradi
+function resolveUnitStock(unit, allUnits, warehouseId) {
+    const cf = Number(unit.conversionFactor ?? 1) || 1
+    if (unit.isBaseUnit || cf === 1) {
+        const ws = warehouseId
+            ? (unit.warehouseStocks || []).find(w => w.warehouseId === warehouseId)
+            : (unit.warehouseStocks || [])[0]
+        return ws ? Number(ws.quantity) : null
+    }
+    // Non-base: base unit ni top
+    const baseUnit = allUnits.find(u => u.isBaseUnit)
+    if (!baseUnit) return null
+    const ws = warehouseId
+        ? (baseUnit.warehouseStocks || []).find(w => w.warehouseId === warehouseId)
+        : (baseUnit.warehouseStocks || [])[0]
+    if (!ws) return null
+    return Math.floor(Number(ws.quantity) / cf * 100) / 100
+}
+
 // ─── Unit tanlash ─────────────────────────────
 function UnitModal({ data, onSelect, onClose, warehouseId }) {
     return ReactDOM.createPortal(
@@ -727,17 +747,14 @@ function UnitModal({ data, onSelect, onClose, warehouseId }) {
                     <p className="pos-unit-hint">O'lchov birligini tanlang:</p>
                     <div className="pos-unit-list">
                         {data.units.map(u => {
-                            const ws = warehouseId
-                                ? (u.warehouseStocks || []).find(w => w.warehouseId === warehouseId)
-                                : null
-                            const stock = ws ? Number(ws.quantity) : null
+                            const stock = resolveUnitStock(u, data.units, warehouseId)
                             const oos = stock !== null && stock <= 0
                             return (
                                 <button key={u.id} onClick={() => onSelect(data.product, u)}
                                         className={`pos-unit-item${oos ? ' pos-unit-item--oos' : ''}`}>
                                     <div>
-                                        <div className="pos-unit-symbol">{u.unitSymbol}</div>
-                                        {u.barcode && <div className="pos-unit-barcode">{u.barcode}</div>}
+                                        <div className="pos-unit-symbol">{u.unitName || u.unitSymbol}</div>
+                                        <div className="pos-unit-barcode">{u.unitSymbol}{u.barcode ? ` · ${u.barcode}` : ''}</div>
                                     </div>
                                     <div className="pos-unit-right">
                                         <div className="pos-unit-price">{fmt(u.salePrice)} so'm</div>
@@ -970,9 +987,15 @@ export default function CashierPage() {
     const [showHoldList, setShowHoldList] = React.useState(false)
     const [holdTab, setHoldTab] = React.useState('hold')  // 'hold' | 'pending'
     const [myPendingOrders, setMyPendingOrders] = React.useState([])
+    const myPendingRef = React.useRef([])
     const [favorites, setFavorites] = React.useState(() => getTopFavs())
     const [showCamera, setShowCamera] = React.useState(false)
+    const [showSubmitModal, setShowSubmitModal] = React.useState(false)
+    const [submitNote, setSubmitNote] = React.useState('')
     const [confirmCancel, setConfirmCancel] = React.useState(null)  // { id, referenceNo }
+    const [rejectModal, setRejectModal] = React.useState(null)     // { id, referenceNo }
+    const [rejectReason, setRejectReason] = React.useState('')
+    const [confirmCancelPending, setConfirmCancelPending] = React.useState(null)  // { id, referenceNo }
     const [warehouseModal, setWarehouseModal] = React.useState(null)  // { items: [{productUnitId, warehouses}] }
     const [warehouseSelections, setWarehouseSelections] = React.useState({})  // { productUnitId: warehouseId }
     const [pricePopoverPos, setPricePopoverPos] = React.useState({ top: 0, left: 0 })
@@ -1023,10 +1046,13 @@ export default function CashierPage() {
 
     // Toast
     const [toast, setToast] = useState(null) // { msg, type: 'success'|'error' }
-    const showToast = (msg, type = 'success') => {
+    const showToastFn = (msg, type = 'success') => {
         setToast({ msg, type })
         setTimeout(() => setToast(null), 3000)
     }
+    const showToastRef = React.useRef(showToastFn)
+    React.useEffect(() => { showToastRef.current = showToastFn })
+    const showToast = (...args) => showToastRef.current(...args)
 
     // Pending orders (ega uchun)
     const [pendingOrders, setPendingOrders] = useState([])
@@ -1071,10 +1097,17 @@ export default function CashierPage() {
         api.get('/api/v1/warehouses?size=100&active=true').then(r => setWarehouses(r.data.content || r.data || []))
     }, [])
 
-    // Polling: har 20 soniyada PENDING statusni tekshirish
+    // Polling: har 8 soniyada PENDING statusni tekshirish (kassir)
     useEffect(() => {
-        if (isAdmin) return  // admin o'z paneliga ega
-        const interval = setInterval(() => loadMyPending(true), 20000)
+        if (isAdmin) return
+        const interval = setInterval(() => loadMyPending(true), 8000)
+        return () => clearInterval(interval)
+    }, [isAdmin])
+
+    // Polling: har 10 soniyada admin pending listni yangilash
+    useEffect(() => {
+        if (!isAdmin) return
+        const interval = setInterval(() => loadPendingOrders(), 10000)
         return () => clearInterval(interval)
     }, [isAdmin])
 
@@ -1084,10 +1117,12 @@ export default function CashierPage() {
             const r = await shiftsApi.getCurrent()
             setShift(r.data)
             // Smena bugun ochilganmi? Yo'q bo'lsa — ogohlantirish
+            // sessionStorage da yopilgan shiftId saqlanadi — dismiss saqlanadi
             const openedAt = new Date(r.data.openedAt)
             const today = new Date()
             const isStale = openedAt.toDateString() !== today.toDateString()
-            setStaleShift(isStale)
+            const dismissed = sessionStorage.getItem('staleShiftDismissed')
+            setStaleShift(isStale && dismissed !== String(r.data.id))
         }
         catch { setShift(null) }
         finally { setShiftLoading(false) }
@@ -1278,8 +1313,8 @@ export default function CashierPage() {
     }
 
     const addUnitToCart = (product, unit) => {
-        const ws = (unit.warehouseStocks || []).find(w => w.warehouseId === shift?.warehouseId)
-        const stock = Number(ws?.quantity ?? unit.warehouseStocks?.[0]?.quantity ?? 0)
+        const allUnits = product.units || []
+        const stock = resolveUnitStock(unit, allUnits, shift?.warehouseId) ?? 0
         if (stock <= 0) {
             showToast(`${product.name} (${unit.unitSymbol}) — stokda yo'q`, 'error')
             return
@@ -1441,15 +1476,18 @@ export default function CashierPage() {
     }
 
     // ── Pending orders ───────────────
-    const loadPendingOrders = async () => {
+    const loadPendingOrdersFn = async () => {
         try {
             const r = await salesApi.getPending({ size: 50 })
             setPendingOrders(r.data.content || [])
         } catch { /* ruxsat yo'q bo'lsa — jim */ }
     }
+    const loadPendingOrdersRef = React.useRef(loadPendingOrdersFn)
+    React.useEffect(() => { loadPendingOrdersRef.current = loadPendingOrdersFn })
+    const loadPendingOrders = (...args) => loadPendingOrdersRef.current(...args)
 
     // ── Hold ────────────────────────
-    const loadHoldSales = async () => {
+    const loadHoldSalesFn = async () => {
         try {
             const r = await api.get('/api/v1/sales/open?size=50')
             setHoldSales(r.data.content || [])
@@ -1457,26 +1495,44 @@ export default function CashierPage() {
             console.error('Hold load error:', e.response?.status, e.response?.data)
         }
     }
+    const loadHoldSalesRef = React.useRef(loadHoldSalesFn)
+    React.useEffect(() => { loadHoldSalesRef.current = loadHoldSalesFn })
+    const loadHoldSales = (...args) => loadHoldSalesRef.current(...args)
 
     const loadMyPending = async (silent = false) => {
         try {
             const r = await salesApi.getMyPending({ size: 50 })
             const newOrders = r.data.content || []
             if (silent) {
-                // Polling: status o'zgarganlarni aniqlash
-                setMyPendingOrders(prev => {
-                    const prevIds = new Set(prev.map(o => o.id))
-                    const newIds = new Set(newOrders.map(o => o.id))
-                    prev.forEach(o => {
-                        if (!newIds.has(o.id)) {
-                            // Bu buyurtma PENDING dan chiqdi — tasdiqlandi yoki rad etildi
-                            // Notes da "Rad etildi" bor bo'lsa — rejected
-                            showToast(`📋 #${o.referenceNo} — admin ko'rib chiqdi`, 'info')
+                const newIds = new Set(newOrders.map(o => o.id))
+                const disappeared = myPendingRef.current.filter(o => !newIds.has(o.id))
+                myPendingRef.current = newOrders
+                setMyPendingOrders(newOrders)
+                console.log('[polling] disappeared:', disappeared.map(o => o.id), 'newOrders:', newOrders.map(o => o.id))
+                for (const o of disappeared) {
+                    try {
+                        const detail = await salesApi.getById(o.id)
+                        const s = detail.data
+                        console.log('[polling] sale', o.id, 'status:', s.status, 'notes:', s.notes)
+                        if (s.status === 'HOLD') {
+                            const rejLine = s.notes?.split('\n').find(l => l.includes('Rad etildi'))
+                            const reason = rejLine ? rejLine.replace('Rad etildi: ', '').trim() : ''
+                            showToast(
+                                reason
+                                    ? `↩ #${o.referenceNo} qaytarildi: ${reason}`
+                                    : `↩ #${o.referenceNo} admin tomonidan qaytarildi`,
+                                'error'
+                            )
+                            await loadHoldSales()
+                            setHoldTab('hold')
+                            setShowHoldList(true)
+                        } else if (s.status === 'COMPLETED') {
+                            showToast(`✓ #${o.referenceNo} tasdiqlandi!`, 'success')
                         }
-                    })
-                    return newOrders
-                })
+                    } catch (e) { console.error('[polling] xatolik:', e) }
+                }
             } else {
+                myPendingRef.current = newOrders
                 setMyPendingOrders(newOrders)
             }
         } catch { /* ruxsat yo'q bo'lsa — jim */ }
@@ -1540,18 +1596,32 @@ export default function CashierPage() {
         } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
     }
 
-    const handleSubmitPending = async () => {
+    const handleSubmitPending = async (note) => {
         if (!cart.length || !shift) return
         setSaving(true)
+        setShowSubmitModal(false)
+        setSubmitNote('')
         try {
+            // Eski draft/hold ni bekor qilamiz — current cart items ni yangi draftga yozish uchun
+            if (currentSaleRef.current?.id) {
+                const oldId = currentSaleRef.current.id
+                currentSaleRef.current = null
+                setCurrentSale(null)
+                salesApi.cancel(oldId).catch(() => {})  // async, kutmaymiz
+            }
             const r = await salesApi.createDraft({
                 warehouseId: shift.warehouseId,
                 customerId: customerId ? Number(customerId) : null,
                 items: cart.map(c => ({ productUnitId: c.productUnitId, warehouseId: shift.warehouseId, quantity: c.quantity, salePrice: c.salePrice })),
                 payments: []
             })
-            await api.patch(`/api/v1/sales/${r.data.id}/submit`)
-            clearCart()
+            const submitted = await salesApi.submitPending(r.data.id, note?.trim() || null)
+            clearCart(false)
+            setCurrentSale(null)
+            currentSaleRef.current = null
+            // Race condition oldini olish: API chaqiruv o'rniga to'g'ridan ref ga yozamiz
+            myPendingRef.current = [submitted.data]
+            setMyPendingOrders([submitted.data])
             showToast('Buyurtma adminga yuborildi', 'success')
         } catch (e) { showToast(e.response?.data?.message || 'Xatolik', 'error') }
         finally { setSaving(false) }
@@ -1635,6 +1705,100 @@ export default function CashierPage() {
                 {!shift && <OpenShiftModal warehouses={warehouses} onOpen={(s) => { setShift(s); setStaleShift(false) }} />}
                 {showCloseShift && <CloseShiftModal shift={shift} onClose={() => setShowCloseShift(false)} onClosed={() => { setShift(null); setShowCloseShift(false) }} />}
                 {showCamera && <CameraScanner onDetected={searchByBarcode} onClose={() => setShowCamera(false)} />}
+                {/* Kassirga qaytarish modal */}
+                {rejectModal && (
+                    <div className="pos-overlay" onClick={() => { setRejectModal(null); setRejectReason('') }}>
+                        <div className="pos-modal pos-submit-modal" onClick={e => e.stopPropagation()}>
+                            <div className="pos-submit-modal-header" style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#991b1b' }}>
+                                <span>↩</span>
+                                <span>Kassirga qaytarish — #{rejectModal.referenceNo}</span>
+                            </div>
+                            <div className="pos-submit-modal-body">
+                                <label className="pos-submit-label">Sabab (ixtiyoriy)</label>
+                                <textarea
+                                    className="pos-submit-textarea"
+                                    placeholder="Masalan: narx noto'g'ri, mahsulot yo'q..."
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    rows={3}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="pos-submit-modal-footer">
+                                <button className="pos-modal-btn-cancel" onClick={() => { setRejectModal(null); setRejectReason('') }}>
+                                    Bekor qilish
+                                </button>
+                                <button style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:7, background:'#ef4444', color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}
+                                        onClick={async () => {
+                                            await salesApi.rejectPending(rejectModal.id, rejectReason.trim() || undefined)
+                                            setRejectModal(null); setRejectReason('')
+                                            loadPendingOrders()
+                                            showToast('Kassirga qaytarildi')
+                                        }}>
+                                    Qaytarish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Pending bekor qilish tasdiqi */}
+                {confirmCancelPending && (
+                    <div className="pos-overlay" onClick={() => setConfirmCancelPending(null)}>
+                        <div className="pos-modal pos-submit-modal" onClick={e => e.stopPropagation()}>
+                            <div className="pos-submit-modal-header" style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#991b1b' }}>
+                                <span>✕</span>
+                                <span>Bekor qilish — #{confirmCancelPending.referenceNo}</span>
+                            </div>
+                            <div className="pos-submit-modal-body" style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                                Bu buyurtma butunlay bekor qilinadi. Kassir qayta yuborishi kerak bo'ladi.
+                            </div>
+                            <div className="pos-submit-modal-footer">
+                                <button className="pos-modal-btn-cancel" onClick={() => setConfirmCancelPending(null)}>
+                                    Yopish
+                                </button>
+                                <button style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:7, background:'#ef4444', color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}
+                                        onClick={async () => {
+                                            await salesApi.cancel(confirmCancelPending.id)
+                                            setConfirmCancelPending(null)
+                                            loadPendingOrders()
+                                            showToast('Bekor qilindi')
+                                        }}>
+                                    Ha, bekor qilish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {showSubmitModal && (
+                    <div className="pos-overlay" onClick={() => { setShowSubmitModal(false); setSubmitNote('') }}>
+                        <div className="pos-modal pos-submit-modal" onClick={e => e.stopPropagation()}>
+                            <div className="pos-submit-modal-header">
+                                <Bell size={16} />
+                                <span>Adminga yuborish</span>
+                            </div>
+                            <div className="pos-submit-modal-body">
+                                <label className="pos-submit-label">Izoh (ixtiyoriy)</label>
+                                <textarea
+                                    className="pos-submit-textarea"
+                                    placeholder="Masalan: mijoz chegirma so'radi, eski narxda..."
+                                    value={submitNote}
+                                    onChange={e => setSubmitNote(e.target.value)}
+                                    rows={3}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="pos-submit-modal-footer">
+                                <button className="pos-modal-btn-cancel" onClick={() => { setShowSubmitModal(false); setSubmitNote('') }}>
+                                    Bekor qilish
+                                </button>
+                                <button className="pos-modal-btn-submit" onClick={() => handleSubmitPending(submitNote)} disabled={saving}>
+                                    <Bell size={14} />
+                                    Yuborish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Toast */}
                 {toast && (
                     <div className={`pos-toast pos-toast--${toast.type}`}>
@@ -1857,7 +2021,9 @@ export default function CashierPage() {
                             setShowHoldList(v => !v)
                         }}>
                             <Clock size={15} />
-                            {holdSales.length > 0 && <span className="pos-pending-badge">{holdSales.length}</span>}
+                            {(holdSales.length + myPendingOrders.length) > 0 && (
+                                <span className="pos-pending-badge">{holdSales.length + myPendingOrders.length}</span>
+                            )}
                         </button>
                     )}
 
@@ -1880,7 +2046,10 @@ export default function CashierPage() {
                             <button className="pos-stale-btn pos-stale-btn-close" onClick={() => setShowCloseShift(true)}>
                                 Yopish va yangi ochish
                             </button>
-                            <button className="pos-stale-btn pos-stale-btn-continue" onClick={() => setStaleShift(false)}>
+                            <button className="pos-stale-btn pos-stale-btn-continue" onClick={() => {
+                                sessionStorage.setItem('staleShiftDismissed', String(shift.id))
+                                setStaleShift(false)
+                            }}>
                                 Davom etish
                             </button>
                         </div>
@@ -2113,6 +2282,16 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
                                                 </div>
+                                                {s.notes && (() => {
+                                                    const lines = s.notes.split('\n').filter(Boolean)
+                                                    const kassirNote = lines.filter(l => !l.includes('Rad etildi')).join(' ')
+                                                    const rejLine = lines.find(l => l.includes('Rad etildi'))
+                                                    const rejReason = rejLine?.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()
+                                                    return <>
+                                                        {kassirNote && <div className="pos-hold-item-note">📝 {kassirNote}</div>}
+                                                        {rejLine && <div className="pos-hold-item-rejected">↩ Admin qaytardi{rejReason ? `: ${rejReason}` : ''}</div>}
+                                                    </>
+                                                })()}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(s.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2137,6 +2316,9 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {order.items?.length || 0} ta • {fmt(order.totalAmount)} so'm
                                                 </div>
+                                                {order.notes && (
+                                                    <div className="pos-hold-item-note">📝 {order.notes}</div>
+                                                )}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(order.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2145,22 +2327,16 @@ export default function CashierPage() {
                                                 <span className="pos-hold-item-btn" onClick={() => openPending(order)}>Ochish</span>
                                                 <span className="pos-hold-item-btn pos-hold-item-btn-return"
                                                       title="Kassirga qaytarish"
-                                                      onClick={async e => {
+                                                      onClick={e => {
                                                           e.stopPropagation()
-                                                          const reason = window.prompt('Qaytarish sababi (ixtiyoriy):')
-                                                          if (reason === null) return
-                                                          await salesApi.rejectPending(order.id, reason || undefined)
-                                                          loadPendingOrders()
-                                                          showToast('Kassirga qaytarildi')
+                                                          setRejectModal({ id: order.id, referenceNo: order.referenceNo })
+                                                          setRejectReason('')
                                                       }}>↩</span>
                                                 <span className="pos-hold-item-cancel"
                                                       title="Bekor qilish"
-                                                      onClick={async e => {
+                                                      onClick={e => {
                                                           e.stopPropagation()
-                                                          if (!window.confirm(`#${order.referenceNo} bekor qilinsinmi?`)) return
-                                                          await salesApi.cancel(order.id)
-                                                          loadPendingOrders()
-                                                          showToast('Bekor qilindi')
+                                                          setConfirmCancelPending({ id: order.id, referenceNo: order.referenceNo })
                                                       }}>✕</span>
                                             </div>
                                         </div>
@@ -2179,9 +2355,15 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
                                                 </div>
-                                                {s.notes?.includes('Rad etildi') && (
-                                                    <div className="pos-hold-item-rejected">{s.notes.split('\n').find(l => l.includes('Rad etildi'))}</div>
-                                                )}
+                                                {s.notes?.includes('Rad etildi') && (() => {
+                                                    const line = s.notes.split('\n').find(l => l.includes('Rad etildi'))
+                                                    const reason = line?.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()
+                                                    return (
+                                                        <div className="pos-hold-item-rejected">
+                                                            ↩ Admin qaytardi{reason ? `: ${reason}` : ''}
+                                                        </div>
+                                                    )
+                                                })()}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(s.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2253,11 +2435,11 @@ export default function CashierPage() {
                                 <div className="pos-disc-row">
                                     <input className="pos-disc-input" type="text" inputMode="numeric"
                                            placeholder="Chegirmani kiriting"
-                                           value={discountValue}
+                                           value={fmtPrice(discountValue)}
                                            onChange={e => setDiscountValue(e.target.value.replace(/\D/g, ''))} />
                                     <div className="pos-disc-type">
                                         <button className={discountType === 'PERCENT' ? 'on' : ''} onClick={() => setDiscountType('PERCENT')}>%</button>
-                                        <button className={discountType === 'FIXED' ? 'on' : ''} onClick={() => setDiscountType('FIXED')}>UZS</button>
+                                        <button className={discountType === 'AMOUNT' ? 'on' : ''} onClick={() => setDiscountType('AMOUNT')}>UZS</button>
                                     </div>
                                 </div>
                                 <div className="pos-quick">
@@ -2299,7 +2481,7 @@ export default function CashierPage() {
                                     Kechiktirish
                                 </button>
                                 {!isAdmin && (
-                                    <button className="pos-sec-btn pos-sec-btn-amber" onClick={handleSubmitPending} disabled={!cart.length || saving}>
+                                    <button className="pos-sec-btn pos-sec-btn-amber" onClick={() => setShowSubmitModal(true)} disabled={!cart.length || saving}>
                                         <Bell size={15} />
                                         Adminga yuborish
                                     </button>
@@ -2352,7 +2534,14 @@ export default function CashierPage() {
 
             {showPayment && currentSaleRef.current?.id && <PaymentModal
                 sale={{ ...currentSale, customerId: customerId ? Number(customerId) : null, customerName: customers.find(c => c.id === Number(customerId))?.name || currentSale.customerName }}
-                onClose={() => setShowPayment(false)}
+                onClose={() => {
+                    setShowPayment(false)
+                    if (currentSaleRef.current?.id) {
+                        salesApi.cancel(currentSaleRef.current.id).catch(() => {})
+                        setCurrentSale(null)
+                        currentSaleRef.current = null
+                    }
+                }}
                 onCompleted={(s) => { setShowPayment(false); setCompletedSale(s); setLastSale(s); setCurrentSale(null); currentSaleRef.current = null; clearCart(false) }}
                 onCustomerSet={(updatedSale, customer) => {
                     setCurrentSale(updatedSale)

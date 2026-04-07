@@ -55,6 +55,8 @@ public class ProductResponse {
         private BigDecimal costPriceUsd;    // null bo'lsa — UZS da kiritilgan
         private BigDecimal exchangeRateAtSave; // saqlash vaqtidagi kurs
         private Boolean isActive;
+        private BigDecimal conversionFactor; // 1 ta shu birlik = nechta asosiy birlik
+        private Boolean isBaseUnit;          // stock shu birlikda saqlanadimi
         private List<PriceTierResponse> priceTiers;
         private List<WarehouseStockResponse> warehouseStocks;
     }

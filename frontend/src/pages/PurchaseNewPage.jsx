@@ -20,7 +20,7 @@ const fmtPrice = (val) => {
 }
 
 const EMPTY_FORM = {
-    productUnitId: null, productName: '', unitSymbol: '',
+    productUnitId: null, productName: '', unitSymbol: '', availableUnits: [],
     quantity: '', unitPrice: '', currency: 'UZS',
     exchangeRate: '', salePrice: '', minPrice: '', updatePrices: false,
 }
@@ -97,18 +97,30 @@ export default function PurchaseNewPage() {
         try {
             const res = await getProductById(product.id)
             const full = res.data
-            const unit = full.units?.[0] || full.productUnits?.[0]
+            const units = full.units || []
+            const unit = units.find(u => u.isBaseUnit) || units[0]
             setForm(prev => ({
                 ...prev,
-                productUnitId: unit?.id,
+                productUnitId: unit?.id || null,
                 productName: full.name,
                 unitSymbol: unit?.unitSymbol || unit?.symbol || '',
+                availableUnits: units,
                 salePrice: unit?.salePrice ? String(unit.salePrice) : '',
                 minPrice: unit?.minPrice ? String(unit.minPrice) : '',
             }))
         } catch {}
         setProductSearch('')
         setProductResults([])
+    }
+
+    const selectUnit = (unit) => {
+        setForm(prev => ({
+            ...prev,
+            productUnitId: unit.id,
+            unitSymbol: unit.unitSymbol || unit.symbol || '',
+            salePrice: unit.salePrice ? String(unit.salePrice) : '',
+            minPrice: unit.minPrice ? String(unit.minPrice) : '',
+        }))
     }
 
     const getItemTotalUsd = (item) =>
@@ -363,19 +375,43 @@ export default function PurchaseNewPage() {
                                 Mahsulot <span className="required">*</span>
                             </label>
                             {form.productUnitId ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span style={{
-                                        flex: 1, padding: '9px 14px', borderRadius: 8, fontSize: 14,
-                                        background: 'var(--primary-light, rgba(37,99,235,0.08))',
-                                        color: 'var(--primary)', fontWeight: 600,
-                                        display: 'flex', alignItems: 'center', gap: 8
-                                    }}>
-                                        <CheckCircle size={15} />
-                                        {form.productName} ({form.unitSymbol})
-                                    </span>
-                                    <button className="act-btn" onClick={() => setForm(f => ({ ...f, productUnitId: null, productName: '', unitSymbol: '' }))}>
-                                        <X size={13} />
-                                    </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{
+                                            flex: 1, padding: '9px 14px', borderRadius: 8, fontSize: 14,
+                                            background: 'var(--primary-light, rgba(37,99,235,0.08))',
+                                            color: 'var(--primary)', fontWeight: 600,
+                                            display: 'flex', alignItems: 'center', gap: 8
+                                        }}>
+                                            <CheckCircle size={15} />
+                                            {form.productName}
+                                        </span>
+                                        <button className="act-btn" onClick={() => setForm(f => ({ ...f, productUnitId: null, productName: '', unitSymbol: '', availableUnits: [] }))}>
+                                            <X size={13} />
+                                        </button>
+                                    </div>
+                                    {form.availableUnits.length > 1 && (
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                            {form.availableUnits.map(u => (
+                                                <button
+                                                    key={u.id}
+                                                    type="button"
+                                                    onClick={() => selectUnit(u)}
+                                                    style={{
+                                                        padding: '5px 14px', borderRadius: 20, fontSize: 13,
+                                                        border: `1.5px solid ${form.productUnitId === u.id ? 'var(--primary)' : 'var(--border)'}`,
+                                                        background: form.productUnitId === u.id ? 'var(--primary)' : 'var(--surface)',
+                                                        color: form.productUnitId === u.id ? '#fff' : 'var(--text)',
+                                                        cursor: 'pointer', fontWeight: form.productUnitId === u.id ? 600 : 400,
+                                                        transition: 'all 0.15s'
+                                                    }}
+                                                >
+                                                    {u.unitName || u.unitSymbol}
+                                                    {u.isBaseUnit && <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.75 }}>(asosiy)</span>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div style={{ position: 'relative' }}>

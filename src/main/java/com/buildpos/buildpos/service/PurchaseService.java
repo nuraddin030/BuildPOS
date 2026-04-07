@@ -348,25 +348,41 @@ public class PurchaseService {
                 ? item.getUnitPriceUzs()
                 : item.getUnitPrice();
 
-        // Stock ko'tarish
+        // Non-base unit bo'lsa → base unit topib, effectiveQty ni qo'shamiz
+        ProductUnit purchasedUnit = item.getProductUnit();
+        ProductUnit stockUnit = purchasedUnit;
+        BigDecimal effectiveQty = qty;
+
+        if (!Boolean.TRUE.equals(purchasedUnit.getIsBaseUnit())) {
+            stockUnit = productUnitRepository
+                    .findByProductIdAndIsBaseUnitTrue(purchasedUnit.getProduct().getId())
+                    .orElse(purchasedUnit);
+            BigDecimal cf = purchasedUnit.getConversionFactor();
+            if (cf != null && cf.compareTo(BigDecimal.ONE) != 0) {
+                effectiveQty = qty.multiply(cf).setScale(4, java.math.RoundingMode.HALF_UP);
+            }
+        }
+
+        // Stock ko'tarish (base unit stockiga)
+        final ProductUnit finalStockUnit = stockUnit;
         WarehouseStock stock = warehouseStockRepository
-                .findByWarehouseIdAndProductUnitId(warehouse.getId(), item.getProductUnit().getId())
+                .findByWarehouseIdAndProductUnitId(warehouse.getId(), finalStockUnit.getId())
                 .orElseGet(() -> WarehouseStock.builder()
                         .warehouse(warehouse)
-                        .productUnit(item.getProductUnit())
+                        .productUnit(finalStockUnit)
                         .quantity(BigDecimal.ZERO)
                         .minStock(BigDecimal.ZERO)
                         .build());
 
-        stock.setQuantity(stock.getQuantity().add(qty));
+        stock.setQuantity(stock.getQuantity().add(effectiveQty));
         warehouseStockRepository.save(stock);
 
         // Stock movement yozish (UZS da)
         StockMovement movement = StockMovement.builder()
-                .productUnit(item.getProductUnit())
+                .productUnit(stockUnit)
                 .movementType(StockMovementType.PURCHASE_IN)
                 .toWarehouse(warehouse)
-                .quantity(qty)
+                .quantity(effectiveQty)
                 .unitPrice(unitPriceUzs)
                 .totalPrice(unitPriceUzs.multiply(qty))
                 .referenceType("PURCHASE")

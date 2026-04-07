@@ -1,10 +1,52 @@
-HELP.md
+# ================================================
+# BuildPOS .gitignore
+# ================================================
+
+# --------------------------------
+# Maxfiy hujjatlar — HECH QACHON YUKLAMANG
+# --------------------------------
+.env
+.env.local
+.env.production
+CLAUDE.md
+journal.md
+
+# --------------------------------
+# Java / Maven (Spring Boot)
+# --------------------------------
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+*.jar
+*.class
+HELP.md
 
-### STS ###
+# --------------------------------
+# Node / React (Frontend)
+# --------------------------------
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# --------------------------------
+# Upload fayllar (rasmlar)
+# --------------------------------
+uploads/
+backend/uploads/
+
+# --------------------------------
+# IDE — IntelliJ IDEA
+# --------------------------------
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# --------------------------------
+# IDE — STS (Spring Tool Suite)
+# --------------------------------
 .apt_generated
 .classpath
 .factorypath
@@ -13,13 +55,9 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# --------------------------------
+# IDE — NetBeans
+# --------------------------------
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -29,5 +67,19 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# --------------------------------
+# IDE — VS Code
+# --------------------------------
 .vscode/
+
+# --------------------------------
+# Logs
+# --------------------------------
+*.log
+logs/
+
+# --------------------------------
+# OS
+# --------------------------------
+.DS_Store
+Thumbs.db

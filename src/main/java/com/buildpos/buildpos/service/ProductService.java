@@ -49,7 +49,7 @@ public class ProductService {
     public ProductResponse create(ProductRequest request) {
         // Slug generatsiya
         String slug = generateSlug(request.getName());
-        if (productRepository.existsBySlugAndIsDeletedFalse(slug)) {
+        if (productRepository.existsBySlug(slug)) {
             slug = slug + "-" + System.currentTimeMillis();
         }
 
@@ -111,10 +111,17 @@ public class ProductService {
             }
 
 
+            boolean isBase = Boolean.TRUE.equals(unitReq.getIsBaseUnit());
+            BigDecimal cf = unitReq.getConversionFactor() != null
+                    ? unitReq.getConversionFactor()
+                    : BigDecimal.ONE;
+
             ProductUnit productUnit = ProductUnit.builder()
                     .product(product)
                     .unit(unit)
                     .isDefault(Boolean.TRUE.equals(unitReq.getIsDefault()))
+                    .isBaseUnit(isBase)
+                    .conversionFactor(isBase ? BigDecimal.ONE : cf)
                     .barcode(unitReq.getBarcode())
                     .costPrice(unitReq.getCostPrice())
                     .salePrice(unitReq.getSalePrice())
@@ -286,29 +293,116 @@ public class ProductService {
             product.setCategory(null);
         }
 
-        // Units narxlarini yangilash + price history saqlash
+        // Units yangilash — mavjud unitlar ID bo'yicha, yangilari (id=null) qo'shiladi
         if (request.getUnits() != null) {
             for (ProductRequest.ProductUnitRequest unitReq : request.getUnits()) {
-                productUnitRepository.findByProductIdAndIsDefaultTrue(product.getId())
-                        .ifPresent(pu -> {
-                            savePriceHistoryIfChanged(pu, "cost_price", pu.getCostPrice(), unitReq.getCostPrice());
-                            savePriceHistoryIfChanged(pu, "sale_price", pu.getSalePrice(), unitReq.getSalePrice());
-                            savePriceHistoryIfChanged(pu, "min_price", pu.getMinPrice(), unitReq.getMinPrice());
-                            pu.setCostPrice(unitReq.getCostPrice());
-                            pu.setSalePrice(unitReq.getSalePrice());
-                            pu.setMinPrice(unitReq.getMinPrice());
-                            pu.setBarcode(unitReq.getBarcode());
-                            productUnitRepository.save(pu);
 
-                            // minStock — barcha omborlardagi WarehouseStock ni yangilash
-                            if (unitReq.getMinStock() != null) {
-                                List<WarehouseStock> stocks = warehouseStockRepository.findAllByProductUnitId(pu.getId());
-                                for (WarehouseStock ws : stocks) {
-                                    ws.setMinStock(unitReq.getMinStock());
-                                    warehouseStockRepository.save(ws);
-                                }
-                            }
-                        });
+                if (unitReq.getId() == null) {
+                    // ── Yangi unit qo'shish ──────────────────────────────────
+                    Unit unit = unitRepository.findById(unitReq.getUnitId())
+                            .orElseThrow(() -> new NotFoundException("O'lchov birligi topilmadi: " + unitReq.getUnitId()));
+
+                    if (unitReq.getBarcode() != null &&
+                            productUnitRepository.existsByBarcodeAndIdNot(unitReq.getBarcode(), 0L)) {
+                        throw new AlreadyExistsException("Bu barcode allaqachon mavjud: " + unitReq.getBarcode());
+                    }
+
+                    boolean isBase = Boolean.TRUE.equals(unitReq.getIsBaseUnit());
+                    BigDecimal cf = unitReq.getConversionFactor() != null ? unitReq.getConversionFactor() : BigDecimal.ONE;
+
+                    ProductUnit newPu = ProductUnit.builder()
+                            .product(product)
+                            .unit(unit)
+                            .isDefault(Boolean.TRUE.equals(unitReq.getIsDefault()))
+                            .isBaseUnit(isBase)
+                            .conversionFactor(isBase ? BigDecimal.ONE : cf)
+                            .barcode(unitReq.getBarcode())
+                            .costPrice(unitReq.getCostPrice())
+                            .salePrice(unitReq.getSalePrice())
+                            .minPrice(unitReq.getMinPrice())
+                            .isActive(true)
+                            .build();
+
+                    newPu = productUnitRepository.save(newPu);
+
+                    // Barcha omborlar uchun WarehouseStock yaratish
+                    List<Warehouse> warehouses = warehouseRepository.findAllByIsActiveTrue();
+                    for (Warehouse warehouse : warehouses) {
+                        BigDecimal qty = BigDecimal.ZERO;
+                        if (unitReq.getInitialStock() != null
+                                && unitReq.getWarehouseId() != null
+                                && warehouse.getId().equals(unitReq.getWarehouseId())) {
+                            qty = unitReq.getInitialStock();
+                        }
+                        WarehouseStock stock = WarehouseStock.builder()
+                                .warehouse(warehouse)
+                                .productUnit(newPu)
+                                .quantity(qty)
+                                .minStock(unitReq.getMinStock() != null ? unitReq.getMinStock() : BigDecimal.ZERO)
+                                .build();
+                        warehouseStockRepository.save(stock);
+                    }
+
+                    // Boshlang'ich zaxira StockMovement
+                    if (unitReq.getInitialStock() != null
+                            && unitReq.getInitialStock().compareTo(BigDecimal.ZERO) > 0
+                            && unitReq.getWarehouseId() != null) {
+                        final ProductUnit finalNewPu = newPu;
+                        warehouses.stream()
+                                .filter(w -> w.getId().equals(unitReq.getWarehouseId()))
+                                .findFirst()
+                                .ifPresent(warehouse -> {
+                                    StockMovement movement = StockMovement.builder()
+                                            .productUnit(finalNewPu)
+                                            .movementType(StockMovementType.ADJUSTMENT_IN)
+                                            .toWarehouse(warehouse)
+                                            .quantity(unitReq.getInitialStock())
+                                            .unitPrice(unitReq.getCostPrice())
+                                            .totalPrice(unitReq.getCostPrice() != null
+                                                    ? unitReq.getCostPrice().multiply(unitReq.getInitialStock())
+                                                    : null)
+                                            .notes("Boshlang'ich zaxira (edit)")
+                                            .referenceType("INITIAL_STOCK")
+                                            .build();
+                                    stockMovementRepository.save(movement);
+                                });
+                    }
+                    continue;
+                }
+
+                // ── Mavjud unitni yangilash ──────────────────────────────
+                ProductUnit pu = productUnitRepository.findById(unitReq.getId())
+                        .orElse(null);
+                if (pu == null || !pu.getProduct().getId().equals(product.getId())) continue;
+
+                // Barcode uniqueness tekshirish
+                if (unitReq.getBarcode() != null
+                        && !unitReq.getBarcode().equals(pu.getBarcode())
+                        && productUnitRepository.existsByBarcodeAndIdNot(unitReq.getBarcode(), pu.getId())) {
+                    throw new AlreadyExistsException("Bu barcode allaqachon mavjud: " + unitReq.getBarcode());
+                }
+
+                savePriceHistoryIfChanged(pu, "cost_price", pu.getCostPrice(), unitReq.getCostPrice());
+                savePriceHistoryIfChanged(pu, "sale_price", pu.getSalePrice(), unitReq.getSalePrice());
+                savePriceHistoryIfChanged(pu, "min_price", pu.getMinPrice(), unitReq.getMinPrice());
+                pu.setCostPrice(unitReq.getCostPrice());
+                pu.setSalePrice(unitReq.getSalePrice());
+                pu.setMinPrice(unitReq.getMinPrice());
+                pu.setBarcode(unitReq.getBarcode());
+                boolean isBase = Boolean.TRUE.equals(unitReq.getIsBaseUnit());
+                pu.setIsBaseUnit(isBase);
+                BigDecimal cf = unitReq.getConversionFactor() != null ? unitReq.getConversionFactor() : BigDecimal.ONE;
+                pu.setConversionFactor(isBase ? BigDecimal.ONE : cf);
+                productUnitRepository.save(pu);
+
+                // minStock — barcha omborlardagi WarehouseStock ni yangilash
+                if (unitReq.getMinStock() != null) {
+                    List<WarehouseStock> stocks = warehouseStockRepository.findAllByProductUnitId(pu.getId());
+                    for (WarehouseStock ws : stocks) {
+                        ws.setMinStock(unitReq.getMinStock());
+                        warehouseStockRepository.save(ws);
+                    }
+                }
             }
         }
 

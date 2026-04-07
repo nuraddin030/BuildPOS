@@ -365,14 +365,52 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                     )}
 
                     {/* Izoh */}
-                    {sale.notes && (
-                        <div style={{
-                            padding: '10px 14px', background: 'var(--surface-secondary)',
-                            borderRadius: 8, fontSize: 13, color: 'var(--text-secondary)'
-                        }}>
-                            📝 {sale.notes}
-                        </div>
-                    )}
+                    {sale.notes && (() => {
+                        const lines = sale.notes.split('\n').filter(Boolean)
+                        const kassirLines = lines.filter(l => !l.includes('Rad etildi'))
+                        const rejLines = lines.filter(l => l.includes('Rad etildi'))
+                        return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {kassirLines.length > 0 && (
+                                    <div style={{
+                                        padding: '10px 14px', background: 'var(--surface-secondary)',
+                                        borderRadius: 8, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span>📝</span>
+                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Kassir izohi</span>
+                                            {(sale.sellerName || sale.submittedAt) && (
+                                                <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
+                                                    {sale.sellerName}
+                                                    {sale.submittedAt && ` • ${new Date(sale.submittedAt).toLocaleString('ru-RU')}`}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {kassirLines.map((line, i) => (
+                                            <div key={i} style={{ paddingLeft: 22, color: 'var(--text-secondary)' }}>{line}</div>
+                                        ))}
+                                    </div>
+                                )}
+                                {rejLines.length > 0 && (
+                                    <div style={{
+                                        padding: '10px 14px', background: '#fef2f2',
+                                        borderRadius: 8, fontSize: 13, border: '1px solid #fecaca',
+                                        display: 'flex', flexDirection: 'column', gap: 4
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span>↩</span>
+                                            <span style={{ fontWeight: 600, color: '#dc2626' }}>Admin sababi</span>
+                                        </div>
+                                        {rejLines.map((line, i) => (
+                                            <div key={i} style={{ paddingLeft: 22, color: '#dc2626' }}>
+                                                {line.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })()}
                 </div>
 
                 {/* Footer */}
@@ -548,7 +586,8 @@ function ReturnModal({ sale, onClose, onDone }) {
 // SalesPage — Asosiy komponent
 // ════════════════════════════════════════════════════════════════
 export default function SalesPage() {
-    const { hasPermission } = useAuth()
+    const { hasPermission, user } = useAuth()
+    const isAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN'
 
     // ── State ────────────────────────────────────────────────────
     const [sales, setSales]             = useState([])
@@ -580,12 +619,13 @@ export default function SalesPage() {
         setTimeout(() => setToast(null), 3500)
     }
 
-    // ── Xodimlar ro'yxati (kassir filter uchun) ─────────────────
+    // ── Xodimlar ro'yxati (faqat admin/owner uchun) ─────────────
     useEffect(() => {
+        if (!isAdmin) return
         api.get('/api/v1/employees', { params: { size: 100 } })
             .then(res => setEmployees(res.data.content || res.data || []))
-            .catch(console.error)
-    }, [])
+            .catch(() => {})
+    }, [isAdmin])
 
     // ── Bugungi statistika ───────────────────────────────────────
     const loadStats = useCallback(() => {

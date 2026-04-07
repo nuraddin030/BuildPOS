@@ -68,9 +68,11 @@ public class SaleController {
     @PatchMapping("/{id}/submit")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER', 'ASSISTANT') or hasAuthority('SALES_SUBMIT')")
     @Operation(summary = "Savatchani tasdiqlashga yuborish (DRAFT → PENDING)")
-    public ResponseEntity<SaleResponse> submit(@PathVariable Long id) {
+    public ResponseEntity<SaleResponse> submit(
+            @PathVariable Long id,
+            @RequestParam(required = false) String note) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(saleService.submitPending(id, username));
+        return ResponseEntity.ok(saleService.submitPending(id, username, note));
     }
 
     // ── PENDING BUYURTMANI TASDIQLASH (PENDING → COMPLETED) ─────────

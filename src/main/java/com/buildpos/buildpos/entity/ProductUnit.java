@@ -41,6 +41,15 @@ public class ProductUnit {
     @Column(nullable = false)
     private Boolean isDefault = false;  // asosiy o'lchov birligi
 
+    // Konversiya: 1 ta shu birlik = nechta asosiy birlik
+    // Masalan: Pochka (250 metr) → conversionFactor = 250
+    @Column(nullable = false, precision = 12, scale = 4)
+    private BigDecimal conversionFactor = BigDecimal.ONE;
+
+    // Stock faqat asosiy birlik (isBaseUnit=true) da saqlanadi
+    @Column(nullable = false)
+    private Boolean isBaseUnit = false;
+
     @Column(unique = true)
     private String barcode;             // har unit uchun alohida barcode
 

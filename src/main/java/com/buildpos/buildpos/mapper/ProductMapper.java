@@ -37,24 +37,30 @@ public class ProductMapper {
     }
 
     public ProductSummaryResponse toSummaryResponse(Product product) {
-        // Default unit topish
+        // Asosiy birlik (isBaseUnit=true) topish; yo'q bo'lsa isDefault ga fallback
         ProductUnit defaultUnit = product.getProductUnits().stream()
-                .filter(pu -> Boolean.TRUE.equals(pu.getIsDefault()))
+                .filter(pu -> Boolean.TRUE.equals(pu.getIsBaseUnit()))
                 .findFirst()
-                .orElse(product.getProductUnits().isEmpty() ? null : product.getProductUnits().get(0));
+                .orElseGet(() -> product.getProductUnits().stream()
+                        .filter(pu -> Boolean.TRUE.equals(pu.getIsDefault()))
+                        .findFirst()
+                        .orElse(product.getProductUnits().isEmpty() ? null : product.getProductUnits().get(0)));
 
-        // Umumiy stock
-        BigDecimal totalStock = product.getProductUnits().stream()
-                .filter(pu -> Boolean.TRUE.equals(pu.getIsDefault()))
-                .findFirst()
-                .map(pu -> warehouseStockRepository.getTotalStockByProductUnitId(pu.getId()))
-                .orElse(BigDecimal.ZERO);
+        // Umumiy stock — faqat asosiy birlik dan
+        BigDecimal totalStock = defaultUnit != null
+                ? warehouseStockRepository.getTotalStockByProductUnitId(defaultUnit.getId())
+                : BigDecimal.ZERO;
 
-        // Low stock tekshirish
-        boolean isLowStock = product.getProductUnits().stream()
-                .flatMap(pu -> pu.getWarehouseStocks().stream())
-                .anyMatch(ws -> ws.getQuantity().compareTo(ws.getMinStock()) <= 0
-                        && ws.getMinStock().compareTo(BigDecimal.ZERO) > 0);
+        // Low stock tekshirish — totalStock vs minStock pragi (per-warehouse emas)
+        BigDecimal minStockThreshold = defaultUnit != null
+                ? defaultUnit.getWarehouseStocks().stream()
+                        .map(WarehouseStock::getMinStock)
+                        .filter(ms -> ms != null && ms.compareTo(BigDecimal.ZERO) > 0)
+                        .findFirst()
+                        .orElse(BigDecimal.ZERO)
+                : BigDecimal.ZERO;
+        boolean isLowStock = minStockThreshold.compareTo(BigDecimal.ZERO) > 0
+                && totalStock.compareTo(minStockThreshold) <= 0;
 
         return ProductSummaryResponse.builder()
                 .id(product.getId())
@@ -90,6 +96,8 @@ public class ProductMapper {
                 .salePrice(pu.getSalePrice())
                 .minPrice(pu.getMinPrice())
                 .isActive(pu.getIsActive())
+                .conversionFactor(pu.getConversionFactor())
+                .isBaseUnit(pu.getIsBaseUnit())
                 .priceTiers(mapPriceTiers(pu.getPriceTiers()))
                 .warehouseStocks(mapWarehouseStocks(pu.getWarehouseStocks()))
                 .build()

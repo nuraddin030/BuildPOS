@@ -1,0 +1,38 @@
+name: BuildPOS — Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to primestroy.uz
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kod
+        uses: actions/checkout@v4
+
+      - name: VPS ga deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /opt/buildpos
+
+            echo ">>> Kod yangilanmoqda..."
+            git pull origin main
+
+            echo ">>> Docker build va restart..."
+            docker compose up --build -d
+
+            echo ">>> Eski image larni tozalash..."
+            docker image prune -f
+
+            echo ">>> Holat:"
+            docker compose ps
+
+            echo "✅ Deploy muvaffaqiyatli!"

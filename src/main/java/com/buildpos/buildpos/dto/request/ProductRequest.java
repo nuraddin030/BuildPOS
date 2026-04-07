@@ -34,6 +34,8 @@ public class ProductRequest {
     @Data
     public static class ProductUnitRequest {
 
+        private Long id; // edit uchun — mavjud product_unit ID si
+
         @NotNull(message = "Unit ID bo'sh bo'lmasligi kerak")
         private Long unitId;
 
@@ -60,6 +62,12 @@ public class ProductRequest {
 
         // Minimal zaxira miqdori (ogohlantirish uchun)
         private BigDecimal minStock;
+
+        // Konversiya: 1 ta shu birlik = nechta asosiy birlik (default: 1)
+        private BigDecimal conversionFactor;
+
+        // Ushbu birlik stock uchun asosiy birlikmi?
+        private Boolean isBaseUnit;
 
         // USD narxlar (ixtiyoriy)
         private BigDecimal costPriceUsd;

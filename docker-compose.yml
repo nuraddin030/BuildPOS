@@ -1,0 +1,120 @@
+services:
+
+  # ================================
+  # PostgreSQL
+  # ================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: buildpos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal                    # Faqat ichki network — tashqaridan kirish yo'q
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ================================
+  # Spring Boot Backend
+  # ================================
+  backend:
+    build:
+      context: .                    # ← repo ildizi (src/ va pom.xml shu yerda)
+      dockerfile: Dockerfile        # ← repo ildizidagi Dockerfile
+    container_name: buildpos-backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads   # Rasmlar saqlanadi
+    networks:
+      - internal
+      - proxy
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s             # Spring Boot ishga tushishi uchun vaqt
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ================================
+  # React Frontend (Nginx)
+  # ================================
+  frontend:
+    build:
+      context: ./frontend           # ← frontend/ papkasi
+      dockerfile: Dockerfile
+    container_name: buildpos-frontend
+    restart: unless-stopped
+    networks:
+      - proxy
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ================================
+  # Nginx (SSL + Reverse Proxy)
+  # ================================
+  nginx:
+    image: nginx:alpine
+    container_name: buildpos-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/buildpos.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro    # SSL sertifikat
+      - /var/www/certbot:/var/www/certbot:ro    # Certbot tekshiruvi
+    networks:
+      - proxy
+    depends_on:
+      - frontend
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  postgres_data:                    # DB ma'lumotlari
+  uploads_data:                     # Yuklangan rasmlar
+
+# ================================
+# Networks
+# ================================
+networks:
+  internal:                         # PostgreSQL + Backend (tashqaridan ko'rinmaydi)
+  proxy:                            # Backend + Frontend + Nginx

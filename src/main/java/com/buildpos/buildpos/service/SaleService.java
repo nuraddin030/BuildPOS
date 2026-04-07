@@ -147,32 +147,8 @@ public class SaleService {
 
         sale = saleRepository.save(sale);
 
-        // DRAFT yaratilganda stock rezerv qilamiz
-        for (SaleItem item : sale.getItems()) {
-            WarehouseStock stock = warehouseStockRepository
-                    .findByWarehouseIdAndProductUnitId(
-                            item.getWarehouse().getId(), item.getProductUnit().getId())
-                    .orElseThrow(() -> new BadRequestException(
-                            item.getProductUnit().getProduct().getName() + " omborda mavjud emas"));
-            if (!StockCalculator.isEnough(stock.getQuantity(), item.getQuantity())) {
-                throw new BadRequestException(
-                        item.getProductUnit().getProduct().getName()
-                                + " uchun yetarli tovar yo'q. Mavjud: "
-                                + stock.getQuantity() + " " + item.getProductUnit().getUnit().getSymbol());
-            }
-            stock.setQuantity(StockCalculator.subtract(stock.getQuantity(), item.getQuantity()));
-            warehouseStockRepository.save(stock);
-            stockMovementRepository.save(StockMovement.builder()
-                    .productUnit(item.getProductUnit())
-                    .movementType(StockMovementType.ADJUSTMENT_OUT)
-                    .fromWarehouse(item.getWarehouse())
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getSalePrice())
-                    .totalPrice(item.getTotalPrice())
-                    .referenceType("DRAFT")
-                    .referenceId(sale.getId())
-                    .build());
-        }
+        // DRAFT yaratilganda faqat stock tekshiramiz — kamaytirishni COMPLETE/APPROVE da qilamiz
+        checkStockForSale(sale);
 
         return toResponse(sale);
     }
@@ -238,19 +214,8 @@ public class SaleService {
         shiftRepository.findByCashierIdAndStatus(completingUser.getId(), ShiftStatus.OPEN)
                 .ifPresent(sale::setShift);
 
-        // Stock DRAFT da allaqachon kamaygаn — faqat SALE_OUT movement yozamiz
-        for (SaleItem item : sale.getItems()) {
-            stockMovementRepository.save(StockMovement.builder()
-                    .productUnit(item.getProductUnit())
-                    .movementType(StockMovementType.SALE_OUT)
-                    .fromWarehouse(item.getWarehouse())
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getSalePrice())
-                    .totalPrice(item.getTotalPrice())
-                    .referenceType("SALE")
-                    .referenceId(sale.getId())
-                    .build());
-        }
+        // Stock kamaytirish + SALE_OUT movement
+        deductStockForSale(sale);
 
         if (debtAmount.compareTo(BigDecimal.ZERO) > 0) {
             CustomerDebt debt = CustomerDebt.builder()
@@ -293,7 +258,7 @@ public class SaleService {
     // TASDIQLASHGA YUBORISH (DRAFT → PENDING)
     // ─────────────────────────────────────────
     @Transactional
-    public SaleResponse submitPending(Long id, String username) {
+    public SaleResponse submitPending(Long id, String username, String note) {
         Sale sale = findById(id);
         if (sale.getStatus() != SaleStatus.DRAFT) {
             throw new BadRequestException("Faqat DRAFT statusdagi savatchani yuborish mumkin");
@@ -304,6 +269,9 @@ public class SaleService {
                 || "OWNER".equals(user.getRole().getName());
         if (!isAdminOrOwner && !sale.getSeller().getId().equals(user.getId())) {
             throw new BadRequestException("Faqat o'z savatchasini yuborish mumkin");
+        }
+        if (note != null && !note.isBlank()) {
+            sale.setNotes(note.trim());
         }
         sale.setStatus(SaleStatus.PENDING);
         sale.setSubmittedAt(LocalDateTime.now());
@@ -391,19 +359,8 @@ public class SaleService {
         shiftRepository.findByCashierIdAndStatus(cashier.getId(), ShiftStatus.OPEN)
                 .ifPresent(sale::setShift);
 
-        // Stock DRAFT da allaqachon kamaytgan — faqat SALE_OUT movement
-        for (SaleItem item : sale.getItems()) {
-            stockMovementRepository.save(StockMovement.builder()
-                    .productUnit(item.getProductUnit())
-                    .movementType(StockMovementType.SALE_OUT)
-                    .fromWarehouse(item.getWarehouse())
-                    .quantity(item.getQuantity())
-                    .unitPrice(item.getSalePrice())
-                    .totalPrice(item.getTotalPrice())
-                    .referenceType("SALE")
-                    .referenceId(sale.getId())
-                    .build());
-        }
+        // Stock kamaytirish + SALE_OUT movement
+        deductStockForSale(sale);
 
         if (debtAmount.compareTo(BigDecimal.ZERO) > 0) {
             CustomerDebt debt = CustomerDebt.builder()
@@ -474,7 +431,7 @@ public class SaleService {
                 && sale.getStatus() != SaleStatus.PENDING) {
             throw new BadRequestException("Faqat ochiq savatchani bekor qilish mumkin");
         }
-        returnStockForSale(sale, "CANCEL");
+        // DRAFT/HOLD/PENDING da stock hech qachon kaymaydi — returnStockForSale chaqirmaymiz
         sale.setStatus(SaleStatus.CANCELLED);
         return toResponse(saleRepository.save(sale));
     }
@@ -512,23 +469,34 @@ public class SaleService {
             // returnedQuantity yangilash — cascade orqali saqlanadi
             saleItem.setReturnedQuantity(alreadyReturned.add(returnItem.getQuantity()));
 
-            // Stock qaytarish
+            // Stock qaytarish — non-base unit bo'lsa base unit stockiga qaytarish
+            ProductUnit soldUnit = saleItem.getProductUnit();
+            BigDecimal cf = soldUnit.getConversionFactor();
+            BigDecimal returnBaseQty = (cf != null && cf.compareTo(BigDecimal.ONE) != 0)
+                    ? returnItem.getQuantity().multiply(cf).setScale(4, RoundingMode.HALF_UP)
+                    : returnItem.getQuantity();
+            ProductUnit stockUnit = soldUnit;
+            if (!Boolean.TRUE.equals(soldUnit.getIsBaseUnit())) {
+                stockUnit = productUnitRepository
+                        .findByProductIdAndIsBaseUnitTrue(soldUnit.getProduct().getId())
+                        .orElse(soldUnit);
+            }
             WarehouseStock stock = warehouseStockRepository
                     .findByWarehouseIdAndProductUnitId(
-                            saleItem.getWarehouse().getId(), saleItem.getProductUnit().getId())
+                            saleItem.getWarehouse().getId(), stockUnit.getId())
                     .orElse(null);
             if (stock != null) {
-                stock.setQuantity(stock.getQuantity().add(returnItem.getQuantity()));
+                stock.setQuantity(stock.getQuantity().add(returnBaseQty));
                 warehouseStockRepository.save(stock);
             }
 
             // RETURN_IN movement
             BigDecimal returnTotal = saleItem.getSalePrice().multiply(returnItem.getQuantity());
             stockMovementRepository.save(StockMovement.builder()
-                    .productUnit(saleItem.getProductUnit())
+                    .productUnit(stockUnit)
                     .movementType(StockMovementType.RETURN_IN)
                     .toWarehouse(saleItem.getWarehouse())
-                    .quantity(returnItem.getQuantity())
+                    .quantity(returnBaseQty)
                     .unitPrice(saleItem.getSalePrice())
                     .totalPrice(returnTotal)
                     .referenceType("RETURN")
@@ -630,8 +598,21 @@ public class SaleService {
     public List<Map<String, Object>> checkWarehouses(List<Long> productUnitIds) {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Long productUnitId : productUnitIds) {
+            ProductUnit unit = productUnitRepository.findById(productUnitId).orElse(null);
+            if (unit == null) continue;
+
+            // Non-base unit bo'lsa — base unit ning stockini ishlatamiz
+            Long stockUnitId = productUnitId;
+            if (!Boolean.TRUE.equals(unit.getIsBaseUnit())) {
+                stockUnitId = productUnitRepository
+                        .findByProductIdAndIsBaseUnitTrue(unit.getProduct().getId())
+                        .map(ProductUnit::getId)
+                        .orElse(productUnitId);
+            }
+
+            final Long finalStockUnitId = stockUnitId;
             List<WarehouseStock> stocks = warehouseStockRepository
-                    .findAllByProductUnitId(productUnitId)
+                    .findAllByProductUnitId(finalStockUnitId)
                     .stream()
                     .filter(s -> s.getQuantity().compareTo(BigDecimal.ZERO) > 0)
                     .toList();
@@ -728,7 +709,7 @@ public class SaleService {
         }
         BigDecimal base = price.multiply(quantity);
         if (type == DiscountType.PERCENT) {
-            return base.multiply(value).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            return base.multiply(value).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
         }
         return value.min(base);
     }
@@ -756,20 +737,106 @@ public class SaleService {
         shiftRepository.save(shift);
     }
 
-    private void returnStockForSale(Sale sale, String reason) {
-        for (SaleItem item : sale.getItems()) {
-            WarehouseStock stock = warehouseStockRepository
+    // ─────────────────────────────────────────
+    // STOCK DEDUCTION (konversiya bilan)
+    // ─────────────────────────────────────────
+
+    /**
+     * Sotilgan birlik asosiy birlik bo'lmasa, base unit ombor stockidan
+     * quantity × conversionFactor kamaytiradi.
+     */
+    private WarehouseStock resolveBaseStock(SaleItem item) {
+        ProductUnit soldUnit = item.getProductUnit();
+
+        if (Boolean.TRUE.equals(soldUnit.getIsBaseUnit())) {
+            // Asosiy birlik — to'g'ridan to'g'ri shu unit ning stocki
+            return warehouseStockRepository
                     .findByWarehouseIdAndProductUnitId(
-                            item.getWarehouse().getId(), item.getProductUnit().getId())
-                    .orElse(null);
-            if (stock == null) continue;
-            stock.setQuantity(stock.getQuantity().add(item.getQuantity()));
+                            item.getWarehouse().getId(), soldUnit.getId())
+                    .orElseThrow(() -> new BadRequestException(
+                            soldUnit.getProduct().getName() + " omborda mavjud emas"));
+        }
+
+        // Asosiy birlik emas — base unit ni topib, uning stockidan kamaytiramiz
+        ProductUnit baseUnit = productUnitRepository
+                .findByProductIdAndIsBaseUnitTrue(soldUnit.getProduct().getId())
+                .orElse(soldUnit); // fallback: o'zini ishlatamiz
+
+        return warehouseStockRepository
+                .findByWarehouseIdAndProductUnitId(
+                        item.getWarehouse().getId(), baseUnit.getId())
+                .orElseThrow(() -> new BadRequestException(
+                        soldUnit.getProduct().getName() + " omborda mavjud emas"));
+    }
+
+    /** Sotish uchun kerakli stock miqdorini hisoblaydi (qty × conversionFactor) */
+    private BigDecimal effectiveQty(SaleItem item) {
+        BigDecimal cf = item.getProductUnit().getConversionFactor();
+        if (cf == null || cf.compareTo(BigDecimal.ONE) == 0) return item.getQuantity();
+        return item.getQuantity().multiply(cf).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private void deductStockForSale(Sale sale) {
+        for (SaleItem item : sale.getItems()) {
+            WarehouseStock stock = resolveBaseStock(item);
+            BigDecimal needed = effectiveQty(item);
+            if (!StockCalculator.isEnough(stock.getQuantity(), needed)) {
+                String unitName = item.getProductUnit().getUnit().getSymbol();
+                BigDecimal available = stock.getQuantity();
+                BigDecimal cf = item.getProductUnit().getConversionFactor();
+                // Foydalanuvchiga qulay xabar: mavjud miqdorni sotilgan birlikka o'giramiz
+                BigDecimal availableInSoldUnit = (cf != null && cf.compareTo(BigDecimal.ONE) != 0)
+                        ? available.divide(cf, 2, RoundingMode.DOWN)
+                        : available;
+                throw new BadRequestException(
+                        item.getProductUnit().getProduct().getName()
+                                + " uchun yetarli tovar yo'q. Mavjud: "
+                                + availableInSoldUnit + " " + unitName);
+            }
+            stock.setQuantity(StockCalculator.subtract(stock.getQuantity(), needed));
             warehouseStockRepository.save(stock);
             stockMovementRepository.save(StockMovement.builder()
                     .productUnit(item.getProductUnit())
+                    .movementType(StockMovementType.SALE_OUT)
+                    .fromWarehouse(item.getWarehouse())
+                    .quantity(needed)
+                    .unitPrice(item.getSalePrice())
+                    .totalPrice(item.getTotalPrice())
+                    .referenceType("SALE")
+                    .referenceId(sale.getId())
+                    .build());
+        }
+    }
+
+    private void checkStockForSale(Sale sale) {
+        for (SaleItem item : sale.getItems()) {
+            WarehouseStock stock = resolveBaseStock(item);
+            BigDecimal needed = effectiveQty(item);
+            if (!StockCalculator.isEnough(stock.getQuantity(), needed)) {
+                BigDecimal cf = item.getProductUnit().getConversionFactor();
+                BigDecimal available = stock.getQuantity();
+                BigDecimal availableInSoldUnit = (cf != null && cf.compareTo(BigDecimal.ONE) != 0)
+                        ? available.divide(cf, 2, RoundingMode.DOWN)
+                        : available;
+                throw new BadRequestException(
+                        item.getProductUnit().getProduct().getName()
+                                + " uchun yetarli tovar yo'q. Mavjud: "
+                                + availableInSoldUnit + " " + item.getProductUnit().getUnit().getSymbol());
+            }
+        }
+    }
+
+    private void returnStockForSale(Sale sale, String reason) {
+        for (SaleItem item : sale.getItems()) {
+            WarehouseStock stock = resolveBaseStock(item);
+            BigDecimal qty = effectiveQty(item);
+            stock.setQuantity(stock.getQuantity().add(qty));
+            warehouseStockRepository.save(stock);
+            stockMovementRepository.save(StockMovement.builder()
+                    .productUnit(stock.getProductUnit())
                     .movementType(StockMovementType.ADJUSTMENT_IN)
                     .toWarehouse(item.getWarehouse())
-                    .quantity(item.getQuantity())
+                    .quantity(qty)
                     .unitPrice(item.getSalePrice())
                     .totalPrice(item.getTotalPrice())
                     .referenceType(reason)

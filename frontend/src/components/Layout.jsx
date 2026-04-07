@@ -14,6 +14,7 @@ import PurchasesPage from '../pages/PurchasesPage'
 import PurchaseNewPage from '../pages/PurchaseNewPage'
 import PurchaseDetailPage from '../pages/PurchaseDetailPage'
 import StockMovementsPage from '../pages/StockMovementsPage'
+import ProductFormPage from '../pages/ProductFormPage'
 import SalesPage from "../pages/SalesPage.jsx";
 import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
@@ -359,6 +360,12 @@ export default function Layout() {
                         } />
                         <Route path="/products" element={
                             <ProtectedRoute permission="PRODUCTS_VIEW"><ProductsPage /></ProtectedRoute>
+                        } />
+                        <Route path="/products/new" element={
+                            <ProtectedRoute permission="PRODUCTS_CREATE"><ProductFormPage /></ProtectedRoute>
+                        } />
+                        <Route path="/products/:id/edit" element={
+                            <ProtectedRoute permission="PRODUCTS_EDIT"><ProductFormPage /></ProtectedRoute>
                         } />
                         <Route path="/categories" element={
                             <ProtectedRoute permission="CATEGORIES_VIEW"><CategoriesPage /></ProtectedRoute>

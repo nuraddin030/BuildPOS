@@ -613,6 +613,37 @@ to   { opacity: 1; transform: translateY(0); }
     margin-bottom: 22px;
 }
 
+.form-row-4 .form-group {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ---- Input ichidagi action tugmalar ---- */
+.input-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.input-action-btn:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.input-action-btn:active {
+    transform: scale(0.93);
+}
+
 .flex-1 { flex: 1; }
 .flex-2 { flex: 2; }
 
@@ -1144,6 +1175,72 @@ to   { opacity: 1; transform: translateX(0); }
 
 .toast-msg--success { background: #22c55e; }
 .toast-msg--error   { background: #ef4444; }
+
+/* ---- ProductFormPage ---- */
+.product-form-page {
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.products-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+.btn-back:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.btn-save-page {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 20px;
+    height: 36px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.btn-save-page:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-save-page:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+.btn-cancel-page {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 36px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.btn-cancel-page:hover { background: var(--surface-secondary); }
 
 @media (max-width: 768px) {
     .stock-info-row {

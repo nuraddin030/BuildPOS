@@ -10,7 +10,7 @@ export const salesApi = {
     checkWarehouses: (ids)        => api.post('/api/v1/sales/check-warehouses', ids),
 
     // ── PENDING ORDER ─────────────────────────────────────────────────
-    submitPending:  (id)          => api.patch(`/api/v1/sales/${id}/submit`),
+    submitPending:  (id, note)    => api.patch(`/api/v1/sales/${id}/submit`, null, note ? { params: { note } } : {}),
     approvePending: (id, data)    => api.post(`/api/v1/sales/${id}/approve`, data),
     rejectPending:  (id, reason)  => api.patch(`/api/v1/sales/${id}/reject`, null, { params: { reason } }),
     takePending:    (id)          => api.patch(`/api/v1/sales/${id}/take`),
