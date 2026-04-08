@@ -345,7 +345,7 @@
 /* ── Note input ── */
 .inv-note-input {
     width: 100%;
-    min-width: 120px;
+    min-width: 80px;
     padding: 4px 8px;
     border: 1px solid transparent;
     border-radius: 6px;
@@ -354,6 +354,7 @@
     font-size: 12px;
     outline: none;
     font-family: inherit;
+    text-align: center;
 }
 
 .inv-note-input:hover { border-color: var(--border); }

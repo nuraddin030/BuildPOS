@@ -281,17 +281,17 @@ function SessionDetail({ sessionId }) {
                             <col style={{ width: '32%' }} />
                             <col style={{ width: '16%' }} />
                             <col style={{ width: '16%' }} />
-                            <col style={{ width: '14%' }} />
-                            <col style={{ width: '18%' }} />
+                            <col style={{ width: '16%' }} />
+                            <col style={{ width: '16%' }} />
                         </colgroup>
                         <thead>
                         <tr>
                             <th className="th-num">#</th>
                             <th>Mahsulot</th>
-                            <th className="th-right">Tizim miqdori</th>
+                            <th className="th-center">Tizim miqdori</th>
                             <th className="th-center">Haqiqiy miqdor</th>
-                            <th className="th-right">Farq</th>
-                            <th>Izoh</th>
+                            <th className="th-center">Farq</th>
+                            <th className="th-center">Izoh</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -307,7 +307,7 @@ function SessionDetail({ sessionId }) {
                                         <span className="cell-name">{item.productName}</span>
                                         <span className="cell-muted" style={{ marginLeft: 6, fontSize: 12 }}>{item.unitSymbol}</span>
                                     </td>
-                                    <td className="th-right">
+                                    <td className="th-center">
                                         <span style={{ fontWeight: 500 }}>{fmt(item.systemQty)}</span>
                                     </td>
                                     <td className="th-center">
@@ -329,14 +329,14 @@ function SessionDetail({ sessionId }) {
                                             <span style={{ fontWeight: 600 }}>{fmt(item.actualQty)}</span>
                                         )}
                                     </td>
-                                    <td className="th-right">
+                                    <td className="th-center">
                                         {diff != null && (
                                             <span style={{ color: diffColor, fontWeight: 700 }}>
                                                 {diff > 0 ? '+' : ''}{fmt(diff)}
                                             </span>
                                         )}
                                     </td>
-                                    <td>
+                                    <td className="th-center">
                                         {isDraft && canManage ? (
                                             <input className="inv-note-input" type="text"
                                                    defaultValue={item.notes || ''}
