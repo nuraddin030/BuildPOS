@@ -359,7 +359,7 @@ function SessionDetail({ sessionId }) {
             {confirmModal === 'complete' && (
                 <ConfirmModal
                     title="Inventarizatsiyani yakunlash"
-                    message="Kiritilgan farqlar omborga ADJUSTMENT sifatida yoziladi. Davom etasizmi?"
+                    message="Kiritilgan farqlar omborga kirim/chiqim sifatida yoziladi. Davom etasizmi?"
                     confirmLabel="Yakunlash"
                     confirmClass="inv-btn-success"
                     onConfirm={doComplete}
