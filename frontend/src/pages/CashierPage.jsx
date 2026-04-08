@@ -1121,8 +1121,8 @@ export default function CashierPage() {
             const openedAt = new Date(r.data.openedAt)
             const today = new Date()
             const isStale = openedAt.toDateString() !== today.toDateString()
-            const dismissed = sessionStorage.getItem('staleShiftDismissed')
-            setStaleShift(isStale && dismissed !== String(r.data.id))
+            const dismissKey = `staleShiftDismissed_${r.data.id}_${today.toDateString()}`
+            setStaleShift(isStale && !sessionStorage.getItem(dismissKey))
         }
         catch { setShift(null) }
         finally { setShiftLoading(false) }
@@ -2056,11 +2056,15 @@ export default function CashierPage() {
                             Smena {fmtShiftDate(shift.openedAt)} da ochilgan va yopilmagan
                         </span>
                         <div className="pos-stale-shift-actions">
-                            <button className="pos-stale-btn pos-stale-btn-close" onClick={() => setShowCloseShift(true)}>
-                                Yopish va yangi ochish
-                            </button>
+                            {(user?.role === 'ADMIN' || user?.role === 'OWNER' ||
+                              user?.role === 'ROLE_ADMIN' || user?.role === 'ROLE_OWNER') && (
+                                <button className="pos-stale-btn pos-stale-btn-close" onClick={() => setShowCloseShift(true)}>
+                                    Yopish va yangi ochish
+                                </button>
+                            )}
                             <button className="pos-stale-btn pos-stale-btn-continue" onClick={() => {
-                                sessionStorage.setItem('staleShiftDismissed', String(shift.id))
+                                const key = `staleShiftDismissed_${shift.id}_${new Date().toDateString()}`
+                                sessionStorage.setItem(key, '1')
                                 setStaleShift(false)
                             }}>
                                 Davom etish

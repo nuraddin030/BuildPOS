@@ -1,5 +1,49 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-08 (2) — Narx tarixi + Smena ogohlantirish bugfixlar
+
+### Bajarilgan ishlar
+
+#### 1. Narx tarixi (#6) — PRICE_HISTORY_VIEW permission
+- `V27__price_history_permission.sql` — yangi `PRICE_HISTORY_VIEW` permission
+- `ProductPriceHistoryRepository` — yangi repository
+- `PriceHistoryResponse` DTO — lazy loading xatoligidan qochish uchun
+- `ProductService.getPriceHistory()` + `savePriceHistoryIfChanged()` to'liq ishlaydi
+- `ProductController` — `GET /units/{unitId}/price-history` (permission himoyasida)
+- `ProductSummaryResponse` + `ProductMapper` — `defaultUnitId` qo'shildi
+- `ProductsPage` — har bir mahsulot qatorida `📈` tugmasi (faqat `PRICE_HISTORY_VIEW` ruxsatida)
+- `ProductFormPage` — tahrirlash formida har bir birlik uchun narx tarixi tugmasi
+
+#### 2. Smena ogohlantirish — 2 ta bugfix
+
+**Bug: Kassirda "Yopish va yangi ochish" tugmasi chiqardi**
+- Sabab: banner barcha foydalanuvchilarga ko'rsatilardi
+- Fix: "Yopish va yangi ochish" tugmasi faqat `ADMIN`/`OWNER` uchun ko'rinadi
+- Kassir faqat "Davom etish" ni ko'radi → adashib smena yopa olmaydi
+
+**Bug: Ertasi kun ogohlantirish qayta chiqmay qolardi**
+- Sabab: `sessionStorage` da faqat `shiftId` saqlanardi; shiftId o'zgarmaydi → dismiss abadiy
+- Fix: dismiss kalitiga sana qo'shildi: `staleShiftDismissed_{id}_{date}`
+- Har kuni yangi kalit → har kuni bir marta ogohlantirish ko'rinadi
+
+### Fayllar o'zgarishi
+| Fayl | O'zgarish |
+|------|-----------|
+| `V27__price_history_permission.sql` | Yangi migration |
+| `ProductPriceHistoryRepository.java` | Yangi repository |
+| `PriceHistoryResponse.java` | Yangi DTO |
+| `ProductService.java` | `getPriceHistory`, `savePriceHistoryIfChanged` |
+| `ProductController.java` | Narx tarixi endpoint |
+| `ProductSummaryResponse.java` | `defaultUnitId` qo'shildi |
+| `ProductMapper.java` | `defaultUnitId` to'ldiriladi |
+| `products.js` | `getPriceHistory` API |
+| `ProductsPage.jsx` | `📈` tugmasi va modal |
+| `ProductFormPage.jsx` | Birlikda narx tarixi tugmasi |
+| `ProductsPage.css` | `.act-history`, `.ph-*` stillari |
+| `CashierPage.jsx` | Smena ogohlantirish — 2 ta bugfix |
+
+---
+
 ## Session: 2026-04-08 — Pending Order + Kiberxavfsizlik bugfixlar
 
 ### Bajarilgan ishlar
