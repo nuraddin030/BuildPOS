@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { inventoryApi } from '../api/inventory'
 import { getWarehouses } from '../api/products'
 import {
@@ -95,8 +96,9 @@ function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, o
 }
 
 // ── Sessiya detali (mahsulotlar ro'yxati + kiritish) ───────────────
-function SessionDetail({ sessionId, onBack, onCompleted }) {
+function SessionDetail({ sessionId }) {
     const { hasPermission, user } = useAuth()
+    const navigate = useNavigate()
     const [session, setSession] = useState(null)
     const [loading, setLoading] = useState(true)
     const [completing, setCompleting] = useState(false)
@@ -162,8 +164,8 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
         setConfirmModal(null)
         setCompleting(true)
         try {
-            const r = await inventoryApi.complete(sessionId)
-            onCompleted(r.data)
+            await inventoryApi.complete(sessionId)
+            navigate('/inventory')
         } catch (e) {
             console.error(e)
         } finally {
@@ -176,7 +178,7 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
         setDeleting(true)
         try {
             await inventoryApi.delete(sessionId)
-            onBack()
+            navigate('/inventory')
         } catch (e) {
             console.error(e)
             setDeleting(false)
@@ -203,7 +205,7 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
             {/* Header */}
             <div className="inv-detail-header">
                 <div className="inv-detail-header-left">
-                    <button className="inv-back-btn" onClick={onBack}>
+                    <button className="inv-back-btn" onClick={() => navigate('/inventory')}>
                         <ArrowLeft size={18} />
                     </button>
                     <div>
@@ -383,13 +385,24 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
 // ══════════════════════════════════════════════════════════════════
 export default function InventoryPage() {
     const { hasPermission, user } = useAuth()
+    const navigate = useNavigate()
+    const { id } = useParams()
+
+    // Detail view — URL da id bo'lsa
+    if (id) {
+        return <SessionDetail sessionId={Number(id)} />
+    }
+
+    return <InventoryList hasPermission={hasPermission} user={user} navigate={navigate} />
+}
+
+function InventoryList({ hasPermission, user, navigate }) {
     const [sessions, setSessions] = useState([])
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
     const [size] = useState(20)
     const [loading, setLoading] = useState(false)
     const [createOpen, setCreateOpen] = useState(false)
-    const [selectedId, setSelectedId] = useState(null)
 
     const canManage = hasPermission('INVENTORY_MANAGE') ||
         user?.role === 'ADMIN' || user?.role === 'OWNER' ||
@@ -407,16 +420,6 @@ export default function InventoryPage() {
     useEffect(() => { load() }, [load])
 
     const totalPages = Math.ceil(total / size)
-
-    if (selectedId) {
-        return (
-            <SessionDetail
-                sessionId={selectedId}
-                onBack={() => { setSelectedId(null); load() }}
-                onCompleted={() => { setSelectedId(null); load() }}
-            />
-        )
-    }
 
     return (
         <div className="products-wrapper">
@@ -471,7 +474,7 @@ export default function InventoryPage() {
                                 const st = STATUS[s.status] || {}
                                 return (
                                     <tr key={s.id} style={{ cursor: 'pointer' }}
-                                        onClick={() => setSelectedId(s.id)}>
+                                        onClick={() => navigate(`/inventory/${s.id}`)}>
                                         <td className="cell-num">#{s.id}</td>
                                         <td><span className="cell-name">{s.warehouseName}</span></td>
                                         <td className="th-center">
@@ -494,7 +497,7 @@ export default function InventoryPage() {
                                             <div className="action-group">
                                                 <button className="act-btn act-edit"
                                                         title="Ko'rish"
-                                                        onClick={() => setSelectedId(s.id)}>
+                                                        onClick={() => navigate(`/inventory/${s.id}`)}>
                                                     <ClipboardList size={14} />
                                                 </button>
                                             </div>
@@ -530,7 +533,7 @@ export default function InventoryPage() {
                     onClose={() => setCreateOpen(false)}
                     onCreate={(session) => {
                         setCreateOpen(false)
-                        setSelectedId(session.id)
+                        navigate(`/inventory/${session.id}`)
                     }}
                 />
             )}

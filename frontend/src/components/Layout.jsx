@@ -414,6 +414,9 @@ export default function Layout() {
                         <Route path="/inventory" element={
                             <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>
                         } />
+                        <Route path="/inventory/:id" element={
+                            <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>
+                        } />
                     </Routes>
                 </div>
             </div>
