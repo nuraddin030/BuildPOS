@@ -1,6 +1,7 @@
 package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.request.ApprovePendingRequest;
+import com.buildpos.buildpos.dto.request.ResubmitRequest;
 import com.buildpos.buildpos.dto.request.ReturnRequest;
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
@@ -9,6 +10,8 @@ import com.buildpos.buildpos.entity.Partner;
 import com.buildpos.buildpos.repository.PartnerRepository;
 import com.buildpos.buildpos.entity.*;
 import com.buildpos.buildpos.entity.enums.DiscountType;
+import com.buildpos.buildpos.repository.SaleItemRepository;
+import com.buildpos.buildpos.repository.SaleNoteRepository;
 import com.buildpos.buildpos.entity.enums.SaleStatus;
 import com.buildpos.buildpos.entity.enums.ShiftStatus;
 import com.buildpos.buildpos.entity.enums.StockMovementType;
@@ -47,6 +50,8 @@ public class SaleService {
     private final StockMovementRepository stockMovementRepository;
     private final UserRepository userRepository;
     private final PartnerRepository partnerRepository;
+    private final SaleNoteRepository saleNoteRepository;
+    private final SaleItemRepository saleItemRepository;
 
     // ─────────────────────────────────────────
     // SAVATCHA YARATISH
@@ -271,7 +276,12 @@ public class SaleService {
             throw new BadRequestException("Faqat o'z savatchasini yuborish mumkin");
         }
         if (note != null && !note.isBlank()) {
-            sale.setNotes(note.trim());
+            saleNoteRepository.save(SaleNote.builder()
+                    .sale(sale)
+                    .sender(user)
+                    .senderName(user.getFullName())
+                    .message(note.trim())
+                    .build());
         }
         sale.setStatus(SaleStatus.PENDING);
         sale.setSubmittedAt(LocalDateTime.now());
@@ -396,16 +406,82 @@ public class SaleService {
     // RAD ETISH (PENDING → HOLD)
     // ─────────────────────────────────────────
     @Transactional
-    public SaleResponse rejectPending(Long id, String reason) {
+    public SaleResponse rejectPending(Long id, String reason, String username) {
         Sale sale = findById(id);
-        if (sale.getStatus() != SaleStatus.PENDING) {
-            throw new BadRequestException("Faqat PENDING statusdagi buyurtmani rad etish mumkin");
+        if (sale.getStatus() != SaleStatus.PENDING && sale.getStatus() != SaleStatus.DRAFT) {
+            throw new BadRequestException("Faqat PENDING yoki DRAFT statusdagi buyurtmani qaytarish mumkin");
         }
         sale.setStatus(SaleStatus.HOLD);
-        if (reason != null && !reason.isBlank()) {
-            String existing = sale.getNotes() != null ? sale.getNotes() + "\n" : "";
-            sale.setNotes(existing + "Rad etildi: " + reason);
+        String message = reason != null && !reason.isBlank() ? "↩ Rad etildi: " + reason.trim() : "↩ Rad etildi";
+        User sender = userRepository.findByUsername(username).orElse(null);
+        saleNoteRepository.save(SaleNote.builder()
+                .sale(sale)
+                .sender(sender)
+                .senderName(sender != null ? sender.getFullName() : username)
+                .message(message)
+                .build());
+        return toResponse(saleRepository.save(sale));
+    }
+
+    // ─────────────────────────────────────────
+    // QAYTA YUBORISH + ITEMLARNI YANGILASH
+    // ─────────────────────────────────────────
+    @Transactional
+    public SaleResponse resubmitWithItems(Long id, ResubmitRequest request, String username) {
+        Sale sale = findById(id);
+        if (sale.getStatus() != SaleStatus.DRAFT) {
+            throw new BadRequestException("Faqat DRAFT statusdagi savatchani qayta yuborish mumkin");
         }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Foydalanuvchi topilmadi: " + username));
+
+        // Eski itemlarni o'chiramiz
+        saleItemRepository.deleteAllBySaleId(id);
+        sale.getItems().clear();
+
+        // Yangi itemlarni qo'shamiz
+        BigDecimal subtotal = BigDecimal.ZERO;
+        for (ResubmitRequest.ItemRequest itemReq : request.getItems()) {
+            ProductUnit productUnit = productUnitRepository.findById(itemReq.getProductUnitId())
+                    .orElseThrow(() -> new NotFoundException("Mahsulot topilmadi: " + itemReq.getProductUnitId()));
+            Warehouse itemWarehouse = warehouseRepository.findById(itemReq.getWarehouseId())
+                    .orElseThrow(() -> new NotFoundException("Ombor topilmadi: " + itemReq.getWarehouseId()));
+
+            BigDecimal salePrice = itemReq.getSalePrice() != null ? itemReq.getSalePrice() : productUnit.getSalePrice();
+            BigDecimal itemTotal = salePrice.multiply(itemReq.getQuantity());
+            subtotal = subtotal.add(itemTotal);
+
+            SaleItem item = SaleItem.builder()
+                    .sale(sale)
+                    .productUnit(productUnit)
+                    .warehouse(itemWarehouse)
+                    .quantity(itemReq.getQuantity())
+                    .originalPrice(productUnit.getSalePrice())
+                    .salePrice(salePrice)
+                    .minPrice(productUnit.getMinPrice())
+                    .discountAmount(BigDecimal.ZERO)
+                    .totalPrice(itemTotal)
+                    .build();
+            sale.getItems().add(item);
+        }
+
+        sale.setSubtotal(subtotal);
+        sale.setDiscountAmount(BigDecimal.ZERO);
+        sale.setTotalAmount(subtotal);
+
+        // Izoh saqlash
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            saleNoteRepository.save(SaleNote.builder()
+                    .sale(sale)
+                    .sender(user)
+                    .senderName(user.getFullName())
+                    .message(request.getNote().trim())
+                    .build());
+        }
+
+        sale.setStatus(SaleStatus.PENDING);
+        sale.setSubmittedAt(LocalDateTime.now());
+        checkStockForSale(sale);
         return toResponse(saleRepository.save(sale));
     }
 
@@ -586,7 +662,7 @@ public class SaleService {
         if (sale.getStatus() != SaleStatus.HOLD && sale.getStatus() != SaleStatus.DRAFT) {
             throw new BadRequestException("Faqat HOLD yoki DRAFT statusdagi savatchani ochish mumkin");
         }
-        returnStockForSale(sale, "UNHOLD");
+        // HOLD/DRAFT hech qachon stockni kamaytirmaydi — returnStock chaqirish noto'g'ri
         sale.setStatus(SaleStatus.DRAFT);
         return toResponse(saleRepository.save(sale));
     }
@@ -926,6 +1002,14 @@ public class SaleService {
                                 .amount(p.getAmount())
                                 .notes(p.getNotes())
                                 .dueDate(p.getDueDate())
+                                .build()).toList())
+                .saleNotes(saleNoteRepository.findAllBySaleIdOrderByCreatedAtAsc(sale.getId())
+                        .stream().map(n -> SaleResponse.SaleNoteResponse.builder()
+                                .id(n.getId())
+                                .senderId(n.getSender() != null ? n.getSender().getId() : null)
+                                .senderName(n.getSenderName())
+                                .message(n.getMessage())
+                                .createdAt(n.getCreatedAt())
                                 .build()).toList())
                 .build();
     }

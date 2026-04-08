@@ -54,6 +54,18 @@ public class SaleResponse {
 
     private List<SaleItemResponse> items;
     private List<SalePaymentResponse> payments;
+    private List<SaleNoteResponse> saleNotes;
+
+    // ─────────────────────────────────────────
+    @Data
+    @Builder
+    public static class SaleNoteResponse {
+        private Long id;
+        private Long senderId;
+        private String senderName;
+        private String message;
+        private LocalDateTime createdAt;
+    }
 
     // ─────────────────────────────────────────
     @Data

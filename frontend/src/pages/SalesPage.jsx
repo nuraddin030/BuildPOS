@@ -364,53 +364,36 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                         </div>
                     )}
 
-                    {/* Izoh */}
-                    {sale.notes && (() => {
-                        const lines = sale.notes.split('\n').filter(Boolean)
-                        const kassirLines = lines.filter(l => !l.includes('Rad etildi'))
-                        const rejLines = lines.filter(l => l.includes('Rad etildi'))
-                        return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {kassirLines.length > 0 && (
-                                    <div style={{
-                                        padding: '10px 14px', background: 'var(--surface-secondary)',
-                                        borderRadius: 8, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 4
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span>📝</span>
-                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Kassir izohi</span>
-                                            {(sale.sellerName || sale.submittedAt) && (
-                                                <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
-                                                    {sale.sellerName}
-                                                    {sale.submittedAt && ` • ${new Date(sale.submittedAt).toLocaleString('ru-RU')}`}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {kassirLines.map((line, i) => (
-                                            <div key={i} style={{ paddingLeft: 22, color: 'var(--text-secondary)' }}>{line}</div>
-                                        ))}
-                                    </div>
-                                )}
-                                {rejLines.length > 0 && (
-                                    <div style={{
-                                        padding: '10px 14px', background: '#fef2f2',
-                                        borderRadius: 8, fontSize: 13, border: '1px solid #fecaca',
+                    {/* Izohlar (sale_notes jadvalidan) */}
+                    {sale.saleNotes?.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {sale.saleNotes.map(n => {
+                                const isReject = n.message.startsWith('↩')
+                                return (
+                                    <div key={n.id} style={{
+                                        padding: '10px 14px',
+                                        background: isReject ? '#fef2f2' : 'var(--surface-secondary)',
+                                        borderRadius: 8, fontSize: 13,
+                                        border: isReject ? '1px solid #fecaca' : 'none',
                                         display: 'flex', flexDirection: 'column', gap: 4
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span>↩</span>
-                                            <span style={{ fontWeight: 600, color: '#dc2626' }}>Admin sababi</span>
+                                            <span>{isReject ? '↩' : '📝'}</span>
+                                            <span style={{ fontWeight: 600, color: isReject ? '#dc2626' : 'var(--text-primary)' }}>
+                                                {n.senderName}
+                                            </span>
+                                            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
+                                                {n.createdAt && new Date(n.createdAt).toLocaleString('ru-RU')}
+                                            </span>
                                         </div>
-                                        {rejLines.map((line, i) => (
-                                            <div key={i} style={{ paddingLeft: 22, color: '#dc2626' }}>
-                                                {line.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()}
-                                            </div>
-                                        ))}
+                                        <div style={{ paddingLeft: 22, color: isReject ? '#dc2626' : 'var(--text-secondary)' }}>
+                                            {n.message.replace('↩ Rad etildi: ', '').replace('↩ Rad etildi', '').trim() || n.message}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        )
-                    })()}
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}

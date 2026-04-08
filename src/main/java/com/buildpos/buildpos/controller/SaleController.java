@@ -1,6 +1,7 @@
 package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.dto.request.ApprovePendingRequest;
+import com.buildpos.buildpos.dto.request.ResubmitRequest;
 import com.buildpos.buildpos.dto.request.ReturnRequest;
 import com.buildpos.buildpos.dto.request.SaleRequest;
 import com.buildpos.buildpos.dto.response.SaleResponse;
@@ -93,7 +94,19 @@ public class SaleController {
     public ResponseEntity<SaleResponse> rejectPending(
             @PathVariable Long id,
             @RequestParam(required = false) String reason) {
-        return ResponseEntity.ok(saleService.rejectPending(id, reason));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.rejectPending(id, reason, username));
+    }
+
+    // ── QAYTA YUBORISH + ITEMLARNI YANGILASH ────────────────────────
+    @PatchMapping("/{id}/resubmit")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER', 'SELLER') or hasAuthority('SALES_CREATE')")
+    @Operation(summary = "Savatchani itemlar bilan qayta yuborish (DRAFT → PENDING)")
+    public ResponseEntity<SaleResponse> resubmit(
+            @PathVariable Long id,
+            @RequestBody ResubmitRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ResponseEntity.ok(saleService.resubmitWithItems(id, request, username));
     }
 
     // ── PENDING BUYURTMALAR RO'YXATI ─────────────────────────────────

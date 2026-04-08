@@ -2041,6 +2041,55 @@ textarea:focus-visible {
     color: #d97706;
     background: rgba(245, 158, 11, 0.06);
 }
+.pos-sec-btn-red:hover {
+    border-color: #ef4444;
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.06);
+}
+
+/* ── Savatcha izohlari (cart ichida) ─────────────────────────── */
+.pos-sale-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+.pos-sale-note-item {
+    padding: 8px 12px;
+    background: var(--surface-secondary);
+    border-radius: 8px;
+    font-size: 12px;
+}
+.pos-sale-note-item.pos-sale-note-reject {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+.pos-sale-note-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+}
+.pos-sale-note-sender {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+.pos-sale-note-reject .pos-sale-note-sender {
+    color: #dc2626;
+}
+.pos-sale-note-time {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+.pos-sale-note-text {
+    padding-left: 18px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.pos-sale-note-reject .pos-sale-note-text {
+    color: #dc2626;
+}
 
 
 /* ── Price popover ────────────────────────────────────────────── */

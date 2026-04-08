@@ -1602,24 +1602,31 @@ export default function CashierPage() {
         setShowSubmitModal(false)
         setSubmitNote('')
         try {
-            // Eski draft/hold ni bekor qilamiz — current cart items ni yangi draftga yozish uchun
+            let submitted
             if (currentSaleRef.current?.id) {
-                const oldId = currentSaleRef.current.id
-                currentSaleRef.current = null
-                setCurrentSale(null)
-                salesApi.cancel(oldId).catch(() => {})  // async, kutmaymiz
+                // Mavjud DRAFT bor (HOLDdan qaytarilgan) — itemlarni yangilab qayta yuboramiz
+                submitted = await salesApi.resubmitWithItems(currentSaleRef.current.id, {
+                    note: note?.trim() || null,
+                    items: cart.map(c => ({
+                        productUnitId: c.productUnitId,
+                        warehouseId: shift.warehouseId,
+                        quantity: c.quantity,
+                        salePrice: c.salePrice
+                    }))
+                })
+            } else {
+                // Yangi savatcha — yangi draft yaratib yuboramiz
+                const r = await salesApi.createDraft({
+                    warehouseId: shift.warehouseId,
+                    customerId: customerId ? Number(customerId) : null,
+                    items: cart.map(c => ({ productUnitId: c.productUnitId, warehouseId: shift.warehouseId, quantity: c.quantity, salePrice: c.salePrice })),
+                    payments: []
+                })
+                submitted = await salesApi.submitPending(r.data.id, note?.trim() || null)
             }
-            const r = await salesApi.createDraft({
-                warehouseId: shift.warehouseId,
-                customerId: customerId ? Number(customerId) : null,
-                items: cart.map(c => ({ productUnitId: c.productUnitId, warehouseId: shift.warehouseId, quantity: c.quantity, salePrice: c.salePrice })),
-                payments: []
-            })
-            const submitted = await salesApi.submitPending(r.data.id, note?.trim() || null)
             clearCart(false)
             setCurrentSale(null)
             currentSaleRef.current = null
-            // Race condition oldini olish: API chaqiruv o'rniga to'g'ridan ref ga yozamiz
             myPendingRef.current = [submitted.data]
             setMyPendingOrders([submitted.data])
             showToast('Buyurtma adminga yuborildi', 'success')
@@ -1732,6 +1739,12 @@ export default function CashierPage() {
                                         onClick={async () => {
                                             await salesApi.rejectPending(rejectModal.id, rejectReason.trim() || undefined)
                                             setRejectModal(null); setRejectReason('')
+                                            // Agar admin cartida shu buyurtma ochiq bo'lsa — tozalaymiz
+                                            if (currentSaleRef.current?.id === rejectModal.id) {
+                                                currentSaleRef.current = null
+                                                setCurrentSale(null)
+                                                clearCart(false)
+                                            }
                                             loadPendingOrders()
                                             showToast('Kassirga qaytarildi')
                                         }}>
@@ -2282,16 +2295,10 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
                                                 </div>
-                                                {s.notes && (() => {
-                                                    const lines = s.notes.split('\n').filter(Boolean)
-                                                    const kassirNote = lines.filter(l => !l.includes('Rad etildi')).join(' ')
-                                                    const rejLine = lines.find(l => l.includes('Rad etildi'))
-                                                    const rejReason = rejLine?.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()
-                                                    return <>
-                                                        {kassirNote && <div className="pos-hold-item-note">📝 {kassirNote}</div>}
-                                                        {rejLine && <div className="pos-hold-item-rejected">↩ Admin qaytardi{rejReason ? `: ${rejReason}` : ''}</div>}
-                                                    </>
-                                                })()}
+                                                {s.saleNotes?.map(n => n.message.startsWith('↩')
+                                                    ? <div key={n.id} className="pos-hold-item-rejected">↩ {n.senderName}: {n.message.replace('↩ Rad etildi: ', '').replace('↩ Rad etildi', '').trim() || '—'}</div>
+                                                    : <div key={n.id} className="pos-hold-item-note">📝 {n.message}</div>
+                                                )}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(s.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2316,9 +2323,9 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {order.items?.length || 0} ta • {fmt(order.totalAmount)} so'm
                                                 </div>
-                                                {order.notes && (
-                                                    <div className="pos-hold-item-note">📝 {order.notes}</div>
-                                                )}
+                                                {order.saleNotes?.filter(n => !n.message.startsWith('↩')).map(n => (
+                                                    <div key={n.id} className="pos-hold-item-note">📝 {n.message}</div>
+                                                ))}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(order.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2355,15 +2362,11 @@ export default function CashierPage() {
                                                 <div className="pos-hold-item-meta">
                                                     {s.items?.length || 0} ta • {fmt(s.totalAmount)} so'm
                                                 </div>
-                                                {s.notes?.includes('Rad etildi') && (() => {
-                                                    const line = s.notes.split('\n').find(l => l.includes('Rad etildi'))
-                                                    const reason = line?.replace('Rad etildi: ', '').replace('Rad etildi', '').trim()
-                                                    return (
-                                                        <div className="pos-hold-item-rejected">
-                                                            ↩ Admin qaytardi{reason ? `: ${reason}` : ''}
-                                                        </div>
-                                                    )
-                                                })()}
+                                                {s.saleNotes?.filter(n => n.message.startsWith('↩')).slice(-1).map(n => (
+                                                    <div key={n.id} className="pos-hold-item-rejected">
+                                                        ↩ {n.message.replace('↩ Rad etildi: ', '').replace('↩ Rad etildi', '').trim() || 'Admin qaytardi'}
+                                                    </div>
+                                                ))}
                                                 <div className="pos-hold-item-date">
                                                     {new Date(s.createdAt).toLocaleString('ru-RU')}
                                                 </div>
@@ -2449,6 +2452,29 @@ export default function CashierPage() {
                                 </div>
                             </div>
 
+                            {/* Savatcha izohlari tarixi */}
+                            {currentSale?.saleNotes?.length > 0 && (
+                                <div className="pos-sale-notes">
+                                    {currentSale.saleNotes.map(n => {
+                                        const isReject = n.message.startsWith('↩')
+                                        return (
+                                            <div key={n.id} className={`pos-sale-note-item${isReject ? ' pos-sale-note-reject' : ''}`}>
+                                                <div className="pos-sale-note-header">
+                                                    <span>{isReject ? '↩' : '📝'}</span>
+                                                    <span className="pos-sale-note-sender">{n.senderName}</span>
+                                                    <span className="pos-sale-note-time">
+                                                        {n.createdAt && new Date(n.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <div className="pos-sale-note-text">
+                                                    {n.message.replace('↩ Rad etildi: ', '').replace('↩ Rad etildi', '').trim() || n.message}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
                             {/* Eslatma */}
                             {!showNotes
                                 ? <button className="pos-note-btn" onClick={() => setShowNotes(true)}><Plus size={14} /> Eslatma qo'shish</button>
@@ -2484,6 +2510,11 @@ export default function CashierPage() {
                                     <button className="pos-sec-btn pos-sec-btn-amber" onClick={() => setShowSubmitModal(true)} disabled={!cart.length || saving}>
                                         <Bell size={15} />
                                         Adminga yuborish
+                                    </button>
+                                )}
+                                {isAdmin && currentSale?.id && (
+                                    <button className="pos-sec-btn pos-sec-btn-red" onClick={() => { setRejectModal({ id: currentSale.id, referenceNo: currentSale.referenceNo }); setRejectReason('') }} disabled={saving}>
+                                        ↩ Kassirga qaytarish
                                     </button>
                                 )}
                             </div>

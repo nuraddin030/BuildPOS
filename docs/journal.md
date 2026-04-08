@@ -1,79 +1,141 @@
 # BuildPOS — Project Journal
 
-## Session: 2026-04-07 — VPS Deploy, SSL, Production ishga tushirish
+## Session: 2026-04-08 — Pending Order + Kiberxavfsizlik bugfixlar
 
 ### Bajarilgan ishlar
 
-#### 1. VPS sotib olindi va sozlandi
-- **Provider:** Eskiz.uz
-- **OS:** Ubuntu 24.04 LTS
-- **O'rnatildi:** Docker, Docker Compose, UFW (firewall), Fail2ban (brute-force himoya)
+#### 1. Kiberxavfsizlik — 1-bosqich (tez va muhim)
+| Vazifa | O'zgarish |
+|--------|-----------|
+| **B-03 CORS** | `SecurityConfig.java` — `app.cors.allowed-origins` property dan o'qiydi; prod: `https://primestroy.uz`, dev: `*` |
+| **B-06 Swagger** | `application-prod.properties` da allaqachon o'chirilgan edi ✅ |
+| **B-16 Actuator** | `application-prod.properties` da allaqachon cheklangan edi ✅ |
 
-#### 2. SSL sertifikat va DNS
-- **Let's Encrypt** — bepul SSL sertifikat (`certbot`)
-- **Domen:** `primestroy.uz` → VPS IP ga DNS sozlandi
-- HTTPS to'liq ishlayapti: `https://primestroy.uz` ✅
+#### 2. Pending Order tizimi — to'liq qayta ishlash
 
-#### 3. Kod deploy qilindi
-```bash
-git clone https://github.com/nuraddin030/BuildPOS.git /opt/buildpos
-cd /opt/buildpos/buildpos
-docker compose up --build -d
-```
+**Bug: Notes (izohlar) almashtirilardi (replace), qo'shilmardi**
+- `SaleService.submitPending` — `setNotes(note)` edi → `V26 sale_notes` jadvaliga ko'chirildi
 
-#### 4. Production bugfixlar (deploy jarayonida aniqlandi)
+**Bug: Sotuv tarixida 2 ta yozuv paydo bo'lardi**
+- Sabab: kassir qayta yuborganda `handleSubmitPending` eski DRAFTni bekor qilib yangi draft yaratardi
+- Fix: Mavjud DRAFT bo'lsa → `resubmitWithItems` endpointi orqali itemlarni yangilab submit qiladi
 
+**Bug: Admin savatchani ochgach "Kassirga qaytarish" tugmasi yo'q edi**
+- Fix: Cart (to'lov paneli) da `isAdmin && currentSale?.id` bo'lsa `↩ Kassirga qaytarish` tugmasi ko'rinadi
+- `rejectPending` PENDING va DRAFT statuslarini ham qabul qiladi
+
+**Bug: Admin reject qilgach admin carti ochiq qolardi**
+- Fix: Reject modal tasdiqlanganda `currentSaleRef.current.id === rejectModal.id` bo'lsa cart tozalanadi
+
+**Bug: KRITIK — Stock har HOLD/unhold da noto'g'ri oshib ketardi**
+- Sabab: `unholdSale` `returnStockForSale` chaqirardi, lekin HOLD hech qachon stockni kamaytirmagan edi
+- Fix: `unholdSale` dan `returnStockForSale` chaqiruvi olib tashlandi
+
+#### 3. V26 — `sale_notes` jadvali (yangi arxitektura)
+- Eski: `sales.notes` — bitta string, `\n` bilan ajratilgan, kim/qachon yo'q
+- Yangi: `sale_notes` jadvali — `sender_id`, `sender_name`, `message`, `created_at`
+- `submitPending` → kassir izohi `sale_notes` ga saqlanadi (ismi + vaqt)
+- `rejectPending` → admin sababi `sale_notes` ga saqlanadi (ismi + vaqt)
+- `resubmitWithItems` → kassir qayta yozgan izoh `sale_notes` ga qo'shiladi
+
+#### 4. `resubmitWithItems` — yangi backend endpoint
+- `PATCH /api/v1/sales/{id}/resubmit` — DRAFT itemlarini yangilab PENDING ga o'tkazadi
+- Kassir yangi mahsulot qo'shsa admin ko'radi
+- Bitta savatcha — bitta sotuv yozuvi (bekor qilingan yozuv yo'q)
+
+#### 5. Izohlar UI — CashierPage + SalesPage
+- Cart (to'lov paneli) — `currentSale.saleNotes` dan ko'rsatiladi (kassir/admin izohlar)
+- Hold drawer — HOLD savatchalarda izohlar ko'rinadi
+- Pending drawer — admin pending listda kassir izohlar ko'rinadi
+- Kassir "Yuborilgan" tab — oxirgi rad etish sababi ko'rinadi
+- SalesPage (tarix) — barcha izohlar chronologik, kim/qachon bilan
+
+### Fayllar o'zgarishi
+| Fayl | O'zgarish |
+|------|-----------|
+| `SecurityConfig.java` | CORS property dan o'qiydi |
+| `application-dev.properties` | `app.cors.allowed-origins=*` |
+| `V26__sale_notes.sql` | Yangi migration |
+| `SaleNote.java` | Yangi entity |
+| `SaleNoteRepository.java` | Yangi repository |
+| `SaleItemRepository.java` | `deleteAllBySaleId` qo'shildi |
+| `SaleResponse.java` | `saleNotes` list qo'shildi |
+| `ResubmitRequest.java` | Yangi DTO |
+| `SaleService.java` | 4 metod o'zgardi/qo'shildi |
+| `SaleController.java` | `resubmit` endpoint qo'shildi |
+| `sales.js` | `resubmitWithItems` API qo'shildi |
+| `CashierPage.jsx` | Notes UI, reject logika, stock bugfix |
+| `SalesPage.jsx` | Notes chronologik ko'rsatish |
+| `CashierPage.css` | `.pos-sale-notes` stillari |
+
+---
+
+## Session: 2026-04-07 — Internet Deploy (Eskiz.uz VPS)
+
+### Deploy arxitekturasi
+| Komponent | Ma'lumot |
+|-----------|----------|
+| **VPS** | Eskiz.uz — 2CPU / 2GB RAM / Ubuntu 24.04 / 110 000 so'm/oy |
+| **Domen** | primestroy.uz (Eskiz.uz dan, 1 yil) |
+| **SSL** | Let's Encrypt (Certbot, avtomatik yangilanadi, 90 kun) |
+| **IP** | 138.249.7.150 |
+
+### Bajarilgan ishlar
+
+#### 1. VPS sozlash
+- `vps-setup.sh` skript — Docker, UFW, Fail2ban, backup cron o'rnatildi
+- DNS sozlandi: `primestroy.uz` A record → `138.249.7.150`
+- GitHub repo clone: `/opt/buildpos`
+- `.env` fayl yaratildi (DB parol, JWT secret, va boshqalar)
+- `application-prod.properties` — prod profil sozlamalari
+
+#### 2. Docker deploy
+- 4 konteyner ishga tushirildi: `postgres`, `backend`, `frontend`, `nginx`
+- SSL sertifikat olindi: `certbot --standalone`
+- Admin user yaratildi va sozlandi (parol yangilandi)
+
+#### 3. Hal qilingan muammolar
 | Muammo | Fix |
 |--------|-----|
-| `@vitejs/plugin-basic-ssl` yo'q | `vite.config.js` dan olib tashlandi |
-| `outDir: '../src/main/resources/static'` — Docker da noto'g'ri | `outDir: 'dist'` ga o'zgartirildi |
-| `import '../src/styles/...'` — noto'g'ri yo'l | `'./styles/...'` ga tuzatildi |
-| Linux case-sensitive: `api/auth` → `api/Auth` | 7 ta fayl tuzatildi |
-| `dashboardpage.css` → `DashboardPage.css` | `git mv` bilan renamed |
-| `app.jwt.secret` → `jwt.secret` | `application-prod.properties` tuzatildi |
-| `ADD CONSTRAINT IF NOT EXISTS` PostgreSQL sintaksis xatosi | `DO $$ BEGIN ... END $$` workaround |
-| `idx_categories_status` — ustun yo'q xatosi | V6 `CREATE TABLE` → `ALTER TABLE` ga o'zgartirildi |
-| `supplier_payments.paid_at` va `paid_by` ustunlari yo'q | V25 migration yaratildi |
-| `/actuator/health` 403 berardi | `SecurityConfig` da `permitAll()` qo'shildi |
-| Backend `healthcheck` wget yo'q → unhealthy loop | healthcheck olib tashlandi |
-| `server_names_hash_bucket_size` xatosi | `nginx.conf` ga qo'shildi |
-| V6 checksum mismatch (Flyway) | `flyway_schema_history` dan o'chirib, `out-of-order=true` bilan qayta bajarildi |
+| `vite.config.js` — `https: true` va noto'g'ri `outDir` | `https` olib tashlandi, `outDir: 'dist'` |
+| `main.jsx` — import yo'llari Linux case-sensitive | `'../src/styles/...'` → `'./styles/...'`, fayl nomlari tuzatildi |
+| `V6__create_category_table.sql` — `CREATE TABLE` V1 da allaqachon bor | `ALTER TABLE IF NOT EXISTS` ga o'zgartirildi |
+| `V25` — `supplier_payments.paid_at`, `paid_by` ustunlari yo'q | `V25__supplier_payments_add_columns.sql` yaratildi |
+| `nginx.conf` — `server_names_hash_bucket_size` xatosi | `server_names_hash_bucket_size 64` qo'shildi |
+| Tizim Nginx 80-portni band qilgan edi | `systemctl stop nginx && systemctl disable nginx` |
+| JWT property nomlari noto'g'ri | `app.jwt.secret` → `jwt.secret`, `app.jwt.expiration` → `jwt.expiration` |
+| Backend `healthcheck` 403 berardi (wget yo'q) | healthcheck bloki olib tashlandi |
+| Maven va Node modules cache yo'q | `maven_cache`, `node_cache` Docker volume lar qo'shildi |
 
-#### 5. Admin foydalanuvchi yaratildi
-- V3 migratsiyasi ishlab `admin` foydalanuvchisi yaratilgan, lekin hash noto'g'ri edi
-- SQL orqali bcrypt hash yangilandi → `admin` / vaqtinchalik parol bilan kirish ta'minlandi
-- **Keyingi qadam:** dastur ichida kuchli parolga o'zgartirish
+#### 4. GitHub Actions CI/CD
+- `.github/workflows/deploy.yml` — `master` branch ga push bo'lganda avtomatik deploy
+- **GitHub Secrets:** `SSH_PRIVATE_KEY`, `VPS_HOST`, `VPS_USER`, `VPS_PORT`
+- SSH key: `~/.ssh/github_actions` (ed25519)
+- Birinchi avtomatik deploy muvaffaqiyatli ✅
 
-#### 6. Qo'shimcha o'zgarishlar
+```yaml
+on:
+  push:
+    branches: [master]
+# Push → GitHub Actions → SSH → VPS → git pull → docker compose up --build
+```
 
-**`docker-compose.yml`:**
-- `maven_cache:/root/.m2` — Maven dependency cache (build tezlashtirish)
-- `node_cache:/app/node_modules` — npm cache (build tezlashtirish)
+### Hozirgi holat
+- `https://primestroy.uz` — ishlamoqda ✅
+- Foydalanuvchi mahsulot kiritishni boshladi
+- DB da real ma'lumotlar saqlanmoqda
 
-**`application-prod.properties`:**
-- `jwt.secret`, `jwt.expiration` — to'g'ri property nomlari
-- `springdoc.swagger-ui.enabled=false` — Swagger production da o'chirildi
+### ⚠️ Muhim eslatmalar
+```
+docker volume rm buildpos_postgres_data  ← HECH QACHON (real ma'lumotlar o'chadi!)
+.env fayl faqat VPS da: /opt/buildpos/.env  ← Git ga yuklanmaydi!
+Yangi deploy: faqat git push → Actions avtomatik hal qiladi
+SSL yangilanishi: avtomatik (certbot systemd timer, 90 kun)
+Backup: /opt/backups/ — har kuni soat 03:00
+```
 
 ---
 
-### Production muhiti
-```
-Server:  Eskiz.uz VPS (Ubuntu 24.04)
-Domen:   https://primestroy.uz
-Deploy:  Docker Compose
-DB:      PostgreSQL 16 (Docker volume)
-Proxy:   Nginx (SSL termination + reverse proxy)
-SSL:     Let's Encrypt (auto-renew)
-```
-
-### Keyingi muhim vazifalar
-| # | Vazifa | Izoh |
-|---|--------|------|
-| 1 | **GitHub Actions avtodeploy** | Push qilganda VPS da avtomatik `git pull && docker compose up --build` |
-| 2 | **Parol o'zgartirish UI** | Admin dastur ichida parolini o'zgartirsin |
-| 3 | **Kunlik DB backup cron** | PostgreSQL dump → xavfsiz joyga yuborish |
-
----
 
 ## Loyiha haqida
 - **Nomi:** BuildPOS — Qurilish Mollari Do'koni Boshqaruv Tizimi
@@ -477,7 +539,7 @@ src/
 | ~~1~~ | ~~Qaytarish moduli UI~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) |
 | ~~2~~ | ~~Purchase → multi-unit fix~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) — 10 dona → 40 metr test ✅ |
 | ~~3~~ | ~~ProductFormPage — edit da yangi unit qo'shish~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) |
-| 4 | **Buyurtmaga izoh (assistant_note)** | Oson | Kassir adminga yuborishda izoh yozsin |
+| ~~4~~ | ~~Buyurtmaga izoh~~ | ~~Oson~~ | ✅ Tugallandi (2026-04-08) — `sale_notes` jadvali, chronologik, kim/qachon |
 
 ### 🟡 O'rta muhimlik
 | # | Vazifa | Qiyinlik | Izoh |
@@ -495,6 +557,49 @@ src/
 | 11 | **Hisob-faktura PDF (A4)** | O'rta | B2B mijozlar uchun rasmiy hujjat |
 | 12 | **Docker + avtomatik backup** | O'rta | Loyiha oxirida, PostgreSQL dump kunlik |
 | 13 | **Telegram Bot + Cloudflare Tunnel** | Qiyin | Masofadan kirish + bildirishnomalar (kam stok, katta sotuv) |
+| 14 | **E'lonlar taxtasi (Notice board)** | Oson | Admin xabar yozadi, kassirlar ko'radi, "O'qidim" belgilaydi |
+| 15 | **Vazifa tizimi (Task)** | O'rta | Admin kassirga vazifa tayinlaydi, status: bajarilmoqda/tugallandi |
+
+### 🌐 Subdomen arxitekturasi (primestroy.uz)
+
+**Maqsad:** BuildPOS tizimini `app.primestroy.uz` subdomeni orqali ishlatish,
+`primestroy.uz` esa do'konning rasmiy sayti bo'lsin.
+
+**Arxitektura:**
+- `primestroy.uz` → Do'kon rasmiy sayti (landing page)
+- `app.primestroy.uz` → BuildPOS tizimi (hozirgi dastur)
+
+#### Vazifalar:
+
+**1. DNS sozlash (Eskiz.uz panel)**
+- [ ] `app.primestroy.uz` uchun A record qo'shish → `138.249.7.150`
+- [ ] `www.primestroy.uz` CNAME → `primestroy.uz` (allaqachon bor, tekshirish)
+
+**2. Nginx sozlash (`nginx/nginx.conf`)**
+- [ ] `app.primestroy.uz` uchun yangi server block qo'shish (hozirgi BuildPOS konfiguratsiyasi)
+- [ ] `primestroy.uz` server blockini landing page uchun ajratish
+- [ ] HTTP → HTTPS redirect ikkalasi uchun ham
+
+**3. SSL sertifikat yangilash (VPS da)**
+```bash
+certbot certonly --standalone \
+  -d primestroy.uz \
+  -d www.primestroy.uz \
+  -d app.primestroy.uz
+```
+- [ ] Nginx restart qilish
+
+**4. GitHub Actions yangilash**
+- [ ] `deploy.yml` da nginx reload qo'shish
+
+**5. Landing page yaratish (`primestroy-landing/` papkasi)**
+- [ ] Alohida React yoki oddiy HTML/CSS landing page
+- [ ] Sahifalar: Bosh sahifa, Mahsulotlar, Narxlar, Biz haqimizda, Kontakt
+- [ ] Nginx da `primestroy.uz` → landing page ga yo'naltirish
+- [ ] Landing page uchun alohida Dockerfile
+
+**6. Xavfsizlik (keyingi bosqich)**
+- [ ] `app.primestroy.uz` ga faqat ma'lum IP lardan kirish (ofis IP whitelist)
 
 ---
 

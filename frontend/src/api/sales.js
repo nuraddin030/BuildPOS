@@ -10,9 +10,10 @@ export const salesApi = {
     checkWarehouses: (ids)        => api.post('/api/v1/sales/check-warehouses', ids),
 
     // ── PENDING ORDER ─────────────────────────────────────────────────
-    submitPending:  (id, note)    => api.patch(`/api/v1/sales/${id}/submit`, null, note ? { params: { note } } : {}),
-    approvePending: (id, data)    => api.post(`/api/v1/sales/${id}/approve`, data),
-    rejectPending:  (id, reason)  => api.patch(`/api/v1/sales/${id}/reject`, null, { params: { reason } }),
+    submitPending:      (id, note) => api.patch(`/api/v1/sales/${id}/submit`, null, note ? { params: { note } } : {}),
+    resubmitWithItems:  (id, data) => api.patch(`/api/v1/sales/${id}/resubmit`, data),
+    approvePending:     (id, data) => api.post(`/api/v1/sales/${id}/approve`, data),
+    rejectPending:      (id, reason) => api.patch(`/api/v1/sales/${id}/reject`, null, { params: { reason } }),
     takePending:    (id)          => api.patch(`/api/v1/sales/${id}/take`),
     getPending:     (params)      => api.get('/api/v1/sales/pending', { params }),
     getMyPending:   (params)      => api.get('/api/v1/sales/my-pending', { params }),
