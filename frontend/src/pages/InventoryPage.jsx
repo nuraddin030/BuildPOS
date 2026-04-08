@@ -78,6 +78,22 @@ function CreateModal({ onClose, onCreate }) {
     )
 }
 
+// ── Tasdiqlash modali ─────────────────────────────────────────────
+function ConfirmModal({ title, message, confirmLabel, confirmClass, onConfirm, onCancel }) {
+    return (
+        <div className="inv-overlay" onClick={onCancel}>
+            <div className="inv-confirm-modal" onClick={e => e.stopPropagation()}>
+                <div className="inv-confirm-title">{title}</div>
+                <div className="inv-confirm-msg">{message}</div>
+                <div className="inv-confirm-actions">
+                    <button className="inv-btn-cancel" onClick={onCancel}>Bekor</button>
+                    <button className={confirmClass} onClick={onConfirm}>{confirmLabel}</button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // ── Sessiya detali (mahsulotlar ro'yxati + kiritish) ───────────────
 function SessionDetail({ sessionId, onBack, onCompleted }) {
     const { hasPermission, user } = useAuth()
@@ -87,7 +103,8 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
     const [deleting, setDeleting] = useState(false)
     const [search, setSearch] = useState('')
     const [savingId, setSavingId] = useState(null)
-    const [localQty, setLocalQty] = useState({}) // itemId → string value
+    const [localQty, setLocalQty] = useState({})
+    const [confirmModal, setConfirmModal] = useState(null) // { type: 'complete'|'delete' }
 
     const canManage = hasPermission('INVENTORY_MANAGE') ||
         user?.role === 'ADMIN' || user?.role === 'OWNER' ||
@@ -98,7 +115,6 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
         try {
             const r = await inventoryApi.getById(sessionId)
             setSession(r.data)
-            // local qty ni initialize qilish (faqat birinchi marta)
             setLocalQty(prev => {
                 const next = { ...prev }
                 r.data.items?.forEach(item => {
@@ -142,27 +158,27 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
         }
     }
 
-    const handleComplete = async () => {
-        if (!window.confirm('Inventarizatsiyani yakunlash? Farqlar stock ga kiritiladi.')) return
+    const doComplete = async () => {
+        setConfirmModal(null)
         setCompleting(true)
         try {
             const r = await inventoryApi.complete(sessionId)
             onCompleted(r.data)
         } catch (e) {
-            alert(e?.response?.data?.message || 'Xatolik yuz berdi')
+            console.error(e)
         } finally {
             setCompleting(false)
         }
     }
 
-    const handleDelete = async () => {
-        if (!window.confirm("Inventarizatsiyani o'chirish?")) return
+    const doDelete = async () => {
+        setConfirmModal(null)
         setDeleting(true)
         try {
             await inventoryApi.delete(sessionId)
             onBack()
         } catch (e) {
-            alert(e?.response?.data?.message || 'Xatolik')
+            console.error(e)
             setDeleting(false)
         }
     }
@@ -205,11 +221,11 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
                 <div className="inv-detail-actions">
                     {isDraft && canManage && (
                         <>
-                            <button className="inv-btn-danger" onClick={handleDelete} disabled={deleting}>
+                            <button className="inv-btn-danger" onClick={() => setConfirmModal('delete')} disabled={deleting}>
                                 {deleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
                                 O'chirish
                             </button>
-                            <button className="inv-btn-success" onClick={handleComplete} disabled={completing}>
+                            <button className="inv-btn-success" onClick={() => setConfirmModal('complete')} disabled={completing}>
                                 {completing ? <Loader2 size={14} className="spin" /> : <CheckCircle size={14} />}
                                 Yakunlash
                             </button>
@@ -236,85 +252,120 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
                 </div>
             )}
 
-            {/* Qidiruv */}
-            <div className="inv-search-wrap">
-                <Search size={15} className="inv-search-icon" />
-                <input className="inv-search" placeholder="Mahsulot nomi..."
-                       value={search} onChange={e => setSearch(e.target.value)} />
-                {search && <button className="inv-search-clear" onClick={() => setSearch('')}>✕</button>}
+            {/* Jadval + qidiruv bitta kartada */}
+            <div className="table-card">
+                <div className="inv-table-toolbar">
+                    <div className="filter-search-wrap">
+                        <Search size={16} className="filter-search-icon" />
+                        <input
+                            type="text"
+                            className="filter-search"
+                            placeholder="Mahsulot nomi..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                    </div>
+                    {search && (
+                        <button className="btn-reset" onClick={() => setSearch('')}>
+                            ✕ Tozalash
+                        </button>
+                    )}
+                </div>
+
+                <div className="table-responsive">
+                    <table className="ptable">
+                        <thead>
+                        <tr>
+                            <th className="th-num">#</th>
+                            <th>Mahsulot</th>
+                            <th className="th-right">Tizim miqdori</th>
+                            <th className="th-center">Haqiqiy miqdor</th>
+                            <th className="th-right">Farq</th>
+                            <th>Izoh</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {filteredItems.length === 0 ? (
+                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Mahsulot topilmadi</td></tr>
+                        ) : filteredItems.map((item, i) => {
+                            const diff = item.actualQty != null ? item.actualQty - item.systemQty : null
+                            const diffColor = diff == null ? '' : diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#6b7280'
+                            return (
+                                <tr key={item.id}>
+                                    <td className="cell-num">{i + 1}</td>
+                                    <td>
+                                        <span className="cell-name">{item.productName}</span>
+                                        <span className="cell-muted" style={{ marginLeft: 6, fontSize: 12 }}>{item.unitSymbol}</span>
+                                    </td>
+                                    <td className="th-right">
+                                        <span style={{ fontWeight: 500 }}>{fmt(item.systemQty)}</span>
+                                    </td>
+                                    <td className="th-center">
+                                        {isDraft && canManage ? (
+                                            <div className="inv-qty-cell">
+                                                <input
+                                                    className="inv-qty-input"
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={localQty[item.id] ?? ''}
+                                                    onChange={e => setLocalQty(p => ({ ...p, [item.id]: e.target.value }))}
+                                                    onBlur={() => saveItem(item.id)}
+                                                    onKeyDown={e => e.key === 'Enter' && saveItem(item.id)}
+                                                    placeholder="—"
+                                                />
+                                                {savingId === item.id && <Loader2 size={12} className="spin" style={{ color: 'var(--text-muted)' }} />}
+                                            </div>
+                                        ) : (
+                                            <span style={{ fontWeight: 600 }}>{fmt(item.actualQty)}</span>
+                                        )}
+                                    </td>
+                                    <td className="th-right">
+                                        {diff != null && (
+                                            <span style={{ color: diffColor, fontWeight: 700 }}>
+                                                {diff > 0 ? '+' : ''}{fmt(diff)}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {isDraft && canManage ? (
+                                            <input className="inv-note-input" type="text"
+                                                   defaultValue={item.notes || ''}
+                                                   onBlur={e => inventoryApi.updateItem(sessionId, item.id,
+                                                       { actualQty: item.actualQty, notes: e.target.value || null })}
+                                                   placeholder="..." />
+                                        ) : (
+                                            <span className="cell-muted" style={{ fontSize: 12 }}>{item.notes || ''}</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Items jadvali */}
-            <div className="inv-table-wrap">
-                <table className="inv-table">
-                    <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Mahsulot</th>
-                        <th className="th-right">Tizim</th>
-                        <th className="th-center">Haqiqiy</th>
-                        <th className="th-right">Farq</th>
-                        <th>Izoh</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filteredItems.map((item, i) => {
-                        const diff = item.actualQty != null ? item.actualQty - item.systemQty : null
-                        const diffColor = diff == null ? '' : diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#6b7280'
-                        return (
-                            <tr key={item.id} className={item.actualQty != null ? 'inv-row-filled' : ''}>
-                                <td className="inv-cell-num">{i + 1}</td>
-                                <td>
-                                    <span className="inv-product-name">{item.productName}</span>
-                                    <span className="inv-unit-sym">{item.unitSymbol}</span>
-                                </td>
-                                <td className="th-right inv-sys-qty">{fmt(item.systemQty)}</td>
-                                <td className="th-center">
-                                    {isDraft && canManage ? (
-                                        <div className="inv-qty-cell">
-                                            <input
-                                                className="inv-qty-input"
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={localQty[item.id] ?? ''}
-                                                onChange={e => setLocalQty(p => ({ ...p, [item.id]: e.target.value }))}
-                                                onBlur={() => saveItem(item.id)}
-                                                onKeyDown={e => e.key === 'Enter' && saveItem(item.id)}
-                                                placeholder="—"
-                                            />
-                                            {savingId === item.id && <Loader2 size={12} className="spin inv-saving" />}
-                                        </div>
-                                    ) : (
-                                        <span style={{ fontWeight: 600 }}>{fmt(item.actualQty)}</span>
-                                    )}
-                                </td>
-                                <td className="th-right">
-                                    {diff != null && (
-                                        <span className="inv-diff" style={{ color: diffColor }}>
-                                            {diff > 0 ? '+' : ''}{fmt(diff)}
-                                        </span>
-                                    )}
-                                </td>
-                                <td>
-                                    {isDraft && canManage ? (
-                                        <input className="inv-note-input" type="text"
-                                               defaultValue={item.notes || ''}
-                                               onBlur={e => inventoryApi.updateItem(sessionId, item.id,
-                                                   { actualQty: item.actualQty, notes: e.target.value || null })}
-                                               placeholder="..." />
-                                    ) : (
-                                        <span className="inv-note-text">{item.notes || ''}</span>
-                                    )}
-                                </td>
-                            </tr>
-                        )
-                    })}
-                    </tbody>
-                </table>
-                {filteredItems.length === 0 && (
-                    <div className="inv-empty">Mahsulot topilmadi</div>
-                )}
-            </div>
+            {/* Confirm modallar */}
+            {confirmModal === 'complete' && (
+                <ConfirmModal
+                    title="Inventarizatsiyani yakunlash"
+                    message="Kiritilgan farqlar omborga ADJUSTMENT sifatida yoziladi. Davom etasizmi?"
+                    confirmLabel="Yakunlash"
+                    confirmClass="inv-btn-success"
+                    onConfirm={doComplete}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
+            {confirmModal === 'delete' && (
+                <ConfirmModal
+                    title="Inventarizatsiyani o'chirish"
+                    message="Bu inventarizatsiya sessiyasi butunlay o'chiriladi. Davom etasizmi?"
+                    confirmLabel="O'chirish"
+                    confirmClass="inv-btn-danger"
+                    onConfirm={doDelete}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
         </div>
     )
 }
