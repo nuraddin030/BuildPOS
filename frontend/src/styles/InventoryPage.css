@@ -303,6 +303,12 @@
     padding: 2px 4px;
 }
 
+/* ── Items jadvali — fixed layout, teng ustunlar ── */
+.inv-items-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
 /* ── Table toolbar (qidiruv jadval kartasi ichida) ── */
 .inv-table-toolbar {
     display: flex;

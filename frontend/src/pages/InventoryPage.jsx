@@ -273,7 +273,15 @@ function SessionDetail({ sessionId, onBack, onCompleted }) {
                 </div>
 
                 <div className="table-responsive">
-                    <table className="ptable">
+                    <table className="ptable inv-items-table">
+                        <colgroup>
+                            <col style={{ width: '4%' }} />
+                            <col style={{ width: '32%' }} />
+                            <col style={{ width: '16%' }} />
+                            <col style={{ width: '16%' }} />
+                            <col style={{ width: '14%' }} />
+                            <col style={{ width: '18%' }} />
+                        </colgroup>
                         <thead>
                         <tr>
                             <th className="th-num">#</th>
