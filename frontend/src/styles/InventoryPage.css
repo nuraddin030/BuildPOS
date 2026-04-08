@@ -80,7 +80,7 @@
 .inv-select, .inv-textarea {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid var(--border);
+    border: 1.5px solid #cbd5e1;
     border-radius: 8px;
     background: var(--surface);
     color: var(--text-primary);
@@ -89,9 +89,13 @@
     transition: border-color 0.15s;
     resize: vertical;
     font-family: inherit;
+    box-sizing: border-box;
 }
 
-.inv-select:focus, .inv-textarea:focus { border-color: var(--primary); }
+.inv-select:focus, .inv-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
 
 .inv-modal-footer {
     display: flex;
