@@ -1,5 +1,53 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-08 (3) — Inventarizatsiya moduli (#5)
+
+### Bajarilgan ishlar
+
+#### 1. Backend
+- `V28__inventory_sessions.sql` — `inventory_sessions` va `inventory_items` jadvallar
+- `V29__inventory_permissions.sql` — `INVENTORY_VIEW`, `INVENTORY_MANAGE` permissionlar
+- `InventorySession.java`, `InventoryItem.java` — entitylar
+- `InventorySessionRepository`, `InventoryItemRepository` — repositorylar
+- `InventorySessionResponse` DTO (items bilan, progress hisobi)
+- `InventoryCreateRequest`, `InventoryItemUpdateRequest` — request DTOlar
+- `InventoryService` — yaratish, ko'rish, item yangilash, yakunlash, o'chirish
+- `InventoryController` — CRUD endpointlar, permission himoyasi
+
+#### 2. Inventarizatsiya oqimi
+1. Admin "Yangi inventarizatsiya" → ombor tanlaydi
+2. Tizim o'sha ombordagi barcha mahsulotlarni system_qty bilan yuklaydi (DRAFT)
+3. Omborchi/admin har mahsulot uchun haqiqiy miqdorni kiritadi (blur/Enter da avtosaqlanadi)
+4. Progress bar ko'rsatiladi (nechtasi kiritildi / jami)
+5. "Yakunlash" → farqlar avtomatik ADJUSTMENT_IN/OUT sifatida stock ga kiritiladi
+
+#### 3. Frontend
+- `api/inventory.js` — 5 ta endpoint
+- `InventoryPage.jsx` — ro'yxat + yaratish modal + detail view (bir sahifada)
+- `InventoryPage.css` — to'liq stil
+- `Layout.jsx` — sidebar ga "Inventarizatsiya" qo'shildi + route
+
+### Fayllar o'zgarishi
+| Fayl | O'zgarish |
+|------|-----------|
+| `V28__inventory_sessions.sql` | Yangi migration |
+| `V29__inventory_permissions.sql` | Yangi migration |
+| `InventorySession.java` | Yangi entity |
+| `InventoryItem.java` | Yangi entity |
+| `InventorySessionRepository.java` | Yangi |
+| `InventoryItemRepository.java` | Yangi |
+| `InventorySessionResponse.java` | Yangi DTO |
+| `InventoryCreateRequest.java` | Yangi DTO |
+| `InventoryItemUpdateRequest.java` | Yangi DTO |
+| `InventoryService.java` | Yangi service |
+| `InventoryController.java` | Yangi controller |
+| `inventory.js` | Yangi API |
+| `InventoryPage.jsx` | Yangi sahifa |
+| `InventoryPage.css` | Yangi stil |
+| `Layout.jsx` | Route + sidebar + import |
+
+---
+
 ## Session: 2026-04-08 (2) — Narx tarixi + Smena ogohlantirish bugfixlar
 
 ### Bajarilgan ishlar
@@ -588,7 +636,7 @@ src/
 ### 🟡 O'rta muhimlik
 | # | Vazifa | Qiyinlik | Izoh |
 |---|--------|----------|------|
-| 5 | **Inventarizatsiya (Revision) moduli** | Qiyin | Haqiqiy omborni sanab tizim bilan solishtirish, oyda bir marta |
+| ~~5~~ | ~~Inventarizatsiya (Revision) moduli~~ | ~~Qiyin~~ | ✅ Tugallandi (2026-04-08) |
 | 6 | **Narx tarixi grafigi** | Oson | price_history jadvali tayyor, faqat UI kerak (ProductFormPage yoki alohida) |
 | 7 | **Mahsulot Excel import** | O'rta | 500-1000 mahsulotni bittada kiritish uchun |
 | 8 | **Smena kassa hisoboti chop etish** | Oson | Smena yopilganda A4 chop: naqd/karta/nasiya, kassir imzosi joyi |

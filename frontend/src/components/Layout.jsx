@@ -18,13 +18,14 @@ import ProductFormPage from '../pages/ProductFormPage'
 import SalesPage from "../pages/SalesPage.jsx";
 import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
+import InventoryPage from '../pages/InventoryPage'
 
 import { useState, useEffect, useRef } from 'react'
 import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
@@ -45,6 +46,7 @@ const navItems = [
     { path: '/purchases',  key: 'purchases',  icon: Truck,           permission: 'PURCHASES_VIEW' },
     { path: '/suppliers',  key: 'suppliers',  icon: Factory,         permission: 'SUPPLIERS_VIEW' },
     { path: '/warehouses', key: 'warehouses', icon: Warehouse,       permission: 'WAREHOUSES_VIEW' },
+    { path: '/inventory',      key: 'Inventarizatsiya', icon: ClipboardList,  permission: 'INVENTORY_VIEW' },
     { path: '/stock-movements', key: 'stock-movements', icon: ArrowLeftRight, permission: 'STOCK_VIEW' },
     { path: '/categories', key: 'categories', icon: FolderTree,      permission: 'CATEGORIES_VIEW' },
     { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
@@ -406,10 +408,12 @@ export default function Layout() {
                         <Route path="/debts" element={
                             <ProtectedRoute permission='CUSTOMERS_DEBT_VIEW'> <DebtsPage/></ProtectedRoute>
                         }/>
-                        <Route path="/shifts" element = {
-                            <ProtectedRoute permission="SHIFTS_VIEW"> <ShiftReportPage/></ProtectedRoute>
-                        }
-                        />
+                        <Route path="/shifts" element={
+                            <ProtectedRoute permission="SHIFTS_VIEW"><ShiftReportPage /></ProtectedRoute>
+                        } />
+                        <Route path="/inventory" element={
+                            <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>
+                        } />
                     </Routes>
                 </div>
             </div>
