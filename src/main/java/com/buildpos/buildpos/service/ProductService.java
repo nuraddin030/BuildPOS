@@ -1,6 +1,8 @@
 package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.request.ProductRequest;
+import com.buildpos.buildpos.dto.response.PriceHistoryResponse;
+import com.buildpos.buildpos.dto.response.ProductResponse;
 import com.buildpos.buildpos.dto.request.StockAdjustmentRequest;
 import com.buildpos.buildpos.dto.request.StockTransferRequest;
 import com.buildpos.buildpos.dto.response.ProductResponse;
@@ -41,6 +43,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
     private final ProductMapper productMapper;
+    private final ProductPriceHistoryRepository priceHistoryRepository;
 
     // ─────────────────────────────────────────
     // CREATE
@@ -542,15 +545,26 @@ public class ProductService {
 
     private void savePriceHistoryIfChanged(ProductUnit pu, String fieldName,
                                            BigDecimal oldVal, BigDecimal newVal) {
-        if (newVal != null && oldVal.compareTo(newVal) != 0) {
-            ProductPriceHistory history = ProductPriceHistory.builder()
+        if (newVal != null && oldVal != null && oldVal.compareTo(newVal) != 0) {
+            priceHistoryRepository.save(ProductPriceHistory.builder()
                     .productUnit(pu)
                     .fieldName(fieldName)
                     .oldValue(oldVal)
                     .newValue(newVal)
-                    .build();
-            // history repository inject qilib saqlash mumkin
-            // Bu yerda @Autowire qilish yoki separate service orqali
+                    .build());
         }
+    }
+
+    public List<com.buildpos.buildpos.dto.response.PriceHistoryResponse> getPriceHistory(Long productUnitId) {
+        return priceHistoryRepository.findAllByProductUnitIdOrderByChangedAtDesc(productUnitId)
+                .stream().map(h -> com.buildpos.buildpos.dto.response.PriceHistoryResponse.builder()
+                        .id(h.getId())
+                        .fieldName(h.getFieldName())
+                        .oldValue(h.getOldValue())
+                        .newValue(h.getNewValue())
+                        .changedAt(h.getChangedAt())
+                        .changedByName(h.getChangedBy() != null ? h.getChangedBy().getFullName() : null)
+                        .build())
+                .toList();
     }
 }

@@ -392,6 +392,14 @@ to   { opacity: 1; transform: translateY(0); }
     transform: translateY(-1px);
 }
 
+.act-history {
+    color: #10b981;
+}
+.act-history:hover {
+    background: #ecfdf5;
+    border-color: #10b981;
+}
+
 .act-edit {
     color: var(--primary);
 }
@@ -1252,3 +1260,94 @@ to   { opacity: 1; transform: translateX(0); }
         width: 100%;
     }
 }
+
+/* ── Narx tarixi ─────────────────────────────────────────────── */
+.price-history-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.price-history-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(var(--primary-rgb, 14,165,233), 0.05);
+}
+.ph-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.ph-modal {
+    background: var(--surface);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.ph-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 14px;
+}
+.ph-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+}
+.ph-empty {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+.ph-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    overflow-y: auto;
+}
+.ph-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-secondary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+}
+.ph-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-light, var(--border));
+    color: var(--text-primary);
+}
+.ph-table tbody tr:hover {
+    background: var(--surface-secondary);
+}
+.ph-old { color: #ef4444; font-weight: 500; }
+.ph-new { color: #22c55e; font-weight: 600; }

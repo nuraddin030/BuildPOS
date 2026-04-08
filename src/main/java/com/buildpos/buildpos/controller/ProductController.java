@@ -5,6 +5,7 @@ import com.buildpos.buildpos.dto.request.StockAdjustmentRequest;
 import com.buildpos.buildpos.dto.request.StockTransferRequest;
 import com.buildpos.buildpos.dto.response.ProductResponse;
 import com.buildpos.buildpos.dto.response.ProductSummaryResponse;
+import com.buildpos.buildpos.dto.response.PriceHistoryResponse;
 import com.buildpos.buildpos.entity.enums.ProductStatus;
 import com.buildpos.buildpos.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -97,6 +99,13 @@ public class ProductController {
     public ResponseEntity<Void> adjustStock(@Valid @RequestBody StockAdjustmentRequest request) {
         productService.adjustStock(request);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/units/{unitId}/price-history")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('PRICE_HISTORY_VIEW')")
+    @Operation(summary = "Birlik narx tarixi")
+    public ResponseEntity<List<PriceHistoryResponse>> getPriceHistory(@PathVariable Long unitId) {
+        return ResponseEntity.ok(productService.getPriceHistory(unitId));
     }
 
     @PostMapping("/stock/transfer")

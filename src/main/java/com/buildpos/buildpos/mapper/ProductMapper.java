@@ -71,6 +71,7 @@ public class ProductMapper {
                 .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .status(product.getStatus())
+                .defaultUnitId(defaultUnit != null ? defaultUnit.getId() : null)
                 .defaultUnit(defaultUnit != null ? defaultUnit.getUnit().getName() : null)
                 .defaultUnitSymbol(defaultUnit != null ? defaultUnit.getUnit().getSymbol() : null)
                 .defaultBarcode(defaultUnit != null ? defaultUnit.getBarcode() : null)

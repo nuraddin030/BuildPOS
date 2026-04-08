@@ -24,6 +24,7 @@ public class ProductSummaryResponse {
     private ProductStatus status;
 
     // Default unit ma'lumotlari
+    private Long defaultUnitId;
     private String defaultUnit;
     private String defaultUnitSymbol;
     private String defaultBarcode;

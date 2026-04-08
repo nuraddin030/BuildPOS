@@ -12,3 +12,4 @@ export const getWarehouses = () => api.get('/api/v1/warehouses?size=100&active=t
 export const adjustStock = (productUnitId, data) => api.post('/api/v1/products/stock/adjust', { productUnitId: Number(productUnitId), ...data })
 export const getExchangeRate = () => api.get('/api/v1/exchange-rate/current')
 export const getCategoriesTree = () => api.get('api/v1/categories/tree')
+export const getPriceHistory = (productUnitId) => api.get(`/api/v1/products/units/${productUnitId}/price-history`)

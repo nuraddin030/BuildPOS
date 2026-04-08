@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-    getProducts, deleteProduct, toggleProductStatus, getCategoriesTree
+    getProducts, deleteProduct, toggleProductStatus, getCategoriesTree, getPriceHistory
 } from '../api/products'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
-    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2
+    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
@@ -19,6 +19,9 @@ export default function ProductsPage() {
     const { hasPermission } = useAuth()
 
     const [products, setProducts] = useState([])
+    const [phModal, setPhModal] = useState(null) // { product }
+    const [phData, setPhData] = useState([])
+    const [phLoading, setPhLoading] = useState(false)
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
     const [size] = useState(20)
@@ -51,6 +54,23 @@ export default function ProductsPage() {
         await toggleProductStatus(id)
         load()
     }
+
+    const openPriceHistory = async (p) => {
+        if (!p.defaultUnitId) return
+        setPhModal(p)
+        setPhData([])
+        setPhLoading(true)
+        try {
+            const r = await getPriceHistory(p.defaultUnitId)
+            setPhData(Array.isArray(r.data) ? r.data : [])
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setPhLoading(false)
+        }
+    }
+
+    const fieldLabel = (f) => f === 'costPrice' ? 'Tannarx' : f === 'salePrice' ? 'Sotuv narx' : f === 'minPrice' ? 'Min narx' : f
 
     const totalPages = Math.ceil(total / size)
 
@@ -172,6 +192,13 @@ export default function ProductsPage() {
                                     </td>
                                     <td className="th-center">
                                         <div className="action-group">
+                                            {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
+                                                <button className="act-btn act-history"
+                                                        onClick={() => openPriceHistory(p)}
+                                                        title="Narx tarixi">
+                                                    <TrendingUp size={15} />
+                                                </button>
+                                            )}
                                             {hasPermission('PRODUCTS_EDIT') && (
                                                 <button className="act-btn act-edit"
                                                         onClick={() => navigate(`/products/${p.id}/edit`)}
@@ -228,6 +255,48 @@ export default function ProductsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Price History Modal */}
+            {phModal && (
+                <div className="ph-overlay" onClick={() => setPhModal(null)}>
+                    <div className="ph-modal" onClick={e => e.stopPropagation()}>
+                        <div className="ph-modal-header">
+                            <span>📈 Narx tarixi — {phModal.name}</span>
+                            <button className="ph-close" onClick={() => setPhModal(null)}>✕</button>
+                        </div>
+                        <div style={{ overflowY: 'auto', flex: 1 }}>
+                            {phLoading ? (
+                                <div className="ph-empty"><Loader2 size={20} className="spin" /> Yuklanmoqda...</div>
+                            ) : phData.length === 0 ? (
+                                <div className="ph-empty">Narx o'zgartirish tarixi yo'q</div>
+                            ) : (
+                                <table className="ph-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Sana</th>
+                                        <th>Maydon</th>
+                                        <th>Eski narx</th>
+                                        <th>Yangi narx</th>
+                                        <th>Kim</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {phData.map(h => (
+                                        <tr key={h.id}>
+                                            <td>{new Date(h.changedAt).toLocaleString('uz-UZ')}</td>
+                                            <td>{fieldLabel(h.fieldName)}</td>
+                                            <td className="ph-old">{fmt(h.oldValue)}</td>
+                                            <td className="ph-new">{fmt(h.newValue)}</td>
+                                            <td>{h.changedByName || '—'}</td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
     getProductById, createProduct, updateProduct,
     getCategories, getUnits, getCategoriesTree, adjustStock,
-    getWarehouses, getExchangeRate
+    getWarehouses, getExchangeRate, getPriceHistory
 } from '../api/products'
 import { uploadImage } from '../api/upload'
 import {
@@ -51,7 +51,8 @@ export default function ProductFormPage() {
     const { id } = useParams()
     const isEdit = Boolean(id)
     const fileInputRef = useRef()
-    const { hasPermission } = useAuth()
+    const { hasPermission, user } = useAuth()
+    const canViewPriceHistory = hasPermission('PRICE_HISTORY_VIEW') || ['ADMIN','OWNER','ROLE_ADMIN','ROLE_OWNER'].includes(user?.role)
 
     const [form, setForm] = useState(EMPTY_FORM)
     const [categories, setCategories] = useState([])
@@ -65,6 +66,8 @@ export default function ProductFormPage() {
     const [loading, setLoading] = useState(isEdit)
     const [toast, setToast] = useState(null)
     const [cameraUnitIdx, setCameraUnitIdx] = useState(null)
+    const [priceHistoryModal, setPriceHistoryModal] = useState(null) // { unitId, unitSymbol }
+    const [priceHistoryData, setPriceHistoryData] = useState([])
 
     const showToast = (msg, type = 'error') => {
         setToast({ msg, type })
@@ -505,6 +508,20 @@ export default function ProductFormPage() {
                                 </div>
                             </div>
 
+                            {/* Narx tarixi tugmasi — faqat ruxsat bor va mavjud birliklar uchun */}
+                            {isEdit && u.id && canViewPriceHistory && (
+                                <div style={{ marginBottom: 10 }}>
+                                    <button type="button" className="price-history-btn"
+                                        onClick={async () => {
+                                            const r = await getPriceHistory(u.id)
+                                            setPriceHistoryData(Array.isArray(r.data) ? r.data : [])
+                                            setPriceHistoryModal({ unitId: u.id, unitSymbol: u.unitSymbol || u.unitName || '' })
+                                        }}>
+                                        🕐 Narx tarixi
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Zaxira */}
                             <div className="unit-stock-section">
                                 {(!isEdit || !u.id) ? (
@@ -609,6 +626,44 @@ export default function ProductFormPage() {
             {toast && (
                 <div className={`toast-msg toast-msg--${toast.type}`}>
                     {toast.type === 'error' ? '⚠ ' : '✓ '}{toast.msg}
+                </div>
+            )}
+
+            {/* Narx tarixi modali */}
+            {priceHistoryModal && (
+                <div className="ph-overlay" onClick={() => setPriceHistoryModal(null)}>
+                    <div className="ph-modal" onClick={e => e.stopPropagation()}>
+                        <div className="ph-modal-header">
+                            <span>🕐 Narx tarixi — {priceHistoryModal.unitSymbol}</span>
+                            <button className="ph-close" onClick={() => setPriceHistoryModal(null)}>✕</button>
+                        </div>
+                        {priceHistoryData.length === 0 ? (
+                            <div className="ph-empty">Narx o'zgarishi qayd etilmagan</div>
+                        ) : (
+                            <table className="ph-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sana</th>
+                                        <th>Maydon</th>
+                                        <th>Eski narx</th>
+                                        <th>Yangi narx</th>
+                                        <th>Kim</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {priceHistoryData.map(h => (
+                                        <tr key={h.id}>
+                                            <td>{h.changedAt ? new Date(h.changedAt).toLocaleString('ru-RU') : '—'}</td>
+                                            <td>{h.fieldName === 'cost_price' ? 'Tannarx' : h.fieldName === 'sale_price' ? 'Sotuv' : 'Minimal'}</td>
+                                            <td className="ph-old">{fmt(h.oldValue)}</td>
+                                            <td className="ph-new">{fmt(h.newValue)}</td>
+                                            <td>{h.changedByName || '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
                 </div>
             )}
         </>
