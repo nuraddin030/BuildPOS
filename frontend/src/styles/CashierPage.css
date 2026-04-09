@@ -1111,7 +1111,16 @@
         border-radius: 20px 20px 0 0;
         max-width: 100% !important;
         max-height: 90vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Body scroll, header va footer doim ko'rinib turadi */
+    .pos-mb {
         overflow-y: auto;
+        flex: 1;
+        min-height: 0;
     }
 }
 

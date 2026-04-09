@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import ProductImportModal from '../components/ProductImportModal'
 import PriceLabelModal from '../components/PriceLabelModal'
+import BulkPrintModal from '../components/BulkPrintModal'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -27,6 +28,9 @@ export default function ProductsPage() {
     const [importModal, setImportModal] = useState(false)
     const [labelProduct, setLabelProduct] = useState(null)
     const [openMenuId, setOpenMenuId] = useState(null)
+    const [selected, setSelected] = useState(new Set())
+    const [selectMode, setSelectMode] = useState(false)
+    const [bulkPrint, setBulkPrint] = useState(false)
     const menuRef = useRef(null)
 
     useEffect(() => {
@@ -46,8 +50,11 @@ export default function ProductsPage() {
     const [loading, setLoading] = useState(false)
     const [categories, setCategories] = useState([])
 
+    const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()) }
+
     const load = useCallback(() => {
         setLoading(true)
+        setSelected(new Set())
         getProducts({ search: search || undefined, categoryId: categoryId || undefined, page, size })
             .then(res => { setProducts(res.data.content); setTotal(res.data.totalElements) })
             .catch(console.error)
@@ -107,6 +114,13 @@ export default function ProductsPage() {
                     </div>
                 </div>
                 <div className="products-header-actions">
+                    <button
+                        className={`btn-bulk-print${selectMode ? ' active' : ''}`}
+                        onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true) }}
+                    >
+                        <Printer size={16} />
+                        <span>{selectMode ? 'Bekor' : 'Chop etish'}</span>
+                    </button>
                     {hasPermission('PRODUCTS_CREATE') && (
                         <button className="btn-import" onClick={() => setImportModal(true)}>
                             <Upload size={16} />
@@ -170,6 +184,18 @@ export default function ProductsPage() {
                         <table className="ptable products-ptable">
                             <thead>
                             <tr>
+                                {selectMode && (
+                                    <th className="th-check">
+                                        <input type="checkbox"
+                                            className="row-check"
+                                            checked={products.length > 0 && products.every(p => selected.has(p.id))}
+                                            onChange={e => {
+                                                if (e.target.checked) setSelected(new Set(products.map(p => p.id)))
+                                                else setSelected(new Set())
+                                            }}
+                                        />
+                                    </th>
+                                )}
                                 <th className="th-num">#</th>
                                 <th>{t('products.name')}</th>
                                 <th>Rasm</th>
@@ -183,7 +209,20 @@ export default function ProductsPage() {
                             </thead>
                             <tbody>
                             {products.map((p, i) => (
-                                <tr key={p.id}>
+                                <tr key={p.id} className={selected.has(p.id) ? 'row-selected' : ''}>
+                                    {selectMode && (
+                                        <td className="th-check">
+                                            <input type="checkbox"
+                                                className="row-check"
+                                                checked={selected.has(p.id)}
+                                                onChange={e => {
+                                                    const s = new Set(selected)
+                                                    e.target.checked ? s.add(p.id) : s.delete(p.id)
+                                                    setSelected(s)
+                                                }}
+                                            />
+                                        </td>
+                                    )}
                                     <td className="cell-num">{page * size + i + 1}</td>
                                     <td>
                                         <span className="cell-name">{p.name}</span>
@@ -290,6 +329,32 @@ export default function ProductsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Bulk selection floating bar */}
+            {selected.size > 0 && (
+                <div className="bulk-bar">
+                    <span className="bulk-bar-info">
+                        <strong>{selected.size}</strong> ta mahsulot tanlandi
+                    </span>
+                    <div className="bulk-bar-actions">
+                        <button className="bulk-bar-cancel" onClick={exitSelectMode}>
+                            Bekor
+                        </button>
+                        <button className="bulk-bar-print" onClick={() => setBulkPrint(true)}>
+                            <Printer size={15} />
+                            Etiket chop etish
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Print Modal */}
+            {bulkPrint && (
+                <BulkPrintModal
+                    products={products.filter(p => selected.has(p.id))}
+                    onClose={() => setBulkPrint(false)}
+                />
+            )}
 
             {/* Price Label Modal */}
             {labelProduct && (

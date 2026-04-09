@@ -69,6 +69,30 @@ to   { opacity: 1; transform: translateY(0); }
     gap: 10px;
 }
 
+.btn-bulk-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    background: var(--surface);
+    color: #6366f1;
+    border: 1.5px solid #6366f1;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.btn-bulk-print:hover { background: #eef2ff; }
+.btn-bulk-print.active {
+    background: #eef2ff;
+    color: #4f46e5;
+    border-color: #4f46e5;
+}
+
 .btn-import {
     display: inline-flex;
     align-items: center;
@@ -554,6 +578,82 @@ to   { opacity: 1; transform: translateY(0); }
     padding: 0 8px;
     font-variant-numeric: tabular-nums;
 }
+
+/* ---- Checkbox column ---- */
+.th-check {
+    width: 36px;
+    padding: 0 8px !important;
+    text-align: center;
+}
+
+.row-check {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.row-selected td {
+    background: var(--primary-light, #eff6ff) !important;
+}
+
+/* ---- Bulk floating bar ---- */
+.bulk-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+    z-index: 200;
+    white-space: nowrap;
+}
+
+.bulk-bar-info {
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+.bulk-bar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.bulk-bar-cancel {
+    padding: 7px 14px;
+    border: 1.5px solid #475569;
+    background: transparent;
+    color: #94a3b8;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.bulk-bar-cancel:hover { border-color: #64748b; color: #cbd5e1; }
+
+.bulk-bar-print {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.bulk-bar-print:hover { opacity: 0.88; }
 
 /* ===========================
    MODAL
@@ -1128,6 +1228,9 @@ to   { opacity: 1; transform: translateY(0); }
    Ko'rinadi: Nom | Narx | Qoldiq | Status | Amallar
    =========================== */
 @media (max-width: 768px) {
+    /* Barcha ptable lar uchun min-width olib tashlanadi */
+    .ptable { min-width: 0; }
+
     /* Yashirilgan ustunlar bilan jadval scroll kerak emas */
     .products-ptable {
         min-width: auto;
