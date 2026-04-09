@@ -1103,13 +1103,13 @@
     .pos-totals { padding: 14px 16px; }
 
     .pos-overlay {
-        padding: 0;
-        align-items: flex-end;
+        padding: 16px;
+        align-items: center;
     }
 
     .pos-modal {
-        border-radius: 20px 20px 0 0;
-        max-width: 100% !important;
+        border-radius: var(--pos-radius-xl);
+        max-width: 420px !important;
         max-height: 90vh;
         overflow: hidden;
         display: flex;
