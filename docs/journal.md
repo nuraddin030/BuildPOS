@@ -1,5 +1,51 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-09 (3) — Narx etiketi, Ommaviy chop etish, Mobile UI
+
+### Bajarilgan ishlar
+
+#### Narx etiketi chop etish (PriceLabelModal)
+- `PriceLabelModal.jsx` — yangi komponent:
+  - Do'kon nomi (PrimeStroy) → ajratuvchi chiziq → mahsulot nomi + narx (katta) → shtrix kod
+  - JsBarcode: CODE128, height 22, fontSize 6 (kichik)
+  - Ko'rinish: 196×147px (40×30mm × 1.3 scale)
+  - Nusxa soni: −/input/+ kontrollar (max 999)
+  - Chop etish: `@page { size: 40mm 30mm }` + `window.open()` + avtomatik print
+- `PriceLabelModal.css` — uslublar
+
+#### Ommaviy etiket chop etish (BulkPrintModal)
+- `BulkPrintModal.jsx` — bir vaqtda 10–15 mahsulot etiketini chop etish:
+  - Har bir mahsulot uchun alohida nusxa soni (−/input/+ kontrollar)
+  - Jami nusxalar soni footer da ko'rinadi
+  - Chop etish: barcha etiketlar bitta print oynasida
+- `BulkPrintModal.css` — uslublar
+- `ProductsPage.jsx`:
+  - "Chop etish" toggle button qo'shildi (default: yashirin, bosilsa checkbox lar paydo bo'ladi)
+  - `selectMode` state: faol bo'lganda checkbox ustunlari ko'rinadi
+  - "Select all" checkbox sarlavhada
+  - Tanlangan qatorlar ko'k rang (`row-selected`)
+  - Pastda suzuvchi `bulk-bar` panel: "X ta mahsulot tanlandi" + "Bekor" + "Etiket chop etish"
+  - Sahifa yuklanganda tanlov tozalanadi
+- `ProductsPage.css`: `.btn-bulk-print`, `.th-check`, `.row-check`, `.row-selected`, `.bulk-bar` uslublari
+
+#### ProductsPage ⋮ dropdown
+- 5 ta tugma → bitta "Chop etish" (Printer, doim ko'rinadi) + ⋮ dropdown:
+  - Narx tarixi, Tahrirlash, Faol/Noaktiv, O'chirish
+  - Tashqaridan bosish dropdown ni yopadi (`menuRef` + `mousedown` handler)
+
+#### Brend nomi PrimeStroy ga o'zgartirildi
+- `CashierPage.jsx`: termal chekda `BUILDPOS` → `PrimeStroy`
+- `SalesPage.jsx`: sotuv tarixida `BuildPOS` → `PrimeStroy`
+- `PriceLabelModal.jsx`: `STORE_NAME = 'PrimeStroy'`
+
+#### Mobile UI to'g'irlashlar
+- **Sidebar**: oxirgi nav itemlar ko'rinmaydi — `min-height: 0` flex fix (`layout.css`)
+- **ptable**: `min-width: 600px` sahifani kengaytirardi — `@media 768px` da `min-width: 0`
+- **table-responsive**: `max-width: 100%` qo'shildi (`Common.css`)
+- **CashierPage modal**: smena ochish tugmasi telefon pastida ko'rinmaydi — `.pos-mb` scroll bo'ldi, `.pos-mf` (footer) doim ko'rinadi
+
+---
+
 ## Session: 2026-04-09 (2) — Excel Import bugfixlar va zaxira kiritish
 
 ### Bajarilgan ishlar
@@ -724,7 +770,7 @@ src/
 | ~~5~~ | ~~Inventarizatsiya (Revision) moduli~~ | ~~Qiyin~~ | ✅ Tugallandi (2026-04-08) |
 | ~~6~~ | ~~Narx tarixi~~ | ~~Oson~~ | ✅ Tugallandi (2026-04-08) — ProductsPage da TrendingUp tugmasi |
 | ~~7~~ | ~~Mahsulot Excel import~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-09) — 3 bosqich, auto-mapping, ombor zaxirasi |
-| 8 | **Narx etiketi chop etish** | O'rta | Xprinter X365B, 40×30mm — mahsulot nomi + shtrix kod + narx |
+| ~~8~~ | ~~Narx etiketi chop etish~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-09) — PriceLabelModal + BulkPrintModal, 40×30mm |
 | 9 | **Smena kassa hisoboti chop etish** | Oson | Smena yopilganda A4 chop: naqd/karta/nasiya, kassir imzosi joyi |
 | 10 | **Mijozga avtomatik chegirma** | O'rta | Har bir mijozga doimiy % chegirma, CashierPage da avtomatik qo'llanadi |
 
