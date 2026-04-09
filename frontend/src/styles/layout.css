@@ -10,6 +10,7 @@
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
     height: 100vh;
+    height: 100dvh; /* mobil brauzer UI (address bar) ni hisobga oladi */
     background: var(--sidebar-bg);
     position: fixed;
     left: 0;
@@ -98,6 +99,7 @@
 /* ---- Sidebar Navigation ---- */
 .sidebar-nav {
     padding: 12px 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
     flex: 1;
     display: flex;
     flex-direction: column;
