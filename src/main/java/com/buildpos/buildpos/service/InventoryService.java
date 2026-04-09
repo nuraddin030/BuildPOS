@@ -70,6 +70,7 @@ public class InventoryService {
         for (WarehouseStock ws : stocks) {
             ProductUnit pu = ws.getProductUnit();
             if (pu == null || pu.getProduct() == null) continue;
+            if (Boolean.TRUE.equals(pu.getProduct().getIsDeleted())) continue;
 
             InventoryItem item = InventoryItem.builder()
                     .session(session)
