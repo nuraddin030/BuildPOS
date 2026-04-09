@@ -1,5 +1,21 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-09 — Inventarizatsiya bugfixlar
+
+### Bajarilgan ishlar
+- Sessiyalar tartibini ASC ga o'zgartirish (birinchi yaratilgan birinchi)
+- Jadvalda raqam o'rniga `#ID` ko'rsatish
+- Items jadvali `.ptable` ga o'tkazildi (loyiha standart ko'rinishi)
+- Qidiruv `.table-card` ichiga ko'chirildi (jadvaldan ajralib turmaydigan)
+- `window.confirm/alert` o'rniga `ConfirmModal` komponenti
+- URL routing: `/inventory/:id` (F5 da ma'lumot saqlanadi)
+- Items jadval ustunlari teng kenglik (`colgroup` + `table-layout: fixed`)
+- 4 ustun `th-center` — markazlashtirilgan
+- Create/Confirm modal: chegaralar ko'rinadigan (`#cbd5e1`), `inv-btn-cancel` button ko'rinishi
+- **Bug fix:** O'chirilgan mahsulotlar (soft delete) inventarizatsiyada ko'rinmasin
+
+---
+
 ## Session: 2026-04-08 (3) — Inventarizatsiya moduli (#5)
 
 ### Bajarilgan ishlar
