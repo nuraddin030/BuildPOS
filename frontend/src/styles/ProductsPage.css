@@ -430,6 +430,14 @@ to   { opacity: 1; transform: translateY(0); }
     border-color: #10b981;
 }
 
+.act-print {
+    color: #6366f1;
+}
+.act-print:hover {
+    background: #eef2ff;
+    border-color: #6366f1;
+}
+
 .act-edit {
     color: var(--primary);
 }

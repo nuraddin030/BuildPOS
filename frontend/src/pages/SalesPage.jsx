@@ -141,7 +141,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                 th,td { text-align:left; padding:3px 0; }
                 th { border-bottom: 1px solid #000; }
             </style></head><body>
-            <h2>BuildPOS</h2>
+            <h2>PrimeStroy</h2>
             <p class="center">${fmtDate(sale.completedAt || sale.createdAt)}</p>
             <p class="center">Chek: ${sale.referenceNo}</p>
             <div class="line"></div>

@@ -6,10 +6,11 @@ import {
 } from '../api/products'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
-    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp, Upload
+    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp, Upload, Printer
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import ProductImportModal from '../components/ProductImportModal'
+import PriceLabelModal from '../components/PriceLabelModal'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -24,6 +25,7 @@ export default function ProductsPage() {
     const [phData, setPhData] = useState([])
     const [phLoading, setPhLoading] = useState(false)
     const [importModal, setImportModal] = useState(false)
+    const [labelProduct, setLabelProduct] = useState(null)
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
     const [size] = useState(20)
@@ -209,6 +211,11 @@ export default function ProductsPage() {
                                                     <TrendingUp size={15} />
                                                 </button>
                                             )}
+                                            <button className="act-btn act-print"
+                                                    onClick={() => setLabelProduct(p)}
+                                                    title="Narx etiketi chop etish">
+                                                <Printer size={15} />
+                                            </button>
                                             {hasPermission('PRODUCTS_EDIT') && (
                                                 <button className="act-btn act-edit"
                                                         onClick={() => navigate(`/products/${p.id}/edit`)}
@@ -265,6 +272,14 @@ export default function ProductsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Price Label Modal */}
+            {labelProduct && (
+                <PriceLabelModal
+                    product={labelProduct}
+                    onClose={() => setLabelProduct(null)}
+                />
+            )}
 
             {/* Import Modal */}
             {importModal && (

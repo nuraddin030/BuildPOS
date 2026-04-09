@@ -472,7 +472,7 @@ function ReceiptModal({ sale, onClose }) {
             doc.text(String(right), W - 5, y, { align: 'right' }); y += 5
         }
 
-        line('BUILDPOS', 13, true, 'center')
+        line('PrimeStroy', 13, true, 'center')
         line('SOTUV CHEKI', 10, false, 'center'); y += 2
         divider('=')
 
@@ -519,7 +519,7 @@ function ReceiptModal({ sale, onClose }) {
                 <div className="pos-mb">
                     <div className="receipt">
                         {/* ── Header ── */}
-                        <div className="receipt-store">BUILDPOS</div>
+                        <div className="receipt-store">PrimeStroy</div>
                         <div className="receipt-subtitle">SOTUV CHEKI</div>
                         <div className="receipt-div receipt-div--double" />
 
