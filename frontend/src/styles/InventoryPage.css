@@ -107,7 +107,7 @@
 
 .inv-btn-cancel {
     padding: 8px 16px;
-    border: 1px solid var(--border);
+    border: 1.5px solid #cbd5e1;
     background: var(--surface);
     color: var(--text-secondary);
     border-radius: 8px;
@@ -116,10 +116,12 @@
     font-family: inherit;
     cursor: pointer;
     transition: all 0.15s;
+    appearance: none;
 }
 .inv-btn-cancel:hover {
     background: var(--surface-secondary);
-    border-color: var(--text-secondary);
+    border-color: #94a3b8;
+    color: var(--text-primary);
 }
 
 .inv-btn-primary {
