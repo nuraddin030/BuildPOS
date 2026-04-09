@@ -1,5 +1,35 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-09 (2) — Excel Import bugfixlar va zaxira kiritish
+
+### Bajarilgan ishlar
+
+#### Xatoliklar
+- `403 Forbidden` — `@PreAuthorize` da faqat `hasAuthority('PRODUCTS_CREATE')` edi, admin uchun `ROLE_ADMIN` authority ishlamadi
+  - **Fix:** `hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PRODUCTS_CREATE')` — loyiha standarti
+
+#### Boshlang'ich zaxira (Initial Stock) qo'shildi
+- **Backend:** `execute()` ga `warehouseId` parametri qo'shildi
+  - Ombor tanlangan + miqdor > 0 bo'lsa `WarehouseStock` yozuvi yaratiladi
+  - `WarehouseRepository`, `WarehouseStockRepository` injeksiya qilindi
+  - Shablon va izoh sahifasiga `Boshlang'ich zaxira` ustuni qo'shildi
+  - `FIELD_KEYWORDS` ga `initialStock` kalit so'zlari qo'shildi
+- **Controller:** `warehouseId` ixtiyoriy multipart parametri qo'shildi
+- **Frontend API:** `executeImport(file, mapping, warehouseId)` parametri qo'shildi
+- **Modal Step 1:** Ombor dropdown qo'shildi (ixtiyoriy — tanlanmasa zaxirasiz import)
+- **Mapping:** `FIELD_LABELS` ga `initialStock` qo'shildi
+
+#### UX yaxshilash
+- Xatolik xabari `pim-body` (scroll ichida, pastda) → `pim-footer` ga ko'chirildi
+  - Endi xatolik scroll qilmasdan doim ko'rinadi
+  - Footer: `flex-direction: column` — xatolik ustida, tugmalar pastda
+  - Orqaga/Yana import tugmalarida `setError('')` qo'shildi
+
+### Arxitektura eslatma
+- 15 ta ustunli Excel fayln import qilsa ham ishlaydi — mapping da faqat kerakli ustunlar tanlanadi, qolganlar e'tiborsiz qoladi
+
+---
+
 ## Session: 2026-04-08 (4) — Mahsulot Excel Import
 
 ### Bajarilgan ishlar
@@ -684,28 +714,44 @@ src/
 | # | Vazifa | Qiyinlik | Izoh |
 |---|--------|----------|------|
 | ~~1~~ | ~~Qaytarish moduli UI~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) |
-| ~~2~~ | ~~Purchase → multi-unit fix~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) — 10 dona → 40 metr test ✅ |
+| ~~2~~ | ~~Purchase → multi-unit fix~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) |
 | ~~3~~ | ~~ProductFormPage — edit da yangi unit qo'shish~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-07) |
-| ~~4~~ | ~~Buyurtmaga izoh~~ | ~~Oson~~ | ✅ Tugallandi (2026-04-08) — `sale_notes` jadvali, chronologik, kim/qachon |
+| ~~4~~ | ~~Buyurtmaga izoh~~ | ~~Oson~~ | ✅ Tugallandi (2026-04-08) |
 
 ### 🟡 O'rta muhimlik
 | # | Vazifa | Qiyinlik | Izoh |
 |---|--------|----------|------|
 | ~~5~~ | ~~Inventarizatsiya (Revision) moduli~~ | ~~Qiyin~~ | ✅ Tugallandi (2026-04-08) |
-| 6 | **Narx tarixi grafigi** | Oson | price_history jadvali tayyor, faqat UI kerak (ProductFormPage yoki alohida) |
-| 7 | **Mahsulot Excel import** | O'rta | 500-1000 mahsulotni bittada kiritish uchun |
-| 8 | **Smena kassa hisoboti chop etish** | Oson | Smena yopilganda A4 chop: naqd/karta/nasiya, kassir imzosi joyi |
-| 9 | **Mijozga avtomatik chegirma** | O'rta | Har bir mijozga doimiy % chegirma, CashierPage da avtomatik qo'llanadi |
+| ~~6~~ | ~~Narx tarixi~~ | ~~Oson~~ | ✅ Tugallandi (2026-04-08) — ProductsPage da TrendingUp tugmasi |
+| ~~7~~ | ~~Mahsulot Excel import~~ | ~~O'rta~~ | ✅ Tugallandi (2026-04-09) — 3 bosqich, auto-mapping, ombor zaxirasi |
+| 8 | **Narx etiketi chop etish** | O'rta | Xprinter X365B, 40×30mm — mahsulot nomi + shtrix kod + narx |
+| 9 | **Smena kassa hisoboti chop etish** | Oson | Smena yopilganda A4 chop: naqd/karta/nasiya, kassir imzosi joyi |
+| 10 | **Mijozga avtomatik chegirma** | O'rta | Har bir mijozga doimiy % chegirma, CashierPage da avtomatik qo'llanadi |
 
 ### 🟢 Keyingi bosqich
 | # | Vazifa | Qiyinlik | Izoh |
 |---|--------|----------|------|
-| 10 | **P&L Hisobotlar** | Qiyin | Daromad/zarar hisoboti — tannarx vs sotuv narxi |
-| 11 | **Hisob-faktura PDF (A4)** | O'rta | B2B mijozlar uchun rasmiy hujjat |
-| 12 | **Docker + avtomatik backup** | O'rta | Loyiha oxirida, PostgreSQL dump kunlik |
-| 13 | **Telegram Bot + Cloudflare Tunnel** | Qiyin | Masofadan kirish + bildirishnomalar (kam stok, katta sotuv) |
-| 14 | **E'lonlar taxtasi (Notice board)** | Oson | Admin xabar yozadi, kassirlar ko'radi, "O'qidim" belgilaydi |
-| 15 | **Vazifa tizimi (Task)** | O'rta | Admin kassirga vazifa tayinlaydi, status: bajarilmoqda/tugallandi |
+| 11 | **P&L Hisobotlar** | Qiyin | Daromad/zarar hisoboti — tannarx vs sotuv narxi |
+| 12 | **Hisob-faktura PDF (A4)** | O'rta | B2B mijozlar uchun rasmiy hujjat |
+| 13 | **Docker + avtomatik backup** | O'rta | Loyiha oxirida, PostgreSQL dump kunlik |
+| 14 | **Telegram Bot + Cloudflare Tunnel** | Qiyin | Masofadan kirish + bildirishnomalar (kam stok, katta sotuv) |
+| 15 | **E'lonlar taxtasi (Notice board)** | Oson | Admin xabar yozadi, kassirlar ko'radi, "O'qidim" belgilaydi |
+| 16 | **Vazifa tizimi (Task)** | O'rta | Admin kassirga vazifa tayinlaydi, status: bajarilmoqda/tugallandi |
+
+### 🔐 Kiberxavfsizlik — 2-bosqich (qolgan)
+| # | Kod | Vazifa | Muhimlik |
+|---|-----|--------|----------|
+| — | B-01 | JWT Refresh Token (15 daqiqa + 7 kun refresh) | 🔴 |
+| — | B-04 | Rate Limiting (login: 5/15daqiqa, API: 200/daqiqa) | 🔴 |
+| — | B-05 | Environment Variables (.env, kodda maxfiy ma'lumot yo'q) | 🔴 |
+| — | B-08 | Token Blacklist DB ga ko'chirish (hozir in-memory) | 🟡 |
+| — | B-09 | Input Validation (@Valid, @NotNull, @Size barcha DTO) | 🟡 |
+| — | B-10 | File Upload xavfsizligi (MIME type, fayl nomi sanitize) | 🟡 |
+| — | B-11 | Audit Log jadvali (kim, qachon, nima) | 🟡 |
+| — | B-12 | Xato xabarlarini standartlashtirish (stack trace ko'rinmasin) | 🟡 |
+| — | B-13 | Parol murakkablik talablari (min 8 belgi) | 🟡 |
+| — | F-01 | localStorage → HttpOnly cookie (XSS himoyasi) | 🔴 |
+| — | F-02 | Content Security Policy (CSP meta tag) | 🔴 |
 
 ### 🌐 Subdomen arxitekturasi (primestroy.uz)
 
