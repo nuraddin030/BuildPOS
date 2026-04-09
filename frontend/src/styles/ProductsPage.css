@@ -63,6 +63,36 @@ to   { opacity: 1; transform: translateY(0); }
     margin: 0;
 }
 
+.products-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-import {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn-import:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light, #eff6ff);
+}
+
 .btn-add {
     display: inline-flex;
     align-items: center;

@@ -13,3 +13,24 @@ export const adjustStock = (productUnitId, data) => api.post('/api/v1/products/s
 export const getExchangeRate = () => api.get('/api/v1/exchange-rate/current')
 export const getCategoriesTree = () => api.get('api/v1/categories/tree')
 export const getPriceHistory = (productUnitId) => api.get(`/api/v1/products/units/${productUnitId}/price-history`)
+
+export const downloadImportTemplate = () =>
+    api.get('/api/v1/products/import/template', { responseType: 'blob' })
+
+export const previewImport = (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.post('/api/v1/products/import/preview', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}
+
+export const executeImport = (file, mapping, warehouseId) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('mapping', JSON.stringify(mapping))
+    if (warehouseId) fd.append('warehouseId', String(warehouseId))
+    return api.post('/api/v1/products/import/execute', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}

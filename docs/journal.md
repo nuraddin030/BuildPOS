@@ -1,5 +1,44 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-08 (4) — Mahsulot Excel Import
+
+### Bajarilgan ishlar
+
+#### Backend
+- `CategoryRepository` — `findByNameIgnoreCaseAndIsDeletedFalse` qo'shildi
+- `UnitRepository` — `findByNameIgnoreCase` qo'shildi
+- `ProductUnitRepository` — `existsByBarcode` qo'shildi
+- `ImportPreviewResponse.java` — headers, sampleRows, autoMapping, totalDataRows
+- `ImportResultResponse.java` — totalRows, successCount, errorCount, errorFileBase64
+- `ProductImportService.java`:
+  - `generateTemplate()` — rangli Excel shablon (majburiy ustunlar sariq), namuna qatorlar, izoh sahifasi
+  - `preview(file)` — Excel ustunlarini o'qish, kalit so'z orqali avtomatik mapping, 5 ta namuna qator
+  - `execute(file, mapping)` — import bajarish, xato qatorlarni Base64 Excel sifatida qaytarish
+  - Avtomatik mapping kalit so'zlari: 8 maydon uchun (o'zbek + rus + ingliz)
+- `ProductImportController` — 3 endpoint:
+  - `GET /api/v1/products/import/template` — shablonni yuklab olish (autentifikatsiyasiz)
+  - `POST /api/v1/products/import/preview` — fayl preview (PRODUCTS_CREATE)
+  - `POST /api/v1/products/import/execute` — import bajarish (PRODUCTS_CREATE)
+
+#### Frontend
+- `products.js` — `downloadImportTemplate`, `previewImport`, `executeImport` API funksiyalari
+- `ProductImportModal.jsx` — 3 bosqichli modal:
+  - **Step 1:** Drag-drop fayl yuklash + shablon yuklab olish tugmasi
+  - **Step 2:** Ustun mapping jadvali (avtomatik aniqlangan + qo'lda o'zgartirish), namuna qatorlar ko'rsatish
+  - **Step 3:** Natija — muvaffaqiyatli/xato qatorlar hisobi, xato Excel faylni yuklab olish
+- `ProductImportModal.css` — to'liq uslublar
+- `ProductsPage.jsx` — "Import" tugmasi qo'shildi (PRODUCTS_CREATE ruxsati)
+- `ProductsPage.css` — `.products-header-actions`, `.btn-import` uslublari
+
+### Arxitektura qarorlari
+- Import mapping: frontend fayl + JSON mapping yuboradi (`multipart/form-data`)
+- Xato qatorlar: Base64 kodlangan Excel fayl (server xotirasida saqlamas)
+- Birlik qidirish: avval `symbol`, keyin `name` bilan (case-insensitive)
+- Kategoriya: faqat mavjud kategoriyal qabul qilinadi (yangi kategoriya yaratilmaydi)
+- Slug: `generateSlug()` ishlatiladi, takrorlansa `slug + "-" + timestamp`
+
+---
+
 ## Session: 2026-04-09 — Inventarizatsiya bugfixlar
 
 ### Bajarilgan ishlar

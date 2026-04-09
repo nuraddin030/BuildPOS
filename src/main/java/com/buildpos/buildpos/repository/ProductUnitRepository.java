@@ -12,6 +12,8 @@ public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long> 
 
     Optional<ProductUnit> findByBarcode(String barcode);
 
+    boolean existsByBarcode(String barcode);
+
     boolean existsByBarcodeAndIdNot(String barcode, Long id);
 
     Optional<ProductUnit> findByProductIdAndIsDefaultTrue(Long productId);

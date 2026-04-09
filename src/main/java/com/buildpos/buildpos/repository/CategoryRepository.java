@@ -45,4 +45,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     @Query("SELECT COUNT(c) FROM Category c WHERE c.isDeleted = false AND c.parent IS NULL")
     Long countRootCategories();
+
+    @Query("SELECT c FROM Category c WHERE LOWER(c.name) = LOWER(:name) AND c.isDeleted = false")
+    Optional<Category> findByNameIgnoreCaseAndIsDeletedFalse(@Param("name") String name);
 }

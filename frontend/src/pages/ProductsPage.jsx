@@ -6,9 +6,10 @@ import {
 } from '../api/products'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
-    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp
+    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp, Upload
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import ProductImportModal from '../components/ProductImportModal'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -22,6 +23,7 @@ export default function ProductsPage() {
     const [phModal, setPhModal] = useState(null) // { product }
     const [phData, setPhData] = useState([])
     const [phLoading, setPhLoading] = useState(false)
+    const [importModal, setImportModal] = useState(false)
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
     const [size] = useState(20)
@@ -90,12 +92,20 @@ export default function ProductsPage() {
                         <p className="page-subtitle">Barcha mahsulotlarni boshqaring</p>
                     </div>
                 </div>
-                {hasPermission('PRODUCTS_CREATE') && (
-                    <button className="btn-add" onClick={() => navigate('/products/new')}>
-                        <Plus size={18} />
-                        <span>{t('products.add')}</span>
-                    </button>
-                )}
+                <div className="products-header-actions">
+                    {hasPermission('PRODUCTS_CREATE') && (
+                        <button className="btn-import" onClick={() => setImportModal(true)}>
+                            <Upload size={16} />
+                            <span>Import</span>
+                        </button>
+                    )}
+                    {hasPermission('PRODUCTS_CREATE') && (
+                        <button className="btn-add" onClick={() => navigate('/products/new')}>
+                            <Plus size={18} />
+                            <span>{t('products.add')}</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Filter */}
@@ -255,6 +265,14 @@ export default function ProductsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Import Modal */}
+            {importModal && (
+                <ProductImportModal
+                    onClose={() => setImportModal(false)}
+                    onSuccess={() => { setImportModal(false); load() }}
+                />
+            )}
 
             {/* Price History Modal */}
             {phModal && (

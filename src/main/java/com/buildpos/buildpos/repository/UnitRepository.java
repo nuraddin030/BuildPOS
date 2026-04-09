@@ -13,4 +13,6 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
     boolean existsBySymbolIgnoreCase(String symbol);
 
     Optional<Unit> findBySymbolIgnoreCase(String symbol);
+
+    Optional<Unit> findByNameIgnoreCase(String name);
 }
