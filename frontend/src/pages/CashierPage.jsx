@@ -113,10 +113,16 @@ function SearchSelect({ placeholder, value, search, onSearchChange, onSelect, on
 
 // ─── Smena ochish ─────────────────────────────
 function OpenShiftModal({ warehouses, onOpen }) {
-    const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id || '')
+    const [warehouseId, setWarehouseId] = useState('')
     const [openingCash, setOpeningCash] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+
+    useEffect(() => {
+        if (warehouses.length > 0 && !warehouseId) {
+            setWarehouseId(warehouses[0].id)
+        }
+    }, [warehouses])
     const handle = async () => {
         if (!warehouseId) return setError('Ombor tanlang')
         setLoading(true); setError('')
