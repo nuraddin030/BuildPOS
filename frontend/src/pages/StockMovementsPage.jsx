@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 import "../styles/dashboard.css"
+import '../styles/StockMovementsPage.css'
 
 // ─── Harakat turlari ───────────────────────────────────────────────────────
 const MOVEMENT_TYPES = [
@@ -212,7 +213,7 @@ export default function StockMovementsPage() {
                 </div>
             </div>
             {/* ── Stat kartochkalar ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10, marginBottom: 16 }}>
+            <div className="movement-type-cards">
                 {MOVEMENT_TYPES.filter(t => t.value).map(t => (
                     <div key={t.value}
                          className="kpi-card"
@@ -330,7 +331,8 @@ export default function StockMovementsPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="table-responsive">
+                    <>
+                    <div className="movements-table-wrapper table-responsive">
                         <table className="ptable">
                             <thead>
                             <tr>
@@ -456,6 +458,37 @@ export default function StockMovementsPage() {
                             </tfoot>
                         </table>
                     </div>
+                    <div className="movements-cards">
+                        {movements.map((m, idx) => {
+                            const isIn = ['PURCHASE_IN','ADJUSTMENT_IN','TRANSFER_IN','RETURN_IN'].includes(m.movementType)
+                            const refPath = m.referenceType === 'PURCHASE' ? `/purchases/${m.referenceId}`
+                                : m.referenceType === 'SALE' ? `/sales/${m.referenceId}` : null
+                            return (
+                                <div key={m.id} className="movement-card">
+                                    <div className="movement-card-top">
+                                        <span className="movement-card-product">{m.productName || '—'}</span>
+                                        <span className="movement-card-qty" style={{ color: isIn ? '#10b981' : '#ef4444' }}>
+                                            {isIn ? '+' : '-'}{fmt(m.quantity)}
+                                            {m.unitSymbol && <span style={{ fontSize: 11, fontWeight: 400 }}> {m.unitSymbol}</span>}
+                                        </span>
+                                    </div>
+                                    <div className="movement-card-meta">
+                                        <MovementBadge type={m.movementType} />
+                                        {(m.toWarehouseName || m.fromWarehouseName) && (
+                                            <span>{m.toWarehouseName || m.fromWarehouseName}</span>
+                                        )}
+                                    </div>
+                                    <div className="movement-card-bottom">
+                                        <span>{fmtDateTime(m.movedAt)}</span>
+                                        {m.totalPrice && (
+                                            <span className="movement-card-total">{fmt(m.totalPrice)}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
                 )}
 
                 {/* ── Pagination ── */}

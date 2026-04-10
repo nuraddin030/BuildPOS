@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom'
 import {Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink, MoreVertical} from 'lucide-react'
 import {getCustomers, createCustomer, updateCustomer} from '../api/Customers'
 import '../styles/ProductsPage.css'
+import '../styles/CustomersPage.css'
 import {useAuth} from '../context/AuthContext'
 import DropdownPortal from '../components/DropdownPortal'
 
@@ -148,6 +149,8 @@ export default function CustomersPage() {
                         <p>Mijozlar yo'q</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="cust-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable customers-ptable">
                             <thead>
@@ -287,6 +290,55 @@ export default function CustomersPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="cust-cards">
+                        {customers.map((c) => (
+                            <div key={c.id} className="cust-card">
+                                <div className="cust-card-top">
+                                    <span className="cust-card-name">{c.name}</span>
+                                    <span className={`status-badge ${c.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                        {c.isActive !== false ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                <div className="cust-card-phone">{c.phone}</div>
+                                {c.totalDebt > 0 && (
+                                    <div className="cust-card-debt">Qarz: {fmt(c.totalDebt)}</div>
+                                )}
+                                {c.debtLimit && (
+                                    <div className="cust-card-limit">
+                                        Limit: {fmt(c.debtLimit)}
+                                        {' '}<span style={{
+                                            padding: '1px 5px', borderRadius: 6,
+                                            background: c.debtLimitStrict ? 'rgba(220,38,38,0.1)' : 'rgba(245,158,11,0.1)',
+                                            color: c.debtLimitStrict ? '#dc2626' : '#f59e0b', fontWeight: 600
+                                        }}>
+                                            {c.debtLimitStrict ? "Qat'iy" : 'Ogohlantirish'}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="cust-card-actions">
+                                    {hasPermission('CUSTOMERS_EDIT') && (
+                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(c)}>
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('CUSTOMERS_DEBT_VIEW') && (
+                                        <button className="act-btn"
+                                                title={c.totalDebt > 0 ? "Nasiyalarni ko'rish" : "Nasiya yo'q"}
+                                                style={{ color: c.totalDebt > 0 ? '#dc2626' : 'var(--text-muted)' }}
+                                                onClick={() => {
+                                                    if (c.totalDebt > 0) navigate(`/debts?customerId=${c.id}`)
+                                                    else setNoDebtModal(c.name)
+                                                }}>
+                                            {c.totalDebt > 0 ? <ExternalLink size={14} /> : <CreditCard size={14} />}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

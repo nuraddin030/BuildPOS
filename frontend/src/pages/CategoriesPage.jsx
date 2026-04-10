@@ -10,6 +10,7 @@ import {
 } from '../api/categories'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
+import '../styles/CategoriesPage.css'
 
 const EMPTY_FORM = { name: '', description: '', parentId: '' }
 
@@ -171,6 +172,8 @@ export default function CategoriesPage() {
                         <p>Kategoriyalar yo'q</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="cat-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable categories-ptable">
                             <thead>
@@ -280,6 +283,50 @@ export default function CategoriesPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="cat-cards">
+                        {rows.map((cat) => (
+                            <div key={cat.id} className="cat-card" style={{ marginLeft: cat.depth * 12 }}>
+                                <div className="cat-card-top">
+                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                        {cat.depth > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>└</span>}
+                                        <span className="cat-card-name">{cat.name}</span>
+                                        {cat.children?.length > 0 && (
+                                            <span className="cat-children-badge">{cat.children.length} ta</span>
+                                        )}
+                                    </div>
+                                    <span className={`status-badge ${cat.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                        {cat.isActive !== false ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                {cat.description && <div className="cat-card-desc">{cat.description}</div>}
+                                <div className="cat-card-actions">
+                                    {hasPermission('CATEGORIES_EDIT') && (
+                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(cat)}>
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('CATEGORIES_CREATE') && (
+                                        <button className="act-btn act-edit" title="Pastki kategoriya" onClick={() => openAdd(cat.id)}>
+                                            <FolderPlus size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('CATEGORIES_EDIT') && (
+                                        <button className="act-btn act-lock" title={cat.isActive !== false ? 'Noaktiv' : 'Faollashtirish'} onClick={() => handleToggle(cat.id)}>
+                                            {cat.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                        </button>
+                                    )}
+                                    {hasPermission('CATEGORIES_DELETE') && (
+                                        <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(cat.id)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

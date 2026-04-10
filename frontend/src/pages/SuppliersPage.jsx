@@ -8,6 +8,7 @@ import {
     deleteSupplier, getSupplierDebts
 } from '../api/Suppliers'
 import '../styles/ProductsPage.css'
+import '../styles/SuppliersPage.css'
 import { useAuth } from '../context/AuthContext'
 import DropdownPortal from '../components/DropdownPortal'
 
@@ -152,6 +153,8 @@ export default function SuppliersPage() {
                         <p>Yetkazuvchilar yo'q</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="sup-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable suppliers-ptable">
                             <thead>
@@ -253,6 +256,55 @@ export default function SuppliersPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="sup-cards">
+                        {suppliers.map((s) => (
+                            <div key={s.id} className="sup-card">
+                                <div className="sup-card-top">
+                                    <span className="sup-card-name">{s.name}</span>
+                                    <span className={`status-badge ${s.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                        {s.isActive !== false ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                {s.company && (
+                                    <div className="sup-card-row">
+                                        <Building2 size={12} />
+                                        {s.company}
+                                    </div>
+                                )}
+                                {s.phone && (
+                                    <div className="sup-card-row">
+                                        <Phone size={12} />
+                                        {s.phone}
+                                        {s.inn && <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>INN: {s.inn}</span>}
+                                    </div>
+                                )}
+                                {s.address && (
+                                    <div className="sup-card-row">{s.address}</div>
+                                )}
+                                <div className="sup-card-actions">
+                                    {hasPermission('SUPPLIERS_EDIT') && (
+                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(s)}>
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('SUPPLIERS_DEBT_VIEW') && (
+                                        <button className="act-btn" style={{ color: 'var(--info, #0891b2)' }}
+                                                title="Qarzlar" onClick={() => openDebts(s)}>
+                                            <CreditCard size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('SUPPLIERS_DELETE') && (
+                                        <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(s)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

@@ -361,14 +361,14 @@ export default function ShiftReportPage() {
             </div>
 
             {/* Filter */}
-            <div className="filter-bar">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
-                    <input type="date" className="filter-search" style={{ width: 160 }}
+            <div className="filter-bar shifts-filter-bar">
+                <div className="shifts-date-inputs">
+                    <Calendar size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <input type="date" className="filter-search"
                            value={filterFrom}
                            onChange={e => { setFilterFrom(e.target.value); setPage(0) }} />
-                    <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>—</span>
-                    <input type="date" className="filter-search" style={{ width: 160 }}
+                    <span style={{ color: 'var(--text-muted)', fontSize: 13, flexShrink: 0 }}>—</span>
+                    <input type="date" className="filter-search"
                            value={filterTo}
                            onChange={e => { setFilterTo(e.target.value); setPage(0) }} />
                 </div>
@@ -384,7 +384,8 @@ export default function ShiftReportPage() {
                 ) : shifts.length === 0 ? (
                     <div className="table-empty"><BarChart2 size={40} strokeWidth={1} /><p>Smenalar topilmadi</p></div>
                 ) : (
-                    <div className="table-responsive">
+                    <>
+                    <div className="shifts-table-wrapper table-responsive">
                         <table className="ptable shifts-ptable">
                             <thead>
                             <tr>
@@ -457,6 +458,39 @@ export default function ShiftReportPage() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="shifts-cards">
+                        {shifts.map(s => {
+                            const st = STATUS_MAP[s.status] || {}
+                            return (
+                                <div key={s.id} className="shift-card" onClick={() => setSelectedShiftId(s.id)}>
+                                    <div className="shift-card-top">
+                                        <span className="shift-card-cashier">{s.cashierName}</span>
+                                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, color: st.color, background: st.bg }}>{st.label}</span>
+                                    </div>
+                                    <div className="shift-card-meta">{s.warehouseName} · {fmtDT(s.openedAt)}</div>
+                                    <div className="shift-card-amounts">
+                                        <div className="shift-card-amount-item">
+                                            <span className="shift-card-amount-label">Jami sotuv</span>
+                                            <span className="shift-card-amount-value">{fmt(s.totalSales)}</span>
+                                        </div>
+                                        <div className="shift-card-amount-item">
+                                            <span className="shift-card-amount-label">Naqd</span>
+                                            <span className="shift-card-amount-value" style={{ color: '#16a34a' }}>{fmt(s.totalCash)}</span>
+                                        </div>
+                                        <div className="shift-card-amount-item">
+                                            <span className="shift-card-amount-label">Karta</span>
+                                            <span className="shift-card-amount-value" style={{ color: '#2563eb' }}>{fmt(s.totalCard)}</span>
+                                        </div>
+                                        <div className="shift-card-amount-item">
+                                            <span className="shift-card-amount-label">Nasiya</span>
+                                            <span className="shift-card-amount-value" style={{ color: '#f59e0b' }}>{fmt(s.totalDebt)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
                 )}
 
                 {totalPages > 1 && (

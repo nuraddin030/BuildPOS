@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Warehouse, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, Star, MoreVertical } from 'lucide-react'
 import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, toggleWarehouseStatus, setDefaultWarehouse } from '../api/Warehouses'
 import '../styles/ProductsPage.css'
+import '../styles/WarehousesPage.css'
 import { useAuth } from '../context/AuthContext'
 import DropdownPortal from '../components/DropdownPortal'
 
@@ -132,6 +133,8 @@ export default function WarehousesPage() {
                         <p>Omborlar yo'q</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="wh-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable">
                             <thead>
@@ -242,6 +245,53 @@ export default function WarehousesPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="wh-cards">
+                        {filtered.map((w) => (
+                            <div key={w.id} className="wh-card">
+                                <div className="wh-card-top">
+                                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                                        <span className="wh-card-name">{w.name}</span>
+                                        {w.isDefault && (
+                                            <span className="wh-default-badge">
+                                                <Star size={10} fill="#854d0e" /> Default
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className={`status-badge ${w.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                        {w.isActive !== false ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                {w.address && <div className="wh-card-address">{w.address}</div>}
+                                <div className="wh-card-actions">
+                                    {!w.isDefault && (
+                                        <button className="wh-default-btn" onClick={() => handleSetDefault(w.id)}>
+                                            Default qilish
+                                        </button>
+                                    )}
+                                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                                        {hasPermission('WAREHOUSES_EDIT') && (
+                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(w)}>
+                                                <Pencil size={14} />
+                                            </button>
+                                        )}
+                                        {hasPermission('WAREHOUSES_EDIT') && (
+                                            <button className="act-btn act-lock" title={w.isActive !== false ? 'Noaktiv' : 'Faollashtirish'} onClick={() => handleToggle(w)}>
+                                                {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                            </button>
+                                        )}
+                                        {!w.isDefault && hasPermission('WAREHOUSES_DELETE') && (
+                                            <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(w)}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

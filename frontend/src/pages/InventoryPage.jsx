@@ -274,7 +274,7 @@ function SessionDetail({ sessionId }) {
                     )}
                 </div>
 
-                <div className="table-responsive">
+                <div className="inv-items-table-wrapper table-responsive">
                     <table className="ptable inv-items-table">
                         <colgroup>
                             <col style={{ width: '4%' }} />
@@ -352,6 +352,64 @@ function SessionDetail({ sessionId }) {
                         })}
                         </tbody>
                     </table>
+                </div>
+                <div className="inv-items-cards">
+                    {filteredItems.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Mahsulot topilmadi</div>
+                    ) : filteredItems.map((item, i) => {
+                        const diff = item.actualQty != null ? item.actualQty - item.systemQty : null
+                        const diffColor = diff == null ? '' : diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#6b7280'
+                        return (
+                            <div key={item.id} className="inv-item-card">
+                                <div className="inv-item-card-name">
+                                    {item.productName}
+                                    {item.unitSymbol && <span className="inv-item-unit"> {item.unitSymbol}</span>}
+                                </div>
+                                <div className="inv-item-card-row">
+                                    <span className="inv-item-card-label">Tizim</span>
+                                    <span className="inv-item-card-val">{fmt(item.systemQty)}</span>
+                                </div>
+                                <div className="inv-item-card-row">
+                                    <span className="inv-item-card-label">Haqiqiy</span>
+                                    {isDraft && canManage ? (
+                                        <div className="inv-qty-cell" style={{ justifyContent: 'flex-end' }}>
+                                            <input
+                                                className="inv-qty-input"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={localQty[item.id] ?? ''}
+                                                onChange={e => setLocalQty(p => ({ ...p, [item.id]: e.target.value }))}
+                                                onBlur={() => saveItem(item.id)}
+                                                onKeyDown={e => e.key === 'Enter' && saveItem(item.id)}
+                                                placeholder="—"
+                                            />
+                                            {savingId === item.id && <Loader2 size={12} className="spin" style={{ color: 'var(--text-muted)' }} />}
+                                        </div>
+                                    ) : (
+                                        <span className="inv-item-card-val" style={{ fontWeight: 700 }}>{fmt(item.actualQty)}</span>
+                                    )}
+                                </div>
+                                {diff != null && (
+                                    <div className="inv-item-card-row">
+                                        <span className="inv-item-card-label">Farq</span>
+                                        <span style={{ fontWeight: 700, color: diffColor }}>
+                                            {diff > 0 ? '+' : ''}{fmt(diff)}
+                                        </span>
+                                    </div>
+                                )}
+                                {(isDraft && canManage) ? (
+                                    <input className="inv-note-input" type="text"
+                                           style={{ marginTop: 6, textAlign: 'left' }}
+                                           defaultValue={item.notes || ''}
+                                           onBlur={e => inventoryApi.updateItem(sessionId, item.id,
+                                               { actualQty: item.actualQty, notes: e.target.value || null })}
+                                           placeholder="Izoh..." />
+                                ) : item.notes ? (
+                                    <div className="inv-item-card-notes">{item.notes}</div>
+                                ) : null}
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -455,7 +513,8 @@ function InventoryList({ hasPermission, user, navigate }) {
                         <p>Inventarizatsiya yo'q</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
+                    <>
+                    <div className="inv-table-wrapper table-responsive">
                         <table className="ptable inventory-ptable">
                             <thead>
                             <tr>
@@ -508,6 +567,29 @@ function InventoryList({ hasPermission, user, navigate }) {
                             </tbody>
                         </table>
                     </div>
+                    <div className="inv-cards">
+                        {sessions.map(s => {
+                            const st = STATUS[s.status] || {}
+                            return (
+                                <div key={s.id} className="inv-card" onClick={() => navigate(`/inventory/${s.id}`)}>
+                                    <div className="inv-card-top">
+                                        <span className="inv-card-id">#{s.id}</span>
+                                        <span className="inv-status-badge" style={{ color: st.color, background: st.bg }}>
+                                            {st.label}
+                                        </span>
+                                    </div>
+                                    <div className="inv-card-warehouse">{s.warehouseName}</div>
+                                    <div className="inv-card-meta">
+                                        <span>{s.createdByName || '—'}</span>
+                                        <span>·</span>
+                                        <span>{fmtDT(s.createdAt)}</span>
+                                    </div>
+                                    {s.notes && <div className="inv-card-notes">{s.notes}</div>}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
                 )}
 
                 {totalPages > 1 && (

@@ -1,0 +1,50 @@
+@media (max-width: 768px) {
+  .cust-table-wrapper { display: none; }
+  .cust-cards { display: flex; flex-direction: column; gap: 10px; }
+}
+@media (min-width: 769px) {
+  .cust-cards { display: none; }
+}
+
+.cust-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.cust-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.cust-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.cust-card-phone {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  margin-bottom: 4px;
+}
+.cust-card-debt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--danger);
+  margin-bottom: 4px;
+}
+.cust-card-limit {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.cust-card-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--border-color);
+  margin-top: 8px;
+}

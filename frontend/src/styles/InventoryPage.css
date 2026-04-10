@@ -402,3 +402,99 @@
     gap: 10px;
     justify-content: flex-end;
 }
+
+/* ── Mobile card view (list) ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .inv-table-wrapper { display: none; }
+  .inv-cards { display: flex; flex-direction: column; gap: 10px; }
+  .inv-items-table-wrapper { display: none; }
+  .inv-items-cards { display: flex; flex-direction: column; gap: 8px; }
+}
+@media (min-width: 769px) {
+  .inv-cards { display: none; }
+  .inv-items-cards { display: none; }
+}
+
+.inv-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.inv-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.inv-card-id {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+.inv-card-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.inv-card-warehouse {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.inv-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.inv-card-notes {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Detail items cards ───────────────────────────────────────── */
+.inv-item-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.inv-item-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.inv-item-unit {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.inv-item-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 3px 0;
+}
+.inv-item-card-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.inv-item-card-val {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.inv-item-card-notes {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-style: italic;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Ruler, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, MoreVertical } from 'lucide-react'
 import { getUnits, createUnit, updateUnit, deleteUnit, toggleUnitStatus } from '../api/Units'
 import '../styles/ProductsPage.css'
+import '../styles/UnitsPage.css'
 import { useAuth } from '../context/AuthContext'
 import DropdownPortal from '../components/DropdownPortal'
 
@@ -124,6 +125,8 @@ export default function UnitsPage() {
                         <p>O'lchov birliklari yo'q</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="unit-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable">
                             <thead>
@@ -203,6 +206,41 @@ export default function UnitsPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="unit-cards">
+                        {filtered.map((u) => (
+                            <div key={u.id} className="unit-card">
+                                <div className="unit-card-top">
+                                    <span className="unit-card-name">{u.name}</span>
+                                    <span className={`status-badge ${u.isActive !== false ? 'status-active' : 'status-inactive'}`}>
+                                        {u.isActive !== false ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                <div className="unit-card-symbol">
+                                    Belgi: <strong>{u.symbol}</strong>
+                                </div>
+                                <div className="unit-card-actions">
+                                    {hasPermission('UNITS_EDIT') && (
+                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(u)}>
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
+                                    {hasPermission('UNITS_EDIT') && (
+                                        <button className="act-btn act-lock" title={u.isActive !== false ? 'Noaktiv' : 'Faollashtirish'} onClick={() => handleToggle(u.id)}>
+                                            {u.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                        </button>
+                                    )}
+                                    {hasPermission('UNITS_DELETE') && (
+                                        <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(u.id)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

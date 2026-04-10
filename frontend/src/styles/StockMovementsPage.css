@@ -1,0 +1,83 @@
+/* ── Type stat cards (7 ta) ───────────────────────────────────── */
+.movement-type-cards {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+    .movement-type-cards {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 8px;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .movement-type-cards::-webkit-scrollbar { display: none; }
+    .movement-type-cards .kpi-card {
+        flex-shrink: 0;
+        min-width: 130px;
+        scroll-snap-align: start;
+    }
+}
+
+/* ── Mobile card view ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .movements-table-wrapper { display: none; }
+  .movements-cards { display: flex; flex-direction: column; gap: 10px; }
+}
+@media (min-width: 769px) {
+  .movements-cards { display: none; }
+}
+
+.movement-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.movement-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.movement-card-product {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.movement-card-qty {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.movement-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.movement-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 0.5px solid var(--border-color);
+  padding-top: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.movement-card-total {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}

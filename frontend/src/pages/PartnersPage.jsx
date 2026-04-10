@@ -8,6 +8,7 @@ import {
 } from '../api/Partners'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
+import '../styles/PartnersPage.css'
 import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = { name: '', phone: '', notes: '' }
@@ -133,6 +134,8 @@ export default function PartnersPage() {
                 ) : partners.length === 0 ? (
                     <div className="table-empty"><Handshake size={40} strokeWidth={1} /><p>Hamkorlar yo'q</p></div>
                 ) : (
+                    <>
+                    <div className="partner-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable">
                             <thead>
@@ -238,6 +241,61 @@ export default function PartnersPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="partner-cards">
+                        {partners.map((p) => (
+                            <div key={p.id} className="partner-card">
+                                <div className="partner-card-top">
+                                    <span className="partner-card-name">{p.name}</span>
+                                    <span className={`status-badge ${p.isActive ? 'status-active' : 'status-inactive'}`}>
+                                        {p.isActive ? 'Faol' : 'Noaktiv'}
+                                    </span>
+                                </div>
+                                <div className="partner-card-phone">
+                                    <Phone size={12} style={{ display: 'inline', marginRight: 4 }} />
+                                    {p.phone}
+                                </div>
+                                <div className="partner-card-stats">
+                                    {p.totalSaleAmount > 0 && (
+                                        <span className="partner-stat-pill" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                                            {fmt(p.totalSaleAmount)}
+                                        </span>
+                                    )}
+                                    {p.totalSaleCount > 0 && (
+                                        <span className="partner-stat-pill">{p.totalSaleCount} ta sotuv</span>
+                                    )}
+                                    {p.debtSaleCount > 0 && (
+                                        <span className="partner-stat-pill" style={{ color: 'var(--danger)' }}>
+                                            {p.debtSaleCount} nasiya
+                                        </span>
+                                    )}
+                                    {p.totalCustomerCount > 0 && (
+                                        <span className="partner-stat-pill">{p.totalCustomerCount} mijoz</span>
+                                    )}
+                                </div>
+                                <div className="partner-card-actions">
+                                    {hasPermission('PARTNERS_EDIT') && (
+                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(p)}>
+                                            <Pencil size={14} />
+                                        </button>
+                                    )}
+                                    <button className="act-btn" style={{ color: 'var(--info, #0891b2)' }}
+                                            title="Statistika" onClick={() => openStats(p)}>
+                                        <TrendingUp size={14} />
+                                    </button>
+                                    {hasPermission('PARTNERS_EDIT') && (
+                                        <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
+                                                title={p.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                onClick={() => handleToggle(p)}>
+                                            {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
             </div>
 

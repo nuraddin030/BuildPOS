@@ -934,6 +934,8 @@ export default function SalesPage() {
                         <p>Sotuvlar topilmadi</p>
                     </div>
                 ) : (
+                    <>
+                    <div className="sales-table-wrapper">
                     <div className="table-responsive">
                         <table className="ptable sales-ptable">
                             <thead>
@@ -1022,6 +1024,37 @@ export default function SalesPage() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+
+                    <div className="sales-mobile-cards">
+                        {filtered.map((s) => {
+                            const st = STATUS_MAP[s.status] || {}
+                            return (
+                                <div key={s.id} className="sale-card" onClick={() => openDetail(s.id)}>
+                                    <div className="sale-card-top">
+                                        <span className="sale-card-ref">{s.referenceNo}</span>
+                                        <span className="sale-card-date">{fmtDate(s.completedAt || s.createdAt)}</span>
+                                    </div>
+                                    <div className="sale-card-meta">
+                                        <span>{s.cashierName || s.sellerName || '—'}</span>
+                                        {s.customerName && <span style={{ color: 'var(--primary)' }}>{s.customerName}</span>}
+                                    </div>
+                                    <div className="sale-card-bottom">
+                                        <div>
+                                            <div className="sale-card-amount">{fmt(s.totalAmount)} UZS</div>
+                                            <PaymentBadges payments={s.payments} />
+                                        </div>
+                                        <span style={{
+                                            padding: '3px 10px', borderRadius: 20,
+                                            fontSize: 12, fontWeight: 600,
+                                            color: st.color, background: st.bg
+                                        }}>{st.label}</span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
                 )}
 
                 {/* Pagination */}

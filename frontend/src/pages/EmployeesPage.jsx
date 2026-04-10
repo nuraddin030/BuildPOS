@@ -12,6 +12,7 @@ import {
 } from '../api/employees'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
+import '../styles/EmployeesPage.css'
 import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = { fullName: '', username: '', password: '', phone: '', roleId: '' }
@@ -275,6 +276,8 @@ export default function EmployeesPage() {
                         ) : filtered.length === 0 ? (
                             <div className="table-empty"><Users size={40} strokeWidth={1} /><p>Xodimlar yo'q</p></div>
                         ) : (
+                            <>
+                            <div className="emp-table-wrapper">
                             <div className="table-responsive">
                                 <table className="ptable">
                                     <thead>
@@ -367,6 +370,47 @@ export default function EmployeesPage() {
                                     </tbody>
                                 </table>
                             </div>
+                            </div>
+
+                            <div className="emp-cards">
+                                {filtered.map((emp) => (
+                                    <div key={emp.id} className="emp-card">
+                                        <div className="emp-card-top">
+                                            <span className="emp-card-name">{emp.fullName}</span>
+                                            <span className={`status-badge ${emp.isActive ? 'status-active' : 'status-inactive'}`}>
+                                                {emp.isActive ? 'Faol' : 'Noaktiv'}
+                                            </span>
+                                        </div>
+                                        <div className="emp-card-meta">
+                                            <span className="emp-card-username">@{emp.username}</span>
+                                            {emp.roleName && <span className="emp-card-role">{emp.roleName}</span>}
+                                        </div>
+                                        {emp.phone && <div className="emp-card-phone">{emp.phone}</div>}
+                                        <div className="emp-card-actions">
+                                            {hasPermission('EMPLOYEES_EDIT') && (
+                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(emp)}>
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('EMPLOYEES_PERMS') && (
+                                                <button className="act-btn" title="Permissionlar"
+                                                        style={{ color: 'var(--info, #0891b2)' }}
+                                                        onClick={() => openPerms(emp)}>
+                                                    <Key size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('EMPLOYEES_EDIT') && (
+                                                <button className={`act-btn ${emp.isActive ? 'act-lock' : ''}`}
+                                                        title={emp.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                        onClick={() => handleToggle(emp)}>
+                                                    {emp.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            </>
                         )}
                     </div>
                 </>

@@ -1,0 +1,53 @@
+@media (max-width: 768px) {
+  .partner-table-wrapper { display: none; }
+  .partner-cards { display: flex; flex-direction: column; gap: 10px; }
+}
+@media (min-width: 769px) {
+  .partner-cards { display: none; }
+}
+
+.partner-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.partner-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+.partner-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.partner-card-phone {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  margin-bottom: 6px;
+}
+.partner-card-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.partner-stat-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: 0.5px solid var(--border-color);
+}
+.partner-card-actions {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--border-color);
+  margin-top: 8px;
+}
