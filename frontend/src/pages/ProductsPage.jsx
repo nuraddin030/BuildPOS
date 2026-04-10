@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import DropdownPortal from '../components/DropdownPortal'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -28,20 +29,10 @@ export default function ProductsPage() {
     const [importModal, setImportModal] = useState(false)
     const [labelProduct, setLabelProduct] = useState(null)
     const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
     const [selected, setSelected] = useState(new Set())
     const [selectMode, setSelectMode] = useState(false)
     const [bulkPrint, setBulkPrint] = useState(false)
-    const menuRef = useRef(null)
-
-    useEffect(() => {
-        const handler = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
-                setOpenMenuId(null)
-            }
-        }
-        document.addEventListener('mousedown', handler)
-        return () => document.removeEventListener('mousedown', handler)
-    }, [])
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
     const [size] = useState(20)
@@ -254,7 +245,7 @@ export default function ProductsPage() {
                                         </span>
                                     </td>
                                     <td className="th-center">
-                                        <div className="action-group" ref={openMenuId === p.id ? menuRef : null}>
+                                        <div className="action-group">
                                             {/* Narx etiketi — har doim ko'rinadi */}
                                             <button className="act-btn act-print"
                                                     onClick={() => setLabelProduct(p)}
@@ -262,40 +253,41 @@ export default function ProductsPage() {
                                                 <Printer size={15} />
                                             </button>
 
-                                            {/* ⋮ Dropdown */}
-                                            <div className="act-menu-wrap">
-                                                <button
-                                                    className="act-btn act-more"
-                                                    onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)}
-                                                    title="Ko'proq"
-                                                >
-                                                    <MoreVertical size={15} />
-                                                </button>
-                                                {openMenuId === p.id && (
-                                                    <div className="act-dropdown">
-                                                        {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
-                                                            <button className="act-dd-item" onClick={() => { openPriceHistory(p); setOpenMenuId(null) }}>
-                                                                <TrendingUp size={14} /> Narx tarixi
-                                                            </button>
-                                                        )}
-                                                        {hasPermission('PRODUCTS_EDIT') && (
-                                                            <button className="act-dd-item" onClick={() => { navigate(`/products/${p.id}/edit`); setOpenMenuId(null) }}>
-                                                                <Pencil size={14} /> Tahrirlash
-                                                            </button>
-                                                        )}
-                                                        {hasPermission('PRODUCTS_EDIT') && (
-                                                            <button className="act-dd-item" onClick={() => { handleToggle(p.id); setOpenMenuId(null) }}>
-                                                                {p.status === 'ACTIVE' ? <><Lock size={14} /> Noaktiv qilish</> : <><Unlock size={14} /> Faollashtirish</>}
-                                                            </button>
-                                                        )}
-                                                        {hasPermission('PRODUCTS_DELETE') && (
-                                                            <button className="act-dd-item act-dd-danger" onClick={() => { handleDelete(p.id); setOpenMenuId(null) }}>
-                                                                <Trash2 size={14} /> O'chirish
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {/* ⋮ Dropdown — DropdownPortal (body ga render) */}
+                                            <button
+                                                className="act-btn act-more"
+                                                onClick={(e) => {
+                                                    if (openMenuId === p.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                    else { setOpenMenuId(p.id); setMenuAnchor(e.currentTarget) }
+                                                }}
+                                                title="Ko'proq"
+                                            >
+                                                <MoreVertical size={15} />
+                                            </button>
+                                            {openMenuId === p.id && (
+                                                <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                    {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
+                                                        <button className="act-dd-item" onClick={() => { openPriceHistory(p); setOpenMenuId(null) }}>
+                                                            <TrendingUp size={14} /> Narx tarixi
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('PRODUCTS_EDIT') && (
+                                                        <button className="act-dd-item" onClick={() => { navigate(`/products/${p.id}/edit`); setOpenMenuId(null) }}>
+                                                            <Pencil size={14} /> Tahrirlash
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('PRODUCTS_EDIT') && (
+                                                        <button className="act-dd-item" onClick={() => { handleToggle(p.id); setOpenMenuId(null) }}>
+                                                            {p.status === 'ACTIVE' ? <><Lock size={14} /> Noaktiv qilish</> : <><Unlock size={14} /> Faollashtirish</>}
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('PRODUCTS_DELETE') && (
+                                                        <button className="act-dd-item act-dd-danger" onClick={() => { handleDelete(p.id); setOpenMenuId(null) }}>
+                                                            <Trash2 size={14} /> O'chirish
+                                                        </button>
+                                                    )}
+                                                </DropdownPortal>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

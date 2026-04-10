@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import DropdownPortal from '../components/DropdownPortal'
 import {
     FolderTree, Plus, ChevronRight, ChevronDown,
-    Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, FolderPlus
+    Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, FolderPlus, MoreVertical
 } from 'lucide-react'
 import {
     getCategoryTree, createCategory, updateCategory,
@@ -48,6 +49,8 @@ export default function CategoriesPage() {
     const [form, setForm] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const load = useCallback(() => {
         setLoading(true)
@@ -169,7 +172,7 @@ export default function CategoriesPage() {
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable categories-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>
@@ -214,19 +217,21 @@ export default function CategoriesPage() {
                                                 {cat.isActive !== false ? 'Faol' : 'Noaktiv'}
                                             </span>
                                     </td>
-                                    <td>
-                                        <div className="action-group">
+                                    <td className="th-center">
+                                        {/* Desktop: 4 tugma */}
+                                        <div className="action-group desk-actions">
                                             {hasPermission('CATEGORIES_EDIT') && (
                                                 <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(cat)}>
                                                     <Pencil size={14} />
                                                 </button>
                                             )}
+                                            {hasPermission('CATEGORIES_CREATE') && (
+                                                <button className="act-btn act-edit" title="Pastki kategoriya" onClick={() => openAdd(cat.id)}>
+                                                    <FolderPlus size={14} />
+                                                </button>
+                                            )}
                                             {hasPermission('CATEGORIES_EDIT') && (
-                                                <button
-                                                    className={`act-btn act-lock`}
-                                                    title={cat.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
-                                                    onClick={() => handleToggle(cat.id)}
-                                                >
+                                                <button className="act-btn act-lock" title={cat.isActive !== false ? 'Noaktiv' : 'Faollashtirish'} onClick={() => handleToggle(cat.id)}>
                                                     {cat.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
                                                 </button>
                                             )}
@@ -235,10 +240,38 @@ export default function CategoriesPage() {
                                                     <Trash2 size={14} />
                                                 </button>
                                             )}
-                                            {hasPermission('CATEGORIES_CREATE') && (
-                                                <button className="act-btn act-edit" title="Pastki kategoriya qo'shish" onClick={() => openAdd(cat.id)}>
-                                                    <FolderPlus size={14} />
-                                                </button>
+                                        </div>
+                                        {/* Mobile: ⋮ dropdown */}
+                                        <div className="mob-actions">
+                                            <button className="act-btn act-more" onClick={(e) => {
+                                                if (openMenuId === cat.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                else { setOpenMenuId(cat.id); setMenuAnchor(e.currentTarget) }
+                                            }}>
+                                                <MoreVertical size={15} />
+                                            </button>
+                                            {openMenuId === cat.id && (
+                                                <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                    {hasPermission('CATEGORIES_EDIT') && (
+                                                        <button className="act-dd-item" onClick={() => { openEdit(cat); setOpenMenuId(null) }}>
+                                                            <Pencil size={14} /> Tahrirlash
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('CATEGORIES_CREATE') && (
+                                                        <button className="act-dd-item" onClick={() => { openAdd(cat.id); setOpenMenuId(null) }}>
+                                                            <FolderPlus size={14} /> Pastki kategoriya
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('CATEGORIES_EDIT') && (
+                                                        <button className="act-dd-item" onClick={() => { handleToggle(cat.id); setOpenMenuId(null) }}>
+                                                            {cat.isActive !== false ? <><Lock size={14} /> Noaktiv</> : <><Unlock size={14} /> Faollashtirish</>}
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('CATEGORIES_DELETE') && (
+                                                        <button className="act-dd-item act-dd-danger" onClick={() => { handleDelete(cat.id); setOpenMenuId(null) }}>
+                                                            <Trash2 size={14} /> O'chirish
+                                                        </button>
+                                                    )}
+                                                </DropdownPortal>
                                             )}
                                         </div>
                                     </td>

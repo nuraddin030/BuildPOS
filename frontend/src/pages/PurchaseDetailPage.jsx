@@ -10,6 +10,7 @@ import { getProducts, getProductById, getExchangeRate } from '../api/products'
 import { useAuth } from '../context/AuthContext'
 import { exportToPDF, exportToCSV, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
+import '../styles/PurchasesPage.css'
 
 const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 
@@ -409,7 +410,7 @@ export default function PurchaseDetailPage() {
                         <p className="page-subtitle">{purchase.supplierName}</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div className="purchase-detail-actions" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <span style={{
                         padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700,
                         color: st.color, background: st.bg
@@ -443,7 +444,7 @@ export default function PurchaseDetailPage() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div className="purchase-detail-grid">
                 {/* Asosiy ma'lumotlar */}
                 <div className="table-card" style={{ padding: '16px 20px' }}>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Asosiy ma'lumotlar</div>
@@ -533,52 +534,74 @@ export default function PurchaseDetailPage() {
                         </button>
                     )}
                 </div>
-                <div className="table-responsive">
-                    <table className="ptable">
-                        <thead>
-                        <tr>
-                            <th className="th-num">#</th>
-                            <th>Mahsulot</th>
-                            <th className="th-center">O'lchov</th>
-                            <th className="th-right">Miqdor</th>
-                            <th className="th-right">Narx</th>
-                            <th className="th-center">Valyuta</th>
-                            <th className="th-right">Jami (UZS)</th>
-                            <th className="th-right">Qabul qilindi</th>
-                            <th className="th-right">Qoldi</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {(purchase.items || []).map((item, i) => (
-                            <tr key={item.id}>
-                                <td className="cell-num">{i + 1}</td>
-                                <td><div className="cell-name">{item.productName}</div></td>
-                                <td className="th-center"><span className="cell-muted">{item.unitSymbol}</span></td>
-                                <td className="th-right">{fmt(item.quantity)}</td>
-                                <td className="th-right">
-                                    {fmt(item.unitPrice)}
-                                    {item.currency === 'USD' && item.exchangeRate && (
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                            kurs: {fmt(item.exchangeRate)}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="th-center">
-                                    <span style={{
-                                        fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
-                                        color: item.currency === 'USD' ? '#3b82f6' : 'var(--text-muted)',
-                                        background: item.currency === 'USD' ? 'rgba(59,130,246,0.1)' : 'var(--surface-2)'
-                                    }}>{item.currency || 'UZS'}</span>
-                                </td>
-                                <td className="th-right" style={{ fontWeight: 600 }}>{fmt(item.totalPrice)}</td>
-                                <td className="th-right" style={{ color: '#10b981' }}>{fmt(item.receivedQty)}</td>
-                                <td className="th-right" style={{ color: Number(item.remainingQty) > 0 ? '#f59e0b' : '#10b981' }}>
-                                    {fmt(item.remainingQty)}
-                                </td>
+                <div className="purchase-items-table-wrapper">
+                    <div className="table-responsive">
+                        <table className="ptable">
+                            <thead>
+                            <tr>
+                                <th className="th-num">#</th>
+                                <th>Mahsulot</th>
+                                <th className="th-center">O'lchov</th>
+                                <th className="th-right">Miqdor</th>
+                                <th className="th-right">Narx</th>
+                                <th className="th-center">Valyuta</th>
+                                <th className="th-right">Jami (UZS)</th>
+                                <th className="th-right">Qabul qilindi</th>
+                                <th className="th-right">Qoldi</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {(purchase.items || []).map((item, i) => (
+                                <tr key={item.id}>
+                                    <td className="cell-num">{i + 1}</td>
+                                    <td><div className="cell-name">{item.productName}</div></td>
+                                    <td className="th-center"><span className="cell-muted">{item.unitSymbol}</span></td>
+                                    <td className="th-right">{fmt(item.quantity)}</td>
+                                    <td className="th-right">
+                                        {fmt(item.unitPrice)}
+                                        {item.currency === 'USD' && item.exchangeRate && (
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                                kurs: {fmt(item.exchangeRate)}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="th-center">
+                                        <span style={{
+                                            fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
+                                            color: item.currency === 'USD' ? '#3b82f6' : 'var(--text-muted)',
+                                            background: item.currency === 'USD' ? 'rgba(59,130,246,0.1)' : 'var(--surface-2)'
+                                        }}>{item.currency || 'UZS'}</span>
+                                    </td>
+                                    <td className="th-right" style={{ fontWeight: 600 }}>{fmt(item.totalPrice)}</td>
+                                    <td className="th-right" style={{ color: '#10b981' }}>{fmt(item.receivedQty)}</td>
+                                    <td className="th-right" style={{ color: Number(item.remainingQty) > 0 ? '#f59e0b' : '#10b981' }}>
+                                        {fmt(item.remainingQty)}
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="purchase-items-cards">
+                    {(purchase.items || []).map((item) => (
+                        <div key={item.id} className="purchase-item-card">
+                            <div className="purchase-item-name">{item.productName}</div>
+                            <div className="purchase-item-row">
+                                <span>O'lchov</span>
+                                <span>{item.unitSymbol} &nbsp; {fmt(item.quantity)} ta</span>
+                            </div>
+                            <div className="purchase-item-row">
+                                <span>Narx</span>
+                                <span>{fmt(item.unitPrice)} {item.currency || 'UZS'}</span>
+                            </div>
+                            <div className="purchase-item-total">
+                                <span>Jami</span>
+                                <span>{fmt(item.totalPrice)} UZS</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 

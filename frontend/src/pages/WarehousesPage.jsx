@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Warehouse, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, Star } from 'lucide-react'
+import { Warehouse, Plus, Pencil, Lock, Unlock, Trash2, X, AlertCircle, Loader2, Search, Star, MoreVertical } from 'lucide-react'
 import { getWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, toggleWarehouseStatus, setDefaultWarehouse } from '../api/Warehouses'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
+import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = { name: '', address: '' }
 
@@ -15,6 +16,8 @@ export default function WarehousesPage() {
     const [form, setForm] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const load = useCallback(() => {
         setLoading(true)
@@ -185,23 +188,53 @@ export default function WarehousesPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            {hasPermission('WAREHOUSES_EDIT') && (
-                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(w)}>
-                                                    <Pencil size={14} />
+                                            <div className="desk-actions">
+                                                {hasPermission('WAREHOUSES_EDIT') && (
+                                                    <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(w)}>
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                                {hasPermission('WAREHOUSES_EDIT') && (
+                                                    <button className="act-btn act-lock"
+                                                            title={w.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
+                                                            onClick={() => handleToggle(w)}>
+                                                        {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                                    </button>
+                                                )}
+                                                {!w.isDefault && hasPermission('WAREHOUSES_DELETE') && (
+                                                    <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(w)}>
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mob-actions">
+                                                <button className="act-btn act-more" onClick={(e) => {
+                                                    if (openMenuId === w.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                    else { setOpenMenuId(w.id); setMenuAnchor(e.currentTarget) }
+                                                }}>
+                                                    <MoreVertical size={15} />
                                                 </button>
-                                            )}
-                                            {hasPermission('WAREHOUSES_EDIT') && (
-                                                <button className="act-btn act-lock"
-                                                        title={w.isActive !== false ? 'Noaktiv qilish' : 'Faollashtirish'}
-                                                        onClick={() => handleToggle(w)}>
-                                                    {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
-                                                </button>
-                                            )}
-                                            {!w.isDefault && hasPermission('WAREHOUSES_DELETE') && (
-                                                <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(w)}>
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            )}
+                                                {openMenuId === w.id && (
+                                                    <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                        {hasPermission('WAREHOUSES_EDIT') && (
+                                                            <button className="act-btn act-edit" onClick={() => { openEdit(w); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Pencil size={14} /> Tahrirlash
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('WAREHOUSES_EDIT') && (
+                                                            <button className="act-btn act-lock" onClick={() => { handleToggle(w); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                {w.isActive !== false ? <Lock size={14} /> : <Unlock size={14} />}
+                                                                {w.isActive !== false ? 'Noaktiv' : 'Faollashtirish'}
+                                                            </button>
+                                                        )}
+                                                        {!w.isDefault && hasPermission('WAREHOUSES_DELETE') && (
+                                                            <button className="act-btn act-delete" onClick={() => { handleDelete(w); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Trash2 size={14} /> O'chirish
+                                                            </button>
+                                                        )}
+                                                    </DropdownPortal>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

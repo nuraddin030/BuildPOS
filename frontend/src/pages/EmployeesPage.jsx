@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
     Users, Plus, Pencil, Lock, Unlock, X, AlertCircle,
     Loader2, Search, Shield, ShieldCheck, ShieldOff,
-    ChevronDown, ChevronRight, Trash2, Key
+    ChevronDown, ChevronRight, Trash2, Key, MoreVertical
 } from 'lucide-react'
 import {
     getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus,
@@ -12,6 +12,7 @@ import {
 } from '../api/employees'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
+import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = { fullName: '', username: '', password: '', phone: '', roleId: '' }
 const EMPTY_PERM = { name: '', labelUz: '', labelEn: '', type: 'PAGE', groupId: '' }
@@ -19,6 +20,8 @@ const EMPTY_GROUP = { name: '', labelUz: '', labelEn: '' }
 
 export default function EmployeesPage() {
     const [tab, setTab] = useState('employees') // 'employees' | 'permissions'
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     // ── Employees ──
     const [employees, setEmployees] = useState([])
@@ -306,25 +309,57 @@ export default function EmployeesPage() {
                                             </td>
                                             <td>
                                                 <div className="action-group">
-                                                    {hasPermission('EMPLOYEES_EDIT') && (
-                                                        <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(emp)}>
-                                                            <Pencil size={14} />
+                                                    <div className="desk-actions">
+                                                        {hasPermission('EMPLOYEES_EDIT') && (
+                                                            <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(emp)}>
+                                                                <Pencil size={14} />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('EMPLOYEES_PERMS') && (
+                                                            <button className="act-btn" title="Permissionlar"
+                                                                    style={{ color: 'var(--info, #0891b2)' }}
+                                                                    onClick={() => openPerms(emp)}>
+                                                                <Key size={14} />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('EMPLOYEES_EDIT') && (
+                                                            <button className={`act-btn ${emp.isActive ? 'act-lock' : ''}`}
+                                                                    title={emp.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                                    onClick={() => handleToggle(emp)}>
+                                                                {emp.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="mob-actions">
+                                                        <button className="act-btn act-more" onClick={(e) => {
+                                                            if (openMenuId === emp.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                            else { setOpenMenuId(emp.id); setMenuAnchor(e.currentTarget) }
+                                                        }}>
+                                                            <MoreVertical size={15} />
                                                         </button>
-                                                    )}
-                                                    {hasPermission('EMPLOYEES_PERMS') && (
-                                                        <button className="act-btn" title="Permissionlar"
-                                                                style={{ color: 'var(--info, #0891b2)' }}
-                                                                onClick={() => openPerms(emp)}>
-                                                            <Key size={14} />
-                                                        </button>
-                                                    )}
-                                                    {hasPermission('EMPLOYEES_EDIT') && (
-                                                        <button className={`act-btn ${emp.isActive ? 'act-lock' : ''}`}
-                                                                title={emp.isActive ? 'Bloklash' : 'Faollashtirish'}
-                                                                onClick={() => handleToggle(emp)}>
-                                                            {emp.isActive ? <Lock size={14} /> : <Unlock size={14} />}
-                                                        </button>
-                                                    )}
+                                                        {openMenuId === emp.id && (
+                                                            <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                {hasPermission('EMPLOYEES_EDIT') && (
+                                                                    <button className="act-btn act-edit" onClick={() => { openEdit(emp); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                        <Pencil size={14} /> Tahrirlash
+                                                                    </button>
+                                                                )}
+                                                                {hasPermission('EMPLOYEES_PERMS') && (
+                                                                    <button className="act-btn" style={{ color: 'var(--info, #0891b2)' }}
+                                                                            onClick={() => { openPerms(emp); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                        <Key size={14} /> Permissionlar
+                                                                    </button>
+                                                                )}
+                                                                {hasPermission('EMPLOYEES_EDIT') && (
+                                                                    <button className={`act-btn ${emp.isActive ? 'act-lock' : ''}`}
+                                                                            onClick={() => { handleToggle(emp); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                        {emp.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                                        {emp.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                                    </button>
+                                                                )}
+                                                            </DropdownPortal>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>

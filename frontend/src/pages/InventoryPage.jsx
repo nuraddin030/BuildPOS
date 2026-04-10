@@ -456,7 +456,7 @@ function InventoryList({ hasPermission, user, navigate }) {
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable inventory-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>

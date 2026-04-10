@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
     Factory, Plus, Pencil, Trash2, X, AlertCircle,
-    Loader2, Search, CreditCard, Phone, Building2
+    Loader2, Search, CreditCard, Phone, Building2, MoreVertical
 } from 'lucide-react'
 import {
     getSuppliers, createSupplier, updateSupplier,
@@ -9,6 +9,7 @@ import {
 } from '../api/Suppliers'
 import '../styles/ProductsPage.css'
 import { useAuth } from '../context/AuthContext'
+import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = {
     name: '', company: '', phone: '',
@@ -33,6 +34,8 @@ export default function SuppliersPage() {
     const [debtSupplier, setDebtSupplier] = useState(null)
     const [debts, setDebts] = useState([])
     const [debtLoading, setDebtLoading] = useState(false)
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const { hasPermission } = useAuth()
 
@@ -150,7 +153,7 @@ export default function SuppliersPage() {
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable suppliers-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>
@@ -196,23 +199,53 @@ export default function SuppliersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            {hasPermission('SUPPLIERS_EDIT') && (
-                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(s)}>
-                                                    <Pencil size={14} />
+                                            <div className="desk-actions">
+                                                {hasPermission('SUPPLIERS_EDIT') && (
+                                                    <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(s)}>
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                                {hasPermission('SUPPLIERS_DEBT_VIEW') && (
+                                                    <button className="act-btn"
+                                                            style={{ color: 'var(--info, #0891b2)' }}
+                                                            title="Qarzlar" onClick={() => openDebts(s)}>
+                                                        <CreditCard size={14} />
+                                                    </button>
+                                                )}
+                                                {hasPermission('SUPPLIERS_DELETE') && (
+                                                    <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(s)}>
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mob-actions">
+                                                <button className="act-btn act-more" onClick={(e) => {
+                                                    if (openMenuId === s.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                    else { setOpenMenuId(s.id); setMenuAnchor(e.currentTarget) }
+                                                }}>
+                                                    <MoreVertical size={15} />
                                                 </button>
-                                            )}
-                                            {hasPermission('SUPPLIERS_DEBT_VIEW') && (
-                                                <button className="act-btn"
-                                                        style={{ color: 'var(--info, #0891b2)' }}
-                                                        title="Qarzlar" onClick={() => openDebts(s)}>
-                                                    <CreditCard size={14} />
-                                                </button>
-                                            )}
-                                            {hasPermission('SUPPLIERS_DELETE') && (
-                                                <button className="act-btn act-delete" title="O'chirish" onClick={() => handleDelete(s)}>
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            )}
+                                                {openMenuId === s.id && (
+                                                    <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                        {hasPermission('SUPPLIERS_EDIT') && (
+                                                            <button className="act-btn act-edit" onClick={() => { openEdit(s); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Pencil size={14} /> Tahrirlash
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('SUPPLIERS_DEBT_VIEW') && (
+                                                            <button className="act-btn" style={{ color: 'var(--info, #0891b2)' }}
+                                                                    onClick={() => { openDebts(s); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <CreditCard size={14} /> Qarzlar
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('SUPPLIERS_DELETE') && (
+                                                            <button className="act-btn act-delete" onClick={() => { handleDelete(s); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Trash2 size={14} /> O'chirish
+                                                            </button>
+                                                        )}
+                                                    </DropdownPortal>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

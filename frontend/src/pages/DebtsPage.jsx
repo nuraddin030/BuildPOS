@@ -7,12 +7,13 @@ import {
     Clock, X, Banknote, Smartphone, Package,
     Users, Truck, DollarSign, Calendar, ArrowUpRight,
     LayoutList, GitBranch, ChevronDown, ChevronRight as ChevronRightIcon,
-    CalendarDays, ListOrdered, Trash2, BarChart2, FileSpreadsheet, Download
+    CalendarDays, ListOrdered, Trash2, BarChart2, FileSpreadsheet, Download, MoreVertical
 } from 'lucide-react'
 import { customerDebtsApi, supplierDebtsApi, installmentApi, agingApi } from '../api/debts'
 import { salesApi } from '../api/sales'
 import { useAuth } from '../context/AuthContext'
 import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
+import DropdownPortal from '../components/DropdownPortal'
 import '../styles/ProductsPage.css'
 import '../styles/DebtsPage.css'
 
@@ -2055,6 +2056,8 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
 // ── DebtTreeView komponenti ──────────────────────────────────────
 function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, onPay, onPayAll, onViewSupplier, highlightId, hasPermission }) {
     const isCustomer = type === 'customer'
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     if (loading) return (
         <div className="table-card">
@@ -2083,7 +2086,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
     return (
         <div className="table-card">
             <div className="table-responsive">
-                <table className="ptable">
+                <table className="ptable debts-group-ptable">
                     <thead>
                     <tr>
                         <th className="th-num">#</th>
@@ -2206,7 +2209,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                     </td>
                                     {/* 4. Amallar */}
                                     <td onClick={e => e.stopPropagation()}>
-                                        <div className="action-group">
+                                        <div className="action-group desk-actions">
                                             {isCustomer && hasOpenDebts && hasPermission('CUSTOMERS_DEBT_PAY') && (
                                                 <button className="act-btn act-pay"
                                                         title="Hammasini to'lash"
@@ -2220,6 +2223,29 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                                         onClick={() => onViewSupplier(group.entityId)}>
                                                     <ArrowUpRight size={14} />
                                                 </button>
+                                            )}
+                                        </div>
+                                        <div className="mob-actions">
+                                            <button className="act-btn act-more" onClick={(e) => {
+                                                const menuKey = `g-${group.entityId}`
+                                                if (openMenuId === menuKey) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                else { setOpenMenuId(menuKey); setMenuAnchor(e.currentTarget) }
+                                            }}>
+                                                <MoreVertical size={15} />
+                                            </button>
+                                            {openMenuId === `g-${group.entityId}` && (
+                                                <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                    {isCustomer && hasOpenDebts && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                                        <button className="act-dd-item" onClick={() => { onPayAll({ ...group, debts: debts }); setOpenMenuId(null) }}>
+                                                            <Banknote size={14} /> Hammasini to'lash
+                                                        </button>
+                                                    )}
+                                                    {!isCustomer && (
+                                                        <button className="act-dd-item" onClick={() => { onViewSupplier(group.entityId); setOpenMenuId(null) }}>
+                                                            <ArrowUpRight size={14} /> Yetkazuvchi sahifasi
+                                                        </button>
+                                                    )}
+                                                </DropdownPortal>
                                             )}
                                         </div>
                                     </td>
@@ -2277,7 +2303,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                     }}>{status.label}</span>
                                 </td>
                                 <td onClick={e => e.stopPropagation()}>
-                                    <div className="action-group">
+                                    <div className="action-group desk-actions">
                                         <button className="act-btn act-edit" onClick={() => onView(d)}>
                                             <Eye size={14} />
                                         </button>
@@ -2285,6 +2311,26 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                             <button className="act-btn act-pay" onClick={() => onPay(d)}>
                                                 <Banknote size={14} />
                                             </button>
+                                        )}
+                                    </div>
+                                    <div className="mob-actions">
+                                        <button className="act-btn act-more" onClick={(e) => {
+                                            if (openMenuId === d.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                            else { setOpenMenuId(d.id); setMenuAnchor(e.currentTarget) }
+                                        }}>
+                                            <MoreVertical size={15} />
+                                        </button>
+                                        {openMenuId === d.id && (
+                                            <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                <button className="act-dd-item" onClick={() => { onView(d); setOpenMenuId(null) }}>
+                                                    <Eye size={14} /> Ko'rish
+                                                </button>
+                                                {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                                    <button className="act-dd-item" onClick={() => { onPay(d); setOpenMenuId(null) }}>
+                                                        <Banknote size={14} /> To'lash
+                                                    </button>
+                                                )}
+                                            </DropdownPortal>
                                         )}
                                     </div>
                                 </td>
@@ -2301,6 +2347,8 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
 // ── DebtTable komponenti ─────────────────────────────────────────
 function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange, onView, onPay, hasPermission }) {
     const isCustomer = type === 'customer'
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     return (
         <div className="table-card">
@@ -2316,7 +2364,7 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                 </div>
             ) : (
                 <div className="table-responsive">
-                    <table className="ptable">
+                    <table className="ptable debts-detail-ptable">
                         <thead>
                         <tr>
                             <th className="th-num">#</th>
@@ -2388,7 +2436,7 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                                         </span>
                                     </td>
                                     <td onClick={e => e.stopPropagation()}>
-                                        <div className="action-group">
+                                        <div className="action-group desk-actions">
                                             <button className="act-btn act-edit" title="Ko'rish"
                                                     onClick={() => onView(d)}>
                                                 <Eye size={14} />
@@ -2398,6 +2446,26 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                                                         onClick={() => onPay(d)}>
                                                     <Banknote size={14} />
                                                 </button>
+                                            )}
+                                        </div>
+                                        <div className="mob-actions">
+                                            <button className="act-btn act-more" onClick={(e) => {
+                                                if (openMenuId === d.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                else { setOpenMenuId(d.id); setMenuAnchor(e.currentTarget) }
+                                            }}>
+                                                <MoreVertical size={15} />
+                                            </button>
+                                            {openMenuId === d.id && (
+                                                <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                    <button className="act-dd-item" onClick={() => { onView(d); setOpenMenuId(null) }}>
+                                                        <Eye size={14} /> Ko'rish
+                                                    </button>
+                                                    {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                                        <button className="act-dd-item" onClick={() => { onPay(d); setOpenMenuId(null) }}>
+                                                            <Banknote size={14} /> To'lash
+                                                        </button>
+                                                    )}
+                                                </DropdownPortal>
                                             )}
                                         </div>
                                     </td>

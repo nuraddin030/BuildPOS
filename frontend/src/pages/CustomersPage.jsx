@@ -1,9 +1,10 @@
 import {useState, useEffect, useCallback} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink} from 'lucide-react'
+import {Users, Plus, Pencil, X, AlertCircle, Loader2, Search, CreditCard, ExternalLink, MoreVertical} from 'lucide-react'
 import {getCustomers, createCustomer, updateCustomer} from '../api/Customers'
 import '../styles/ProductsPage.css'
 import {useAuth} from '../context/AuthContext'
+import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = {name: '', phone: '', notes: '', debtLimit: '', debtLimitStrict: false}
 const formatPhone = (v) => v.replace(/\D/g, '').slice(0, 12)
@@ -23,6 +24,8 @@ export default function CustomersPage() {
 
     // Debts endi DebtsPage ga yo'naltiriladi — bu state lar kerak emas
     const [noDebtModal, setNoDebtModal] = useState(null) // qarz yo'q mijoz nomi
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const load = useCallback(() => {
         setLoading(true)
@@ -146,7 +149,7 @@ export default function CustomersPage() {
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable customers-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>
@@ -209,34 +212,74 @@ export default function CustomersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            {hasPermission('CUSTOMERS_EDIT') && (
-                                                <button className="act-btn act-edit" title="Tahrirlash"
-                                                        onClick={() => openEdit(c)}>
-                                                    <Pencil size={14}/>
-                                                </button>
-                                            )}
-                                            {hasPermission('CUSTOMERS_DEBT_VIEW') && (
-                                                <button
-                                                    className="act-btn"
-                                                    title={c.totalDebt > 0 ? "Nasiyalarni ko'rish" : "Nasiya yo'q"}
-                                                    style={{
-                                                        color: c.totalDebt > 0 ? '#dc2626' : 'var(--text-muted)',
-                                                        borderColor: 'var(--border-color)'
-                                                    }}
-                                                    onClick={() => {
-                                                        if (c.totalDebt > 0) {
-                                                            navigate(`/debts?customerId=${c.id}`)
-                                                        } else {
-                                                            setNoDebtModal(c.name)
+                                            <div className="desk-actions">
+                                                {hasPermission('CUSTOMERS_EDIT') && (
+                                                    <button className="act-btn act-edit" title="Tahrirlash"
+                                                            onClick={() => openEdit(c)}>
+                                                        <Pencil size={14}/>
+                                                    </button>
+                                                )}
+                                                {hasPermission('CUSTOMERS_DEBT_VIEW') && (
+                                                    <button
+                                                        className="act-btn"
+                                                        title={c.totalDebt > 0 ? "Nasiyalarni ko'rish" : "Nasiya yo'q"}
+                                                        style={{
+                                                            color: c.totalDebt > 0 ? '#dc2626' : 'var(--text-muted)',
+                                                            borderColor: 'var(--border-color)'
+                                                        }}
+                                                        onClick={() => {
+                                                            if (c.totalDebt > 0) {
+                                                                navigate(`/debts?customerId=${c.id}`)
+                                                            } else {
+                                                                setNoDebtModal(c.name)
+                                                            }
+                                                        }}
+                                                    >
+                                                        {c.totalDebt > 0
+                                                            ? <ExternalLink size={14}/>
+                                                            : <CreditCard size={14}/>
                                                         }
-                                                    }}
-                                                >
-                                                    {c.totalDebt > 0
-                                                        ? <ExternalLink size={14}/>
-                                                        : <CreditCard size={14}/>
-                                                    }
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mob-actions">
+                                                <button className="act-btn act-more" onClick={(e) => {
+                                                    if (openMenuId === c.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                    else { setOpenMenuId(c.id); setMenuAnchor(e.currentTarget) }
+                                                }}>
+                                                    <MoreVertical size={15}/>
                                                 </button>
-                                            )}
+                                                {openMenuId === c.id && (
+                                                    <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                        {hasPermission('CUSTOMERS_EDIT') && (
+                                                            <button className="act-btn act-edit" title="Tahrirlash"
+                                                                    onClick={() => { openEdit(c); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Pencil size={14}/> Tahrirlash
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('CUSTOMERS_DEBT_VIEW') && (
+                                                            <button
+                                                                className="act-btn"
+                                                                style={{
+                                                                    color: c.totalDebt > 0 ? '#dc2626' : 'var(--text-muted)',
+                                                                    borderColor: 'var(--border-color)'
+                                                                }}
+                                                                onClick={() => {
+                                                                    setOpenMenuId(null); setMenuAnchor(null)
+                                                                    if (c.totalDebt > 0) {
+                                                                        navigate(`/debts?customerId=${c.id}`)
+                                                                    } else {
+                                                                        setNoDebtModal(c.name)
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {c.totalDebt > 0 ? <ExternalLink size={14}/> : <CreditCard size={14}/>}
+                                                                {c.totalDebt > 0 ? 'Nasiyalar' : "Nasiya yo'q"}
+                                                            </button>
+                                                        )}
+                                                    </DropdownPortal>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

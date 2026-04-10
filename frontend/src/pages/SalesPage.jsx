@@ -935,7 +935,7 @@ export default function SalesPage() {
                     </div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable sales-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>

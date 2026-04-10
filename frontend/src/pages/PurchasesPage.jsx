@@ -3,12 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
     ShoppingCart, Plus, Search, Filter, Eye, CheckCircle,
     XCircle, Loader2, Truck, Calendar, DollarSign, Package,
-    ChevronLeft, ChevronRight, AlertCircle, FileDown
+    ChevronLeft, ChevronRight, AlertCircle, FileDown, MoreVertical
 } from 'lucide-react'
 import { getPurchases, cancelPurchase } from '../api/purchases'
 import { useAuth } from '../context/AuthContext'
 import { exportToCSV, exportToPDF, fmtNum, fmtDate as fmtDateExport } from '../utils/exportUtils'
+import DropdownPortal from '../components/DropdownPortal'
 import '../styles/ProductsPage.css'
+import '../styles/PurchasesPage.css'
 
 const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 
@@ -58,6 +60,8 @@ export default function PurchasesPage() {
     useEffect(() => { load() }, [load])
 
     const [exportLoading, setExportLoading] = useState(false)
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const handleExport = async (format = 'csv') => {
         setExportLoading(true)
@@ -207,116 +211,206 @@ export default function PurchasesPage() {
                         <p>Xaridlar yo'q</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
-                        <table className="ptable">
-                            <thead>
-                            <tr>
-                                <th className="th-num">#</th>
-                                <th>Raqam</th>
-                                <th>Yetkazuvchi</th>
-                                <th>Ombor</th>
-                                <th className="th-center">Tovarlar</th>
-                                <th className="th-right">Jami</th>
-                                <th className="th-right">To'langan</th>
-                                <th className="th-right">Qarz</th>
-                                <th className="th-center">Status</th>
-                                <th className="th-center">Sana</th>
-                                <th className="th-center">Amallar</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {filtered.map((p, i) => {
+                    <>
+                        <div className="purchases-table-wrapper">
+                            <div className="table-responsive">
+                                <table className="ptable purchases-ptable">
+                                    <thead>
+                                    <tr>
+                                        <th className="th-num">#</th>
+                                        <th>Raqam</th>
+                                        <th>Yetkazuvchi</th>
+                                        <th>Ombor</th>
+                                        <th className="th-center">Tovarlar</th>
+                                        <th className="th-right">Jami</th>
+                                        <th className="th-right">To'langan</th>
+                                        <th className="th-right">Qarz</th>
+                                        <th className="th-center">Status</th>
+                                        <th className="th-center">Sana</th>
+                                        <th className="th-center">Amallar</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {filtered.map((p, i) => {
+                                        const st = STATUS_MAP[p.status] || {}
+                                        return (
+                                            <tr key={p.id}>
+                                                <td className="cell-num">{page * size + i + 1}</td>
+                                                <td>
+                                                    <span className="cell-barcode">{p.referenceNo}</span>
+                                                </td>
+                                                <td>
+                                                    <div className="cell-name">{p.supplierName}</div>
+                                                </td>
+                                                <td>
+                                                    <span className="cell-muted">{p.warehouseName}</span>
+                                                </td>
+                                                <td className="th-center">
+                                                        <span style={{
+                                                            padding: '2px 10px', borderRadius: 20,
+                                                            background: 'var(--primary-light, rgba(37,99,235,0.1))',
+                                                            color: 'var(--primary)', fontSize: 12, fontWeight: 600
+                                                        }}>{p.itemCount} ta</span>
+                                                </td>
+                                                <td className="th-right">
+                                                    {Number(p.totalUsd) > 0 && (
+                                                        <div style={{ fontWeight: 600, color: '#3b82f6' }}>{fmt(p.totalUsd)} USD</div>
+                                                    )}
+                                                    {Number(p.totalUzs) > 0 && (
+                                                        <div style={{ fontWeight: 600 }}>{fmt(p.totalUzs)} UZS</div>
+                                                    )}
+                                                    {!Number(p.totalUsd) && !Number(p.totalUzs) && (
+                                                        <span style={{ fontWeight: 600 }}>{fmt(p.totalAmount)} UZS</span>
+                                                    )}
+                                                </td>
+                                                <td className="th-right">
+                                                    {Number(p.paidUsd) > 0 && (
+                                                        <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUsd)} USD</div>
+                                                    )}
+                                                    {Number(p.paidUzs) > 0 && (
+                                                        <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUzs)} UZS</div>
+                                                    )}
+                                                    {!Number(p.paidUsd) && !Number(p.paidUzs) && (
+                                                        <span style={{ color: 'var(--success)' }}>—</span>
+                                                    )}
+                                                </td>
+                                                <td className="th-right">
+                                                    {Number(p.debtUsd) > 0 && (
+                                                        <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUsd)} USD</div>
+                                                    )}
+                                                    {Number(p.debtUzs) > 0 && (
+                                                        <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUzs)} UZS</div>
+                                                    )}
+                                                    {!Number(p.debtUsd) && !Number(p.debtUzs) && (
+                                                        <span style={{ color: 'var(--success)' }}>—</span>
+                                                    )}
+                                                </td>
+                                                <td className="th-center">
+                                                        <span style={{
+                                                            padding: '3px 10px', borderRadius: 20,
+                                                            fontSize: 12, fontWeight: 600,
+                                                            color: st.color, background: st.bg
+                                                        }}>{st.label}</span>
+                                                </td>
+                                                <td className="th-center">
+                                                        <span className="cell-muted" style={{ fontSize: 12 }}>
+                                                            {p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—'}
+                                                        </span>
+                                                </td>
+                                                <td>
+                                                    <div className="action-group desk-actions">
+                                                        <button
+                                                            className="act-btn act-edit"
+                                                            title="Ko'rish"
+                                                            onClick={() => navigate(`/purchases/${p.id}`)}
+                                                        >
+                                                            <Eye size={14} />
+                                                        </button>
+                                                        {p.status === 'PENDING' && hasPermission('PURCHASES_DELETE') && (
+                                                            <button
+                                                                className="act-btn act-delete"
+                                                                title="Bekor qilish"
+                                                                onClick={() => handleCancel(p.id)}
+                                                            >
+                                                                <XCircle size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="mob-actions">
+                                                        <button className="act-btn act-more" onClick={(e) => {
+                                                            if (openMenuId === p.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                            else { setOpenMenuId(p.id); setMenuAnchor(e.currentTarget) }
+                                                        }}>
+                                                            <MoreVertical size={15} />
+                                                        </button>
+                                                        {openMenuId === p.id && (
+                                                            <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <button className="act-dd-item" onClick={() => { navigate(`/purchases/${p.id}`); setOpenMenuId(null) }}>
+                                                                    <Eye size={14} /> Ko'rish
+                                                                </button>
+                                                                {p.status === 'PENDING' && hasPermission('PURCHASES_DELETE') && (
+                                                                    <button className="act-dd-item act-dd-danger" onClick={() => { handleCancel(p.id); setOpenMenuId(null) }}>
+                                                                        <XCircle size={14} /> Bekor qilish
+                                                                    </button>
+                                                                )}
+                                                            </DropdownPortal>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="purchases-mobile-cards">
+                            {filtered.map((p) => {
                                 const st = STATUS_MAP[p.status] || {}
+                                const hasDebt = Number(p.debtUsd) > 0 || Number(p.debtUzs) > 0
                                 return (
-                                    <tr key={p.id}>
-                                        <td className="cell-num">{page * size + i + 1}</td>
-                                        <td>
-                                            <span className="cell-barcode">{p.referenceNo}</span>
-                                        </td>
-                                        <td>
-                                            <div className="cell-name">{p.supplierName}</div>
-                                        </td>
-                                        <td>
-                                            <span className="cell-muted">{p.warehouseName}</span>
-                                        </td>
-                                        <td className="th-center">
-                                                <span style={{
-                                                    padding: '2px 10px', borderRadius: 20,
-                                                    background: 'var(--primary-light, rgba(37,99,235,0.1))',
-                                                    color: 'var(--primary)', fontSize: 12, fontWeight: 600
-                                                }}>{p.itemCount} ta</span>
-                                        </td>
-                                        <td className="th-right">
-                                            {Number(p.totalUsd) > 0 && (
-                                                <div style={{ fontWeight: 600, color: '#3b82f6' }}>{fmt(p.totalUsd)} USD</div>
-                                            )}
-                                            {Number(p.totalUzs) > 0 && (
-                                                <div style={{ fontWeight: 600 }}>{fmt(p.totalUzs)} UZS</div>
-                                            )}
-                                            {!Number(p.totalUsd) && !Number(p.totalUzs) && (
-                                                <span style={{ fontWeight: 600 }}>{fmt(p.totalAmount)} UZS</span>
-                                            )}
-                                        </td>
-                                        <td className="th-right">
-                                            {Number(p.paidUsd) > 0 && (
-                                                <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUsd)} USD</div>
-                                            )}
-                                            {Number(p.paidUzs) > 0 && (
-                                                <div style={{ color: 'var(--success)', fontWeight: 600 }}>{fmt(p.paidUzs)} UZS</div>
-                                            )}
-                                            {!Number(p.paidUsd) && !Number(p.paidUzs) && (
-                                                <span style={{ color: 'var(--success)' }}>—</span>
-                                            )}
-                                        </td>
-                                        <td className="th-right">
-                                            {Number(p.debtUsd) > 0 && (
-                                                <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUsd)} USD</div>
-                                            )}
-                                            {Number(p.debtUzs) > 0 && (
-                                                <div style={{ color: 'var(--danger)', fontWeight: 700 }}>{fmt(p.debtUzs)} UZS</div>
-                                            )}
-                                            {!Number(p.debtUsd) && !Number(p.debtUzs) && (
-                                                <span style={{ color: 'var(--success)' }}>—</span>
-                                            )}
-                                        </td>
-                                        <td className="th-center">
+                                    <div key={p.id} className="purchase-card">
+                                        <div className="purchase-card-top">
+                                            <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
+                                                {p.referenceNo}
+                                            </span>
+                                            <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>
+                                                {p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—'}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 4 }}>
+                                            {p.supplierName}
+                                        </div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                            <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                                                {p.warehouseName}
+                                            </span>
+                                            <span style={{
+                                                fontSize: 11,
+                                                background: 'var(--primary-light, rgba(37,99,235,0.1))',
+                                                color: 'var(--primary)',
+                                                padding: '2px 8px', borderRadius: 20
+                                            }}>
+                                                {p.itemCount} ta
+                                            </span>
+                                        </div>
+
+                                        <div className="purchase-card-bottom">
+                                            <div>
+                                                {Number(p.totalUsd) > 0 && (
+                                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#3b82f6' }}>{fmt(p.totalUsd)} USD</div>
+                                                )}
+                                                {Number(p.totalUzs) > 0 && (
+                                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{fmt(p.totalUzs)} UZS</div>
+                                                )}
+                                                {!Number(p.totalUsd) && !Number(p.totalUzs) && (
+                                                    <div style={{ fontSize: 13, fontWeight: 600 }}>{fmt(p.totalAmount)} UZS</div>
+                                                )}
+                                                {hasDebt && (
+                                                    <div style={{ fontSize: 11, color: 'var(--danger)' }}>
+                                                        Qarz: {Number(p.debtUsd) > 0 ? `${fmt(p.debtUsd)} USD` : `${fmt(p.debtUzs)} UZS`}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                                                 <span style={{
                                                     padding: '3px 10px', borderRadius: 20,
                                                     fontSize: 12, fontWeight: 600,
                                                     color: st.color, background: st.bg
                                                 }}>{st.label}</span>
-                                        </td>
-                                        <td className="th-center">
-                                                <span className="cell-muted" style={{ fontSize: 12 }}>
-                                                    {p.createdAt ? new Date(p.createdAt).toLocaleDateString('ru-RU') : '—'}
-                                                </span>
-                                        </td>
-                                        <td>
-                                            <div className="action-group">
-                                                <button
-                                                    className="act-btn act-edit"
-                                                    title="Ko'rish"
-                                                    onClick={() => navigate(`/purchases/${p.id}`)}
-                                                >
-                                                    <Eye size={14} />
+                                                <button className="purchase-view-btn" onClick={() => navigate(`/purchases/${p.id}`)}>
+                                                    Ko'rish
                                                 </button>
-                                                {p.status === 'PENDING' && hasPermission('PURCHASES_DELETE') && (
-                                                    <button
-                                                        className="act-btn act-delete"
-                                                        title="Bekor qilish"
-                                                        onClick={() => handleCancel(p.id)}
-                                                    >
-                                                        <XCircle size={14} />
-                                                    </button>
-                                                )}
                                             </div>
-                                        </td>
-                                    </tr>
+                                        </div>
+                                    </div>
                                 )
                             })}
-                            </tbody>
-                        </table>
-                    </div>
+                        </div>
+                    </>
                 )}
 
                 {/* Pagination */}

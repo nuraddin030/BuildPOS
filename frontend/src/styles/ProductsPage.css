@@ -579,6 +579,10 @@ to   { opacity: 1; transform: translateY(0); }
     font-variant-numeric: tabular-nums;
 }
 
+/* Universal: desktop tugmalar ko'rinadi, mobile dropdown yashirin */
+.desk-actions { display: flex; gap: 4px; align-items: center; }
+.mob-actions  { display: none; }
+
 /* ---- Checkbox column ---- */
 .th-check {
     width: 36px;
@@ -1231,8 +1235,32 @@ to   { opacity: 1; transform: translateY(0); }
     /* Barcha ptable lar uchun min-width olib tashlanadi */
     .ptable { min-width: 0; }
 
-    /* table-card overflow:hidden table-responsive scrollini bloklaydi — mobilda override */
-    .table-card { overflow-x: auto; }
+    /* overflow:hidden dropdownni clip qiladi — mobilda visible qilinadi */
+    .table-card { overflow: visible; }
+
+    /* Mijozlar: Izoh (4), Limit (6), Holat (7) — yashiriladi */
+    .customers-ptable th:nth-child(4),
+    .customers-ptable td:nth-child(4),
+    .customers-ptable th:nth-child(6),
+    .customers-ptable td:nth-child(6),
+    .customers-ptable th:nth-child(7),
+    .customers-ptable td:nth-child(7) { display: none; }
+
+    /* Yetkazuvchilar: Kompaniya (3), INN (5), Holat (6) — yashiriladi */
+    .suppliers-ptable th:nth-child(3),
+    .suppliers-ptable td:nth-child(3),
+    .suppliers-ptable th:nth-child(5),
+    .suppliers-ptable td:nth-child(5),
+    .suppliers-ptable th:nth-child(6),
+    .suppliers-ptable td:nth-child(6) { display: none; }
+
+    /* Kategoriyalar: Tavsif (3) — yashiriladi */
+    .categories-ptable th:nth-child(3),
+    .categories-ptable td:nth-child(3) { display: none; }
+
+    /* Mobilda: desktop tugmalar yashiriladi, mobile dropdown ko'rinadi */
+    .desk-actions { display: none; }
+    .mob-actions  { display: block; }
 
     /* Yashirilgan ustunlar bilan jadval scroll kerak emas */
     .products-ptable {
@@ -1254,6 +1282,56 @@ to   { opacity: 1; transform: translateY(0); }
     .products-ptable th:nth-child(2) { width: 40%; }
     .products-ptable th:nth-child(6) { width: 20%; }
     .products-ptable th:nth-child(7) { width: 15%; }
+
+    /* Sotuvlar: Kassir(4), To'lov(6) yashiriladi */
+    .sales-ptable th:nth-child(4),
+    .sales-ptable td:nth-child(4),
+    .sales-ptable th:nth-child(6),
+    .sales-ptable td:nth-child(6) { display: none; }
+
+    /* Xaridlar: Ombor(4), To'langan(7), Sana(10) yashiriladi */
+    .purchases-ptable th:nth-child(4),
+    .purchases-ptable td:nth-child(4),
+    .purchases-ptable th:nth-child(7),
+    .purchases-ptable td:nth-child(7),
+    .purchases-ptable th:nth-child(10),
+    .purchases-ptable td:nth-child(10) { display: none; }
+
+    /* Qarzlar (guruhli): Dastlabki(3), To'langan(4), Muddat(6) yashiriladi */
+    .debts-group-ptable th:nth-child(3),
+    .debts-group-ptable td:nth-child(3),
+    .debts-group-ptable th:nth-child(4),
+    .debts-group-ptable td:nth-child(4),
+    .debts-group-ptable th:nth-child(6),
+    .debts-group-ptable td:nth-child(6) { display: none; }
+
+    /* Qarzlar (batafsil): Chek/Xarid(3), To'langan(5), Muddat(7) yashiriladi */
+    .debts-detail-ptable th:nth-child(3),
+    .debts-detail-ptable td:nth-child(3),
+    .debts-detail-ptable th:nth-child(5),
+    .debts-detail-ptable td:nth-child(5),
+    .debts-detail-ptable th:nth-child(7),
+    .debts-detail-ptable td:nth-child(7) { display: none; }
+
+    /* Smena hisoboti: Ombor(3), Yopilgan(5), Karta(8), Nasiya(9) yashiriladi */
+    .shifts-ptable th:nth-child(3),
+    .shifts-ptable td:nth-child(3),
+    .shifts-ptable th:nth-child(5),
+    .shifts-ptable td:nth-child(5),
+    .shifts-ptable th:nth-child(8),
+    .shifts-ptable td:nth-child(8),
+    .shifts-ptable th:nth-child(9),
+    .shifts-ptable td:nth-child(9) { display: none; }
+
+    /* Inventarizatsiya: Yaratdi(4), Yaratilgan(5), Yakunlangan(6), Izoh(7) yashiriladi */
+    .inventory-ptable th:nth-child(4),
+    .inventory-ptable td:nth-child(4),
+    .inventory-ptable th:nth-child(5),
+    .inventory-ptable td:nth-child(5),
+    .inventory-ptable th:nth-child(6),
+    .inventory-ptable td:nth-child(6),
+    .inventory-ptable th:nth-child(7),
+    .inventory-ptable td:nth-child(7) { display: none; }
 }
 
 /* ===========================

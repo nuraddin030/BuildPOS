@@ -452,6 +452,7 @@
 .page-content {
     padding: 24px;
     flex: 1;
+    overscroll-behavior: contain;
 }
 
 /* ===========================
@@ -494,7 +495,11 @@
     }
 
     .main-content,
-    .main-content.sidebar-collapsed { margin-left: 0 !important; }
+    .main-content.sidebar-collapsed {
+        margin-left: 0 !important;
+        min-width: 0; /* flex itemda kontentdan kichik bo'lish uchun — jadval kenglik fix */
+        overflow-x: hidden;
+    }
 
     .page-content { padding: 20px; }
 

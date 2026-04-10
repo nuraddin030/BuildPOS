@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
     Handshake, Plus, Pencil, Lock, Unlock, X,
-    AlertCircle, Loader2, Search, TrendingUp, Phone
+    AlertCircle, Loader2, Search, TrendingUp, Phone, MoreVertical
 } from 'lucide-react'
 import {
     getPartners, createPartner, updatePartner, togglePartnerStatus
 } from '../api/Partners'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
+import DropdownPortal from '../components/DropdownPortal'
 
 const EMPTY_FORM = { name: '', phone: '', notes: '' }
 
@@ -27,6 +28,8 @@ export default function PartnersPage() {
 
     const [statsPartner, setStatsPartner] = useState(null)
     const [statsLoading, setStatsLoading] = useState(false)
+    const [openMenuId, setOpenMenuId] = useState(null)
+    const [menuAnchor, setMenuAnchor] = useState(null)
 
     const { hasPermission } = useAuth()
 
@@ -181,23 +184,53 @@ export default function PartnersPage() {
                                     </td>
                                     <td>
                                         <div className="action-group">
-                                            {hasPermission('PARTNERS_EDIT') && (
-                                                <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(p)}>
-                                                    <Pencil size={14} />
+                                            <div className="desk-actions">
+                                                {hasPermission('PARTNERS_EDIT') && (
+                                                    <button className="act-btn act-edit" title="Tahrirlash" onClick={() => openEdit(p)}>
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                                <button className="act-btn"
+                                                        style={{ color: 'var(--info, #0891b2)' }}
+                                                        title="Statistika" onClick={() => openStats(p)}>
+                                                    <TrendingUp size={14} />
                                                 </button>
-                                            )}
-                                            <button className="act-btn"
-                                                    style={{ color: 'var(--info, #0891b2)' }}
-                                                    title="Statistika" onClick={() => openStats(p)}>
-                                                <TrendingUp size={14} />
-                                            </button>
-                                            {hasPermission('PARTNERS_EDIT') && (
-                                                <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
-                                                        title={p.isActive ? 'Bloklash' : 'Faollashtirish'}
-                                                        onClick={() => handleToggle(p)}>
-                                                    {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                {hasPermission('PARTNERS_EDIT') && (
+                                                    <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
+                                                            title={p.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                            onClick={() => handleToggle(p)}>
+                                                        {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="mob-actions">
+                                                <button className="act-btn act-more" onClick={(e) => {
+                                                    if (openMenuId === p.id) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                    else { setOpenMenuId(p.id); setMenuAnchor(e.currentTarget) }
+                                                }}>
+                                                    <MoreVertical size={15} />
                                                 </button>
-                                            )}
+                                                {openMenuId === p.id && (
+                                                    <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                        {hasPermission('PARTNERS_EDIT') && (
+                                                            <button className="act-btn act-edit" onClick={() => { openEdit(p); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                <Pencil size={14} /> Tahrirlash
+                                                            </button>
+                                                        )}
+                                                        <button className="act-btn" style={{ color: 'var(--info, #0891b2)' }}
+                                                                onClick={() => { openStats(p); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                            <TrendingUp size={14} /> Statistika
+                                                        </button>
+                                                        {hasPermission('PARTNERS_EDIT') && (
+                                                            <button className={`act-btn ${p.isActive ? 'act-lock' : ''}`}
+                                                                    onClick={() => { handleToggle(p); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                {p.isActive ? <Lock size={14} /> : <Unlock size={14} />}
+                                                                {p.isActive ? 'Bloklash' : 'Faollashtirish'}
+                                                            </button>
+                                                        )}
+                                                    </DropdownPortal>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

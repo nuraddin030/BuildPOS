@@ -385,7 +385,7 @@ export default function ShiftReportPage() {
                     <div className="table-empty"><BarChart2 size={40} strokeWidth={1} /><p>Smenalar topilmadi</p></div>
                 ) : (
                     <div className="table-responsive">
-                        <table className="ptable">
+                        <table className="ptable shifts-ptable">
                             <thead>
                             <tr>
                                 <th className="th-num">#</th>
