@@ -405,3 +405,53 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Dashboard jadvallar mobil ko'rinish ──────────────────────── */
+@media (max-width: 768px) {
+  .dash-table-wrapper { display: none; }
+  .dash-mob-list { display: flex; flex-direction: column; }
+}
+@media (min-width: 769px) {
+  .dash-mob-list { display: none; }
+}
+
+.dash-mob-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border-color);
+  gap: 8px;
+}
+.dash-mob-row:last-child { border-bottom: none; }
+.dash-mob-left {
+  flex: 1;
+  min-width: 0;
+}
+.dash-mob-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-mob-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.dash-mob-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.dash-mob-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.dash-mob-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}

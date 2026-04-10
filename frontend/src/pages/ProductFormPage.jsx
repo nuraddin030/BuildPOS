@@ -286,9 +286,9 @@ export default function ProductFormPage() {
                         <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 16, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Asosiy ma'lumot
                         </div>
-                        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                        <div className="product-form-main-row" style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                             {/* Rasm — kichik thumbnail */}
-                            <div style={{ flexShrink: 0 }}>
+                            <div className="product-form-image-block" style={{ flexShrink: 0 }}>
                                 <div
                                     onClick={() => fileInputRef.current.click()}
                                     style={{
@@ -328,7 +328,7 @@ export default function ProductFormPage() {
 
                             {/* Nom, SKU, Kategoriya, Tavsif */}
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <div style={{ display: 'flex', gap: 12 }}>
+                                <div className="product-form-fields-row" style={{ display: 'flex', gap: 12 }}>
                                     <div className="form-group" style={{ flex: 2, margin: 0 }}>
                                         <label className="form-label-sm">{t('products.name')} *</label>
                                         <input className="form-input form-input-sm"

@@ -231,6 +231,8 @@ export default function DashboardPage() {
                         <h6 className="dash-card-title">Bugungi top mahsulotlar</h6>
                     </div>
                     {data.topProducts?.length > 0 ? (
+                        <>
+                        <div className="dash-table-wrapper">
                         <table className="ptable" style={{ fontSize: 13 }}>
                             <thead>
                             <tr>
@@ -256,6 +258,22 @@ export default function DashboardPage() {
                             ))}
                             </tbody>
                         </table>
+                        </div>
+                        <div className="dash-mob-list">
+                            {data.topProducts.map((p, i) => (
+                                <div key={i} className="dash-mob-row">
+                                    <div className="dash-mob-left">
+                                        <div className="dash-mob-name">{i + 1}. {p.productName}</div>
+                                        <div className="dash-mob-sub">{p.unitSymbol}</div>
+                                    </div>
+                                    <div className="dash-mob-right">
+                                        <div className="dash-mob-amount" style={{ color: '#2563eb' }}>{fmt(p.totalAmount)} UZS</div>
+                                        <div className="dash-mob-meta">{fmt(p.totalQuantity)} dona</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        </>
                     ) : (
                         <div className="table-empty" style={{ padding: '24px 0' }}>
                             <Package size={32} strokeWidth={1} />
@@ -274,6 +292,8 @@ export default function DashboardPage() {
                         )}
                     </div>
                     {data.lowStockItems?.length > 0 ? (
+                        <>
+                        <div className="dash-table-wrapper">
                         <table className="ptable" style={{ fontSize: 13 }}>
                             <thead>
                             <tr>
@@ -301,6 +321,22 @@ export default function DashboardPage() {
                             ))}
                             </tbody>
                         </table>
+                        </div>
+                        <div className="dash-mob-list">
+                            {data.lowStockItems.map((item, i) => (
+                                <div key={i} className="dash-mob-row">
+                                    <div className="dash-mob-left">
+                                        <div className="dash-mob-name">{item.productName}</div>
+                                        <div className="dash-mob-sub">{item.warehouseName}</div>
+                                    </div>
+                                    <div className="dash-mob-right">
+                                        <div className="dash-mob-amount" style={{ color: '#ef4444' }}>{fmt(item.currentStock)}</div>
+                                        <div className="dash-mob-meta">min: {fmt(item.minStock)}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        </>
                     ) : (
                         <div className="table-empty" style={{ padding: '24px 0' }}>
                             <Package size={32} strokeWidth={1} />
@@ -322,6 +358,7 @@ export default function DashboardPage() {
                             Barchasi <ArrowUpRight size={12} />
                         </button>
                     </div>
+                    <div className="dash-table-wrapper">
                     <table className="ptable" style={{ fontSize: 13 }}>
                         <thead>
                         <tr>
@@ -349,6 +386,23 @@ export default function DashboardPage() {
                         ))}
                         </tbody>
                     </table>
+                    </div>
+                    <div className="dash-mob-list">
+                        {data.recentSales?.length === 0 ? (
+                            <div style={{ padding: '16px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Sotuv yo'q</div>
+                        ) : data.recentSales?.map(sale => (
+                            <div key={sale.id} className="dash-mob-row" style={{ cursor: 'pointer' }} onClick={() => navigate('/sales')}>
+                                <div className="dash-mob-left">
+                                    <div className="dash-mob-name">{sale.customerName || '—'}</div>
+                                    <div className="dash-mob-sub">{sale.cashierName || sale.sellerName} · {fmtDate(sale.completedAt)}</div>
+                                </div>
+                                <div className="dash-mob-right">
+                                    <div className="dash-mob-amount">{fmt(sale.totalAmount)} UZS</div>
+                                    <div className="dash-mob-meta">{sale.referenceNo}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 {/* So'nggi xaridlar */}
@@ -361,6 +415,8 @@ export default function DashboardPage() {
                         </button>
                     </div>
                     {data.recentPurchases?.length > 0 ? (
+                        <>
+                        <div className="dash-table-wrapper">
                         <table className="ptable" style={{ fontSize: 13 }}>
                             <thead>
                             <tr>
@@ -395,6 +451,26 @@ export default function DashboardPage() {
                             })}
                             </tbody>
                         </table>
+                        </div>
+                        <div className="dash-mob-list">
+                            {data.recentPurchases.map(p => {
+                                const st = STATUS_PURCHASE[p.status] || {}
+                                return (
+                                    <div key={p.id} className="dash-mob-row" style={{ cursor: 'pointer' }}
+                                         onClick={() => navigate(`/purchases/${p.id}`)}>
+                                        <div className="dash-mob-left">
+                                            <div className="dash-mob-name">{p.supplierName}</div>
+                                            <div className="dash-mob-sub">{p.createdAt}</div>
+                                        </div>
+                                        <div className="dash-mob-right">
+                                            <div className="dash-mob-amount">{p.totalDisplay || (fmt(p.totalAmount) + ' UZS')}</div>
+                                            <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 20, fontWeight: 600, color: st.color, background: st.color + '18' }}>{st.label}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        </>
                     ) : (
                         <div className="table-empty" style={{ padding: '24px 0' }}>
                             <Truck size={32} strokeWidth={1} />

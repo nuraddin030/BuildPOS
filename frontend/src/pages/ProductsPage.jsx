@@ -171,7 +171,8 @@ export default function ProductsPage() {
                         <p>{"Ma'lumot yo'q"}</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
+                    <>
+                    <div className="products-table-wrapper table-responsive">
                         <table className="ptable products-ptable">
                             <thead>
                             <tr>
@@ -295,6 +296,72 @@ export default function ProductsPage() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="products-mobile-cards">
+                        {products.map((p, i) => (
+                            <div key={p.id} className="product-card">
+                                <div className="product-card-top">
+                                    {selectMode && (
+                                        <input type="checkbox" className="product-card-check"
+                                            checked={selected.has(p.id)}
+                                            onChange={e => {
+                                                const s = new Set(selected)
+                                                e.target.checked ? s.add(p.id) : s.delete(p.id)
+                                                setSelected(s)
+                                            }}
+                                        />
+                                    )}
+                                    {p.imageUrl ? (
+                                        <img src={p.imageUrl} alt="" className="product-card-img" />
+                                    ) : (
+                                        <div className="product-card-img-empty"><Package size={18} /></div>
+                                    )}
+                                    <div className="product-card-info">
+                                        <div className="product-card-name">{p.name}</div>
+                                        <div className="product-card-barcode">{p.defaultBarcode || '—'}</div>
+                                    </div>
+                                    <span className={`status-badge status-${(p.status || '').toLowerCase()}`}>
+                                        {p.status === 'ACTIVE' ? 'Faol' : p.status === 'INACTIVE' ? 'Noaktiv' : "O'chirilgan"}
+                                    </span>
+                                </div>
+                                <div className="product-card-meta">
+                                    {p.categoryName && <span className="product-card-cat">{p.categoryName}</span>}
+                                </div>
+                                <div className="product-card-bottom">
+                                    <div>
+                                        <div className="product-card-price">{fmt(p.defaultSalePrice)} UZS</div>
+                                        <div className={`product-card-stock${p.isLowStock ? ' low-stock' : ''}`}>
+                                            Qoldiq: {fmt(p.totalStock)} {p.defaultUnitSymbol}
+                                        </div>
+                                    </div>
+                                    <div className="product-card-actions">
+                                        <button className="act-btn act-print" title="Narx etiketi"
+                                                onClick={() => setLabelProduct(p)}>
+                                            <Printer size={15} />
+                                        </button>
+                                        {hasPermission('PRODUCTS_EDIT') && (
+                                            <button className="act-btn act-edit" title="Tahrirlash"
+                                                    onClick={() => navigate(`/products/${p.id}/edit`)}>
+                                                <Pencil size={14} />
+                                            </button>
+                                        )}
+                                        {hasPermission('PRODUCTS_EDIT') && (
+                                            <button className="act-btn" title={p.status === 'ACTIVE' ? 'Noaktiv' : 'Faollashtirish'}
+                                                    onClick={() => handleToggle(p.id)}>
+                                                {p.status === 'ACTIVE' ? <Lock size={14} /> : <Unlock size={14} />}
+                                            </button>
+                                        )}
+                                        {hasPermission('PRODUCTS_DELETE') && (
+                                            <button className="act-btn act-delete" title="O'chirish"
+                                                    onClick={() => handleDelete(p.id)}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    </>
                 )}
 
                 {/* Pagination */}
