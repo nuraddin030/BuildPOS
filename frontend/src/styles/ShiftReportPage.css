@@ -174,6 +174,29 @@
     }
 }
 
+/* ── Detail modal — top mahsulotlar ──────────────────────────── */
+@media (max-width: 768px) {
+  .shift-top-table-wrapper { display: none; }
+  .shift-top-list { display: flex; flex-direction: column; }
+}
+@media (min-width: 769px) {
+  .shift-top-list { display: none; }
+}
+.shift-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--border-color);
+  gap: 8px;
+  font-size: 13px;
+}
+.shift-top-row:last-child { border-bottom: none; }
+.shift-top-name { flex: 1; font-weight: 600; color: var(--text-primary); }
+.shift-top-right { text-align: right; }
+.shift-top-amount { font-weight: 700; color: #2563eb; }
+.shift-top-qty { font-size: 11px; color: var(--text-muted); }
+
 /* ── Filter bar mobile ────────────────────────────────────────── */
 .shifts-filter-bar {
     flex-wrap: wrap;

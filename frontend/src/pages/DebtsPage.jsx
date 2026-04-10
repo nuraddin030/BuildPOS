@@ -879,6 +879,7 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                     <div className="sale-section-title">
                                         <Banknote size={14} /> To'lov tarixi ({debt.payments.length} ta)
                                     </div>
+                                    <div className="debt-pay-table-wrapper">
                                     <table className="ptable" style={{ fontSize: 13 }}>
                                         <thead><tr>
                                             <th>Sana</th>
@@ -899,6 +900,20 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                         ))}
                                         </tbody>
                                     </table>
+                                    </div>
+                                    <div className="debt-pay-cards">
+                                        {debt.payments.map(p => (
+                                            <div key={p.id} className="debt-pay-card">
+                                                <div className="debt-pay-card-top">
+                                                    <span className="debt-pay-card-amount">{fmt(p.amount)} UZS</span>
+                                                    <span className="cell-muted" style={{ fontSize: 12 }}>{p.paymentMethod || '—'}</span>
+                                                </div>
+                                                <div className="debt-pay-card-meta">
+                                                    {fmtDateTime(p.paidAt)}{p.paidBy ? ` · ${p.paidBy}` : ''}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </>
@@ -912,6 +927,8 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                     <Loader2 size={24} className="spin" />
                                 </div>
                             ) : saleItems?.length > 0 ? (
+                                <>
+                                <div className="debt-items-table-wrapper">
                                 <table className="ptable" style={{ fontSize: 13 }}>
                                     <thead><tr>
                                         <th>Mahsulot</th>
@@ -935,6 +952,22 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                     ))}
                                     </tbody>
                                 </table>
+                                </div>
+                                <div className="debt-items-cards">
+                                    {saleItems.map(item => (
+                                        <div key={item.id} className="debt-item-card">
+                                            <div>
+                                                <div className="debt-item-card-name">{item.productName}</div>
+                                                <div className="debt-item-card-meta">
+                                                    {item.quantity} {item.unitSymbol} × {fmt(item.salePrice)} UZS
+                                                    {item.warehouseName && <> · {item.warehouseName}</>}
+                                                </div>
+                                            </div>
+                                            <div className="debt-item-card-total">{fmt(item.totalPrice)} UZS</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
                             ) : (
                                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
                                     Tovarlar topilmadi
@@ -970,6 +1003,7 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                             )}
                                         </div>
                                     </div>
+                                    <div className="debt-inst-table-wrapper">
                                     <table className="ptable" style={{ fontSize: 13 }}>
                                         <thead><tr>
                                             <th className="th-num">#</th>
@@ -1037,6 +1071,54 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                         })}
                                         </tbody>
                                     </table>
+                                    </div>
+                                    <div className="debt-inst-cards">
+                                        {installments.map(inst => {
+                                            const isOver = inst.isOverdue
+                                            const statusColor = inst.isPaid ? '#16a34a' : isOver ? '#dc2626' : '#f59e0b'
+                                            const statusBg = inst.isPaid ? 'rgba(22,163,74,0.1)' : isOver ? 'rgba(220,38,38,0.1)' : 'rgba(245,158,11,0.1)'
+                                            return (
+                                                <div key={inst.id} className="debt-inst-card"
+                                                     style={{ background: isOver && !inst.isPaid ? 'rgba(220,38,38,0.02)' : 'var(--surface)' }}>
+                                                    <div className="debt-inst-card-top">
+                                                        <span style={{ fontSize: 12, fontWeight: 600, color: statusColor }}>
+                                                            #{inst.installmentNumber} · {fmtDate(inst.dueDate)}
+                                                        </span>
+                                                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, color: statusColor, background: statusBg }}>
+                                                            {inst.isPaid ? "✓ To'landi" : isOver ? "Muddati o'tgan" : "Kutilmoqda"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="debt-inst-card-amounts">
+                                                        <span>Summa: <strong>{fmt(inst.amount)} UZS</strong></span>
+                                                        <span style={{ color: '#16a34a' }}>To'langan: {fmt(inst.paidAmount)} UZS</span>
+                                                    </div>
+                                                    {canPay && !inst.isPaid && (
+                                                        payingInstId === inst.id ? (
+                                                            <div className="debt-inst-card-pay">
+                                                                <input className="modal-input"
+                                                                       style={{ flex: 1, height: 32, fontSize: 13, padding: '0 8px' }}
+                                                                       placeholder="Summa" autoFocus
+                                                                       value={instPayAmount}
+                                                                       onChange={e => setInstPayAmount(e.target.value.replace(/\D/g, ''))}
+                                                                       onKeyDown={e => e.key === 'Enter' && handlePayInst(inst)} />
+                                                                <button className="act-btn act-edit" style={{ color: '#16a34a' }}
+                                                                        onClick={() => handlePayInst(inst)}>✓</button>
+                                                                <button className="act-btn"
+                                                                        onClick={() => { setPayingInstId(null); setInstPayAmount('') }}>✕</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="debt-inst-card-pay">
+                                                                <button className="act-btn act-pay"
+                                                                        onClick={() => { setPayingInstId(inst.id); setInstPayAmount(String(inst.remainingAmount)) }}>
+                                                                    <Banknote size={13} /> To'lash
+                                                                </button>
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </>
                             ) : !showInstForm ? (
                                 // Jadval yo'q
@@ -1985,7 +2067,7 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
             {/* Detail jadval */}
             {filteredItems.length > 0 ? (
                 <div className="table-card">
-                    <div className="table-responsive">
+                    <div className="aging-table-wrapper table-responsive">
                         <table className="ptable">
                             <thead>
                             <tr>
@@ -2040,6 +2122,31 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
                             </tbody>
                         </table>
                     </div>
+                    <div className="aging-cards" style={{ padding: 8 }}>
+                        {filteredItems.map((item, i) => (
+                            <div key={i} className="aging-card">
+                                <div className="aging-card-left">
+                                    <div className="aging-card-name">{item.entityName}</div>
+                                    {item.entityPhone && <div className="aging-card-phone">{item.entityPhone}</div>}
+                                    <div style={{ marginTop: 4 }}>
+                                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600, color: item.color, background: item.color + '18' }}>
+                                            {item.bucket} kun
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="aging-card-right">
+                                    <div className="aging-card-remaining" style={{ color: item.color }}>{fmt(item.remainingAmount)} UZS</div>
+                                    <div className="aging-card-meta">
+                                        <span style={{ fontSize: 12, color: item.color, fontWeight: 600 }}>{item.daysOverdue} kun</span>
+                                        <button className="act-btn act-edit"
+                                                onClick={() => onNavigate(isCustomer ? `/debts?customerId=${item.entityId}` : `/purchases?supplierId=${item.entityId}`)}>
+                                            <ArrowUpRight size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             ) : (
                 <div className="table-card">
@@ -2085,7 +2192,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
 
     return (
         <div className="table-card">
-            <div className="table-responsive">
+            <div className="debts-group-table-wrapper table-responsive">
                 <table className="ptable debts-group-ptable">
                     <thead>
                     <tr>
@@ -2340,6 +2447,89 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                     </tbody>
                 </table>
             </div>
+            <div className="debts-group-cards">
+                {grouped.map(group => {
+                    const key = `${isCustomer ? 'c' : 's'}-${group.entityId}`
+                    const isExpanded = expandedIds.has(key)
+                    const debts = isCustomer ? (group.debts || []) : (group.supplierDebts || [])
+                    const overdueCount = debts.filter(d => !d.isPaid && d.dueDate && new Date(d.dueDate) < new Date()).length
+                    const hasOpenDebts = debts.some(d => !d.isPaid)
+                    return (
+                        <div key={key} className="debt-group-card">
+                            <div className={`debt-group-card-header${overdueCount > 0 ? ' overdue' : ''}`}
+                                 onClick={() => onToggle(key)}>
+                                <div className="debt-group-card-info">
+                                    <div className="debt-group-card-name">{group.entityName}</div>
+                                    {group.entityPhone && <div className="debt-group-card-phone">{group.entityPhone}</div>}
+                                    <div className="debt-group-card-badges">
+                                        <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}>
+                                            {debts.length} ta qarz
+                                        </span>
+                                        {overdueCount > 0 && (
+                                            <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: '#dc2626' }}>
+                                                {overdueCount} ta muddati o'tgan
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="debt-group-card-right">
+                                    <div className="debt-group-card-remaining">{fmt(group.totalRemaining)} UZS</div>
+                                    <div className="debt-group-card-total">Jami: {fmt(group.totalDebt)} UZS</div>
+                                    <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
+                                        {isCustomer && hasOpenDebts && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                            <button className="act-btn act-pay"
+                                                    onClick={e => { e.stopPropagation(); onPayAll({ ...group, debts }) }}>
+                                                <Banknote size={14} />
+                                            </button>
+                                        )}
+                                        {!isCustomer && (
+                                            <button className="act-btn act-edit"
+                                                    onClick={e => { e.stopPropagation(); onViewSupplier(group.entityId) }}>
+                                                <ArrowUpRight size={14} />
+                                            </button>
+                                        )}
+                                        {isExpanded ? <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronRightIcon size={16} style={{ color: 'var(--text-muted)' }} />}
+                                    </div>
+                                </div>
+                            </div>
+                            {isExpanded && debts.length > 0 && (
+                                <div className="debt-group-card-children">
+                                    {debts.map(d => {
+                                        const status = getDebtStatus(d)
+                                        const isOverdue = d.dueDate && new Date(d.dueDate) < new Date()
+                                        return (
+                                            <div key={d.id} className="debt-group-sub-row"
+                                                 style={{ background: isOverdue && !d.isPaid ? 'rgba(220,38,38,0.03)' : '' }}
+                                                 onClick={() => onView(d)}>
+                                                <div>
+                                                    <div className="debt-group-sub-ref">
+                                                        {isCustomer ? d.saleReferenceNo || '—' : d.purchaseReferenceNo || '—'}
+                                                    </div>
+                                                    <div className="debt-group-sub-date">{fmtDate(d.createdAt)}</div>
+                                                </div>
+                                                <div className="debt-group-sub-right">
+                                                    <div className="debt-group-sub-remaining" style={{ color: d.isPaid ? '#16a34a' : '#dc2626' }}>
+                                                        {fmt(d.remainingAmount)} UZS
+                                                    </div>
+                                                    <div className="debt-group-sub-status" style={{ color: status.color, background: status.bg }}>
+                                                        {status.label}
+                                                    </div>
+                                                </div>
+                                                <div className="debt-group-sub-actions" onClick={e => e.stopPropagation()}>
+                                                    <button className="act-btn act-edit" onClick={() => onView(d)}><Eye size={13} /></button>
+                                                    {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                                        <button className="act-btn act-pay" onClick={() => onPay(d)}><Banknote size={13} /></button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
         </div>
     )
 }
@@ -2363,7 +2553,8 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                     <p>Qarzlar topilmadi</p>
                 </div>
             ) : (
-                <div className="table-responsive">
+                <>
+                <div className="debts-detail-table-wrapper table-responsive">
                     <table className="ptable debts-detail-ptable">
                         <thead>
                         <tr>
@@ -2475,6 +2666,55 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                         </tbody>
                     </table>
                 </div>
+                <div className="debts-detail-cards">
+                    {debts.map((d, i) => {
+                        const status = getDebtStatus(d)
+                        const isOverdue = !d.isPaid && d.dueDate && new Date(d.dueDate) < new Date()
+                        return (
+                            <div key={d.id} className={`debt-detail-card${isOverdue ? ' debt-detail-card-overdue' : ''}`}
+                                 onClick={() => onView(d)}>
+                                <div className="debt-detail-card-top">
+                                    <div className="debt-detail-card-entity">
+                                        <div className="debt-detail-card-name">
+                                            {isCustomer ? d.customerName : d.supplierName}
+                                        </div>
+                                        {isCustomer && d.customerPhone && (
+                                            <div className="debt-detail-card-phone">{d.customerPhone}</div>
+                                        )}
+                                    </div>
+                                    <span className="debt-detail-card-status" style={{ color: status.color, background: status.bg }}>
+                                        {status.label}
+                                    </span>
+                                </div>
+                                <div className="debt-detail-card-ref">
+                                    {isCustomer ? d.saleReferenceNo || '—' : d.purchaseReferenceNo || '—'}
+                                    {d.dueDate && <span style={{ color: status.color, fontWeight: 600, marginLeft: 8 }}>{fmtDate(d.dueDate)}</span>}
+                                </div>
+                                <div className="debt-detail-card-amounts">
+                                    <div className="debt-detail-card-amt">
+                                        <span className="debt-detail-card-amt-label">Jami</span>
+                                        <span>{fmt(d.amount)} UZS</span>
+                                    </div>
+                                    <div className="debt-detail-card-amt">
+                                        <span className="debt-detail-card-amt-label">To'langan</span>
+                                        <span style={{ color: '#16a34a' }}>{fmt(d.paidAmount)} UZS</span>
+                                    </div>
+                                    <div className="debt-detail-card-amt">
+                                        <span className="debt-detail-card-amt-label">Qoldiq</span>
+                                        <span style={{ fontWeight: 700, color: d.isPaid ? '#16a34a' : '#dc2626' }}>{fmt(d.remainingAmount)} UZS</span>
+                                    </div>
+                                </div>
+                                <div className="debt-detail-card-actions" onClick={e => e.stopPropagation()}>
+                                    <button className="act-btn act-edit" onClick={() => onView(d)}><Eye size={14} /></button>
+                                    {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
+                                        <button className="act-btn act-pay" onClick={() => onPay(d)}><Banknote size={14} /></button>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+                </>
             )}
 
             {totalPages > 1 && (

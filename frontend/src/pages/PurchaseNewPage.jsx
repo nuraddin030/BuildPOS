@@ -277,7 +277,7 @@ export default function PurchaseNewPage() {
 
             {error && <div className="form-error" style={{ marginBottom: 12 }}><AlertCircle size={16} />{error}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, alignItems: 'start' }}>
+            <div className="purchase-new-grid">
 
                 {/* ── CHAP PANEL ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -578,7 +578,7 @@ export default function PurchaseNewPage() {
                                     color: '#fff', borderRadius: 20, padding: '1px 8px'
                                 }}>{items.length}</span>
                             </div>
-                            <div className="table-responsive">
+                            <div className="pnew-table-wrapper table-responsive">
                                 <table className="ptable">
                                     <thead>
                                     <tr>
@@ -669,6 +669,48 @@ export default function PurchaseNewPage() {
                                     )}
                                     </tfoot>
                                 </table>
+                            </div>
+                            <div className="pnew-items-cards">
+                                {items.map((item, idx) => (
+                                    <div key={item._id} className="pnew-item-card"
+                                         style={{ outline: editingIdx === idx ? '2px solid var(--primary)' : undefined }}>
+                                        <div className="pnew-item-card-top">
+                                            <div className="pnew-item-name">
+                                                {item.productName}
+                                                {item.unitSymbol && <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 11 }}> · {item.unitSymbol}</span>}
+                                            </div>
+                                            <div className="pnew-item-total">
+                                                {item.currency === 'USD'
+                                                    ? `${fmt(getItemTotalUsd(item))} USD`
+                                                    : `${fmt(getItemTotalUzs(item))} UZS`}
+                                            </div>
+                                        </div>
+                                        <div className="pnew-item-meta">
+                                            {fmt(item.quantity)} × {fmt(item.unitPrice)} {item.currency}
+                                            {item.updatePrices && <span style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>· narx ✓</span>}
+                                        </div>
+                                        <div className="pnew-item-actions">
+                                            <button className="act-btn" onClick={() => handleEditItem(idx)}><Edit2 size={13} /></button>
+                                            <button className="act-btn act-delete" onClick={() => handleRemoveItem(idx)}><Trash2 size={13} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(grandTotalUsd > 0 || grandTotalUzs > 0) && (
+                                    <div className="pnew-totals-mobile">
+                                        {grandTotalUsd > 0 && (
+                                            <div className="pnew-total-row">
+                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>USD jami:</span>
+                                                <span style={{ color: '#3b82f6' }}>{fmt(grandTotalUsd)} USD</span>
+                                            </div>
+                                        )}
+                                        {grandTotalUzs > 0 && (
+                                            <div className="pnew-total-row">
+                                                <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>UZS jami:</span>
+                                                <span style={{ color: 'var(--primary)' }}>{fmt(grandTotalUzs)} UZS</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (

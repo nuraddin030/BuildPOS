@@ -616,7 +616,8 @@ export default function PurchaseDetailPage() {
                         To'lovlar yo'q
                     </div>
                 ) : (
-                    <div className="table-responsive">
+                    <>
+                    <div className="purchase-pay-table-wrapper table-responsive">
                         <table className="ptable">
                             <thead>
                             <tr>
@@ -668,6 +669,29 @@ export default function PurchaseDetailPage() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="purchase-pay-cards">
+                        {purchase.payments.map((p, i) => {
+                            const cur = p.currency || 'UZS'
+                            const amountStr = cur === 'USD'
+                                ? (Number(p.amount)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})
+                                : fmt(p.amount)
+                            const methodLabel = PAYMENT_METHODS.find(m => m.value === p.paymentMethod)?.label || p.paymentMethod
+                            return (
+                                <div key={p.id} className="purchase-pay-card">
+                                    <div className="purchase-pay-card-top">
+                                        <span className="purchase-pay-amount" style={{ color: '#10b981' }}>{amountStr} {cur}</span>
+                                        <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 10, background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600 }}>{methodLabel}</span>
+                                    </div>
+                                    <div className="purchase-pay-meta">
+                                        {p.paidAt ? new Date(p.paidAt).toLocaleDateString('ru-RU') : '—'}
+                                        {p.paidBy && ` · ${p.paidBy}`}
+                                        {p.note && ` · ${p.note}`}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
                 )}
             </div>
 

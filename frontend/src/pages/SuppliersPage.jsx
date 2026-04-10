@@ -408,6 +408,8 @@ export default function SuppliersPage() {
                                     <p>Qarz yo'q ✅</p>
                                 </div>
                             ) : (
+                                <>
+                                <div className="sup-debt-table-wrapper">
                                 <table className="ptable">
                                     <thead>
                                     <tr>
@@ -442,6 +444,27 @@ export default function SuppliersPage() {
                                     ))}
                                     </tbody>
                                 </table>
+                                </div>
+                                <div className="sup-debt-cards">
+                                    {debts.map((d, i) => (
+                                        <div key={d.id} className="sup-debt-card">
+                                            <div className="sup-debt-card-top">
+                                                <span className="sup-debt-remaining"
+                                                      style={{ color: d.remainingAmount > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                                                    {fmt(d.remainingAmount)} UZS
+                                                </span>
+                                                <span className={`status-badge ${d.isPaid ? 'status-active' : 'status-inactive'}`}>
+                                                    {d.isPaid ? 'To\'langan' : 'Qarz'}
+                                                </span>
+                                            </div>
+                                            <div className="sup-debt-meta">
+                                                <span>{d.createdAt ? new Date(d.createdAt).toLocaleDateString('ru-RU') : '—'}</span>
+                                                <span>Jami: {fmt(d.totalAmount)} · To'langan: {fmt(d.paidAmount)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
                             )}
                         </div>
                     </div>

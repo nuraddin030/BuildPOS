@@ -6,8 +6,14 @@
 
   .purchase-items-table-wrapper { display: none; }
   .purchase-items-cards { display: flex; flex-direction: column; gap: 10px; }
+
+  /* PurchaseNewPage */
+  .purchase-new-grid { grid-template-columns: 1fr !important; }
+  .pnew-table-wrapper { display: none; }
+  .pnew-items-cards { display: flex; flex-direction: column; gap: 8px; }
 }
 @media (min-width: 769px) {
+  .pnew-items-cards { display: none; }
   .purchases-mobile-cards { display: none; }
   .purchase-items-cards { display: none; }
 }
@@ -111,4 +117,92 @@
   color: #185FA5;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* ── PurchaseDetailPage — to'lovlar ─────────────────────────── */
+@media (max-width: 768px) {
+  .purchase-pay-table-wrapper { display: none; }
+  .purchase-pay-cards { display: flex; flex-direction: column; gap: 8px; }
+}
+@media (min-width: 769px) {
+  .purchase-pay-cards { display: none; }
+}
+
+.purchase-pay-card {
+  background: var(--surface-secondary);
+  border: 0.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.purchase-pay-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.purchase-pay-amount {
+  font-size: 15px;
+  font-weight: 700;
+}
+.purchase-pay-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── PurchaseNewPage ─────────────────────────────────────────── */
+.purchase-new-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.pnew-item-card {
+  background: var(--surface-secondary);
+  border: 0.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.pnew-item-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+.pnew-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.pnew-item-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.pnew-item-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.pnew-item-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.pnew-totals-mobile {
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pnew-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
 }

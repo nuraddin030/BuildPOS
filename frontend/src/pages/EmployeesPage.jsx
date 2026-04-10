@@ -455,6 +455,8 @@ export default function EmployeesPage() {
                                             {g.permissions?.length === 0 ? (
                                                 <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Permission yo'q</p>
                                             ) : (
+                                                <>
+                                                <div className="perm-table-wrapper">
                                                 <table className="ptable" style={{ marginBottom: 0 }}>
                                                     <thead>
                                                     <tr>
@@ -490,6 +492,31 @@ export default function EmployeesPage() {
                                                     ))}
                                                     </tbody>
                                                 </table>
+                                                </div>
+                                                <div className="perm-cards">
+                                                    {g.permissions.map(p => (
+                                                        <div key={p.id} className="perm-card">
+                                                            <div className="perm-card-info">
+                                                                <div className="perm-card-label">{p.labelUz || p.name}</div>
+                                                                <div className="perm-card-name">{p.name}</div>
+                                                            </div>
+                                                            <span style={{
+                                                                padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600, flexShrink: 0,
+                                                                background: p.type === 'PAGE' ? 'rgba(37,99,235,0.1)' : 'rgba(22,163,74,0.1)',
+                                                                color: p.type === 'PAGE' ? 'var(--primary)' : 'var(--success)'
+                                                            }}>{p.type}</span>
+                                                            <button className="act-btn act-delete" title="O'chirish"
+                                                                    onClick={async () => {
+                                                                        if (!confirm(`"${p.labelUz || p.name}" ni o'chirishni tasdiqlaysizmi?`)) return
+                                                                        try { await deletePermission(p.id); loadGroups() }
+                                                                        catch (err) { alert(err.response?.data?.message || 'Xatolik') }
+                                                                    }}>
+                                                                <Trash2 size={13} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                </>
                                             )}
                                         </div>
                                     )}

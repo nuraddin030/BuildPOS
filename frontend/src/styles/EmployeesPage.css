@@ -56,3 +56,36 @@
   border-top: 0.5px solid var(--border-color);
   margin-top: 8px;
 }
+
+/* ── Permission expand panel ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .perm-table-wrapper { display: none; }
+  .perm-cards { display: flex; flex-direction: column; gap: 6px; }
+}
+@media (min-width: 769px) {
+  .perm-cards { display: none; }
+}
+.perm-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 8px;
+}
+.perm-card-info { flex: 1; min-width: 0; }
+.perm-card-name {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.perm-card-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}

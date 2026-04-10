@@ -259,6 +259,7 @@ function ShiftDetailModal({ shiftId, onClose }) {
                             {summary.topProducts?.length > 0 && (
                                 <div>
                                     <div className="shift-section-title">Top mahsulotlar</div>
+                                    <div className="shift-top-table-wrapper">
                                     <table className="ptable" style={{ fontSize: 13 }}>
                                         <thead>
                                         <tr>
@@ -283,6 +284,18 @@ function ShiftDetailModal({ shiftId, onClose }) {
                                         ))}
                                         </tbody>
                                     </table>
+                                    </div>
+                                    <div className="shift-top-list">
+                                        {summary.topProducts.map((p, i) => (
+                                            <div key={i} className="shift-top-row">
+                                                <span className="shift-top-name">{i + 1}. {p.productName}</span>
+                                                <div className="shift-top-right">
+                                                    <div className="shift-top-amount">{fmt(p.totalAmount)} UZS</div>
+                                                    <div className="shift-top-qty">{fmt(p.totalQuantity)} {p.unitName}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>

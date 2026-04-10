@@ -449,9 +449,44 @@
 @media (max-width: 768px) {
   .sales-table-wrapper { display: none; }
   .sales-mobile-cards { display: flex; flex-direction: column; gap: 10px; }
+  .sale-items-table-wrapper { display: none; }
+  .sale-items-cards { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; }
 }
 @media (min-width: 769px) {
   .sales-mobile-cards { display: none; }
+  .sale-items-cards { display: none; }
+}
+
+.sale-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border-color);
+  gap: 8px;
+}
+.sale-item-card:last-child { border-bottom: none; }
+.sale-item-card-left { flex: 1; min-width: 0; }
+.sale-item-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.sale-item-card-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.sale-item-card-right { text-align: right; flex-shrink: 0; }
+.sale-item-card-total {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.sale-item-card-price {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
 .sale-card {

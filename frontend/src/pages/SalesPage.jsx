@@ -243,7 +243,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                         <div className="sale-section-title">
                             <Package size={14} /> Mahsulotlar ({sale.items?.length || 0} ta)
                         </div>
-                        <div className="table-responsive">
+                        <div className="sale-items-table-wrapper table-responsive">
                             <table className="ptable" style={{ fontSize: 13 }}>
                                 <thead>
                                 <tr>
@@ -285,6 +285,25 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
                                 ))}
                                 </tbody>
                             </table>
+                        </div>
+                        <div className="sale-items-cards">
+                            {(sale.items || []).map((item, i) => (
+                                <div key={item.id} className="sale-item-card">
+                                    <div className="sale-item-card-left">
+                                        <div className="sale-item-card-name">{item.productName}</div>
+                                        <div className="sale-item-card-meta">
+                                            {item.quantity} {item.unitSymbol} × {fmt(item.salePrice)} UZS
+                                            {item.discountAmount > 0 && <span style={{ color: '#dc2626' }}> · -{fmt(item.discountAmount)}</span>}
+                                            {Number(item.returnedQuantity || 0) > 0 && (
+                                                <span className="sale-item-returned" style={{ display: 'inline', marginLeft: 6 }}>-{item.returnedQuantity} qaytarildi</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="sale-item-card-right">
+                                        <div className="sale-item-card-total">{fmt(item.totalPrice)} UZS</div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
