@@ -18,20 +18,34 @@
   .purchase-items-cards { display: none; }
 }
 
-/* ── PurchaseNewPage — Miqdor + Tannarx + Valyuta row ── */
+/* ── PurchaseNewPage — Miqdor + Valyuta / Tannarx ── */
 .pnew-qty-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 110px;
+  display: flex;
   gap: 10px;
   margin-bottom: 12px;
+  align-items: flex-end;
 }
-@media (max-width: 480px) {
+.purchase-qty-currency-row {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+.purchase-qty-currency-row .form-group:first-child { flex: 1; }
+.purchase-qty-currency-row .form-group:last-child  { width: 90px; flex-shrink: 0; }
+.purchase-price-row { flex: 1; }
+
+@media (max-width: 768px) {
   .pnew-qty-row {
-    grid-template-columns: 1fr 1fr;
+    flex-direction: column;
+    gap: 8px;
   }
-  .pnew-qty-row > div:last-child {
-    grid-column: 1 / -1;
+  .purchase-qty-currency-row {
+    flex-direction: row;
+    gap: 8px;
   }
+  .purchase-qty-currency-row .form-group:first-child { flex: 1; }
+  .purchase-qty-currency-row .form-group:last-child  { flex: 1; width: auto; }
+  .purchase-price-row { width: 100%; }
 }
 
 /* ── PurchasesPage cards ── */

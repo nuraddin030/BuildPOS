@@ -466,18 +466,28 @@ export default function PurchaseNewPage() {
                             )}
                         </div>
 
-                        {/* Miqdor + Tannarx + Valyuta */}
+                        {/* Miqdor + Valyuta | Tannarx */}
                         <div className="pnew-qty-row">
-                            <div>
-                                <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
-                                    Miqdor {form.unitSymbol && `(${form.unitSymbol})`} <span className="required">*</span>
-                                </label>
-                                <input className="form-input" type="text" inputMode="numeric"
-                                       value={fmtPrice(form.quantity)}
-                                       onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\s/g, '') }))}
-                                       placeholder="0" />
+                            <div className="purchase-qty-currency-row">
+                                <div className="form-group">
+                                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
+                                        Miqdor {form.unitSymbol && `(${form.unitSymbol})`} <span className="required">*</span>
+                                    </label>
+                                    <input className="form-input" type="text" inputMode="numeric"
+                                           value={fmtPrice(form.quantity)}
+                                           onChange={e => setForm(f => ({ ...f, quantity: e.target.value.replace(/\s/g, '') }))}
+                                           placeholder="0" />
+                                </div>
+                                <div className="form-group">
+                                    <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Valyuta</label>
+                                    <select className="form-select" value={form.currency}
+                                            onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
+                                        <option value="UZS">UZS</option>
+                                        <option value="USD">USD</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
+                            <div className="purchase-price-row">
                                 <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
                                     Tannarx ({form.currency}) <span className="required">*</span>
                                 </label>
@@ -485,14 +495,6 @@ export default function PurchaseNewPage() {
                                        value={fmtPrice(form.unitPrice)}
                                        onChange={e => setForm(f => ({ ...f, unitPrice: e.target.value.replace(/\s/g, '') }))}
                                        placeholder="0" />
-                            </div>
-                            <div>
-                                <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>Valyuta</label>
-                                <select className="form-select" value={form.currency}
-                                        onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
-                                    <option value="UZS">UZS</option>
-                                    <option value="USD">USD</option>
-                                </select>
                             </div>
                         </div>
 

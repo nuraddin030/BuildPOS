@@ -1085,8 +1085,8 @@
         display: none;
     }
 
-    .pos-left.pos-tab-visible  { display: flex; flex: 1; }
-    .pos-right.pos-tab-visible { display: flex; flex: 1; overflow: hidden; }
+    .pos-left.pos-tab-visible  { display: flex; flex: 1; min-height: 0; }
+    .pos-right.pos-tab-visible { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 
     .pos-tab-bar { display: flex; }
 
@@ -1095,7 +1095,7 @@
     .pos-bottombar { display: none; }
 
     .pos-price-input { width: 100px; }
-    .pos-right-body { padding: 16px; }
+    .pos-right-body { padding: 16px; min-height: 0; }
     .pos-totals { padding: 14px 16px; }
 
     .pos-cart-item { padding: 8px 10px; }
