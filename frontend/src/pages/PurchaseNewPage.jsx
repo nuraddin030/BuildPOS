@@ -467,7 +467,7 @@ export default function PurchaseNewPage() {
                         </div>
 
                         {/* Miqdor + Tannarx + Valyuta */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 110px', gap: 10, marginBottom: 12 }}>
+                        <div className="pnew-qty-row">
                             <div>
                                 <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
                                     Miqdor {form.unitSymbol && `(${form.unitSymbol})`} <span className="required">*</span>

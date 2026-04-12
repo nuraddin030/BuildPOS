@@ -1076,8 +1076,6 @@
 
     .pos-left  {
         display: none;
-        height: 100%;
-        overflow-y: auto;
     }
 
     .pos-right {
@@ -1085,12 +1083,10 @@
         border-left: none;
         border-top: 2px solid var(--pos-border);
         display: none;
-        height: 100%;
-        overflow-y: auto;
     }
 
-    .pos-left.pos-tab-visible  { display: flex; }
-    .pos-right.pos-tab-visible { display: flex; }
+    .pos-left.pos-tab-visible  { display: flex; flex: 1; }
+    .pos-right.pos-tab-visible { display: flex; flex: 1; overflow: hidden; }
 
     .pos-tab-bar { display: flex; }
 
@@ -1101,6 +1097,10 @@
     .pos-price-input { width: 100px; }
     .pos-right-body { padding: 16px; }
     .pos-totals { padding: 14px 16px; }
+
+    .pos-cart-item { padding: 8px 10px; }
+    .pos-cart-meta { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pos-cart-price-val { font-size: 13px; }
 
     .pos-overlay {
         padding: 16px;

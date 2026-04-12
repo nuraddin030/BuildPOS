@@ -18,6 +18,22 @@
   .purchase-items-cards { display: none; }
 }
 
+/* ── PurchaseNewPage — Miqdor + Tannarx + Valyuta row ── */
+.pnew-qty-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 110px;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media (max-width: 480px) {
+  .pnew-qty-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pnew-qty-row > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 /* ── PurchasesPage cards ── */
 .purchase-card {
   background: var(--surface);
