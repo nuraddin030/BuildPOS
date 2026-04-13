@@ -191,6 +191,86 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     """)
     List<Sale> findRecentSales(Pageable pageable);
 
+    // ─────────────────────────────────────────────────────────────────
+    // P&L HISOBOT QUERY LAR
+    // ─────────────────────────────────────────────────────────────────
+
+    /** Revenue, COGS, chegirmalar, sotuv soni — period uchun */
+    @Query(value = """
+        SELECT
+            COUNT(DISTINCT s.id)                               AS sale_count,
+            COALESCE(SUM(s.total_amount), 0)                   AS revenue,
+            COALESCE(SUM(s.discount_amount), 0)                AS discounts,
+            COALESCE(SUM(si.quantity * pu.cost_price), 0)      AS cogs
+        FROM sales s
+        JOIN sale_items si ON si.sale_id = s.id
+        JOIN product_units pu ON pu.id = si.product_unit_id
+        WHERE s.status = 'COMPLETED'
+          AND s.completed_at >= :from
+          AND s.completed_at <= :to
+    """, nativeQuery = true)
+    Object[] getPLSummary(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /** To'lov usuli bo'yicha breakdown */
+    @Query(value = """
+        SELECT sp.payment_method, COALESCE(SUM(sp.amount), 0)
+        FROM sales s
+        JOIN sale_payments sp ON sp.sale_id = s.id
+        WHERE s.status = 'COMPLETED'
+          AND s.completed_at >= :from
+          AND s.completed_at <= :to
+        GROUP BY sp.payment_method
+    """, nativeQuery = true)
+    List<Object[]> getPLPaymentBreakdown(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
+    /** Oylik trend — oxirgi 12 oy */
+    @Query(value = """
+        SELECT
+            TO_CHAR(s.completed_at, 'YYYY-MM')                AS month,
+            COALESCE(SUM(s.total_amount), 0)                   AS revenue,
+            COALESCE(SUM(si.quantity * pu.cost_price), 0)      AS cogs
+        FROM sales s
+        JOIN sale_items si ON si.sale_id = s.id
+        JOIN product_units pu ON pu.id = si.product_unit_id
+        WHERE s.status = 'COMPLETED'
+          AND s.completed_at >= :from12
+        GROUP BY TO_CHAR(s.completed_at, 'YYYY-MM')
+        ORDER BY month
+    """, nativeQuery = true)
+    List<Object[]> getPLMonthlyTrend(@Param("from12") LocalDateTime from12);
+
+    /** Top 10 foydali mahsulotlar */
+    @Query(value = """
+        SELECT
+            p.name                                             AS product_name,
+            u.symbol                                           AS unit_symbol,
+            SUM(si.quantity)                                   AS quantity,
+            SUM(si.total_price)                                AS revenue,
+            SUM(si.quantity * pu.cost_price)                   AS cogs,
+            SUM(si.total_price) - SUM(si.quantity * pu.cost_price) AS profit
+        FROM sale_items si
+        JOIN product_units pu ON pu.id = si.product_unit_id
+        JOIN products p       ON p.id  = pu.product_id
+        JOIN units u          ON u.id  = pu.unit_id
+        JOIN sales s          ON s.id  = si.sale_id
+        WHERE s.status = 'COMPLETED'
+          AND s.completed_at >= :from
+          AND s.completed_at <= :to
+        GROUP BY p.name, u.symbol
+        ORDER BY profit DESC
+        LIMIT 10
+    """, nativeQuery = true)
+    List<Object[]> getPLTopProducts(
+            @Param("from") LocalDateTime from,
+            @Param("to")   LocalDateTime to
+    );
+
     // ── Dashboard: bugungi top 5 mahsulot ─────────────────────────────────
     @Query(value = """
         SELECT
