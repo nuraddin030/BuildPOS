@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { X } from 'lucide-react'
-
-const HTML5QR_CDN = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+import { Html5Qrcode } from 'html5-qrcode'
 
 export default function CameraScanner({ onDetected, onClose }) {
     const instanceRef = useRef(null)
@@ -35,8 +34,7 @@ export default function CameraScanner({ onDetected, onClose }) {
         .then(() => { isRunningRef.current = true; setLoading(false) })
         .catch(() => {
             if (cameraConstraint?.facingMode) {
-                // facingMode ishlamasa — getCameras() orqali ID olish
-                window.Html5Qrcode.getCameras()
+                Html5Qrcode.getCameras()
                     .then(cameras => {
                         if (!cameras.length) { setError('Kamera topilmadi'); return }
                         doStart(scanner, cameras[cameras.length - 1].id)
@@ -52,23 +50,11 @@ export default function CameraScanner({ onDetected, onClose }) {
         if (startedRef.current) return
         startedRef.current = true
 
-        const startScanner = () => {
-            const el = document.getElementById('pos-qr-reader')
-            if (el) el.innerHTML = ''
-            const scanner = new window.Html5Qrcode('pos-qr-reader')
-            instanceRef.current = scanner
-            doStart(scanner, { facingMode: 'environment' })
-        }
-
-        if (window.Html5Qrcode) {
-            startScanner()
-        } else {
-            const script = document.createElement('script')
-            script.src = HTML5QR_CDN
-            script.onload = startScanner
-            script.onerror = () => setError('Kutubxona yuklanmadi. Internetni tekshiring.')
-            document.head.appendChild(script)
-        }
+        const el = document.getElementById('pos-qr-reader')
+        if (el) el.innerHTML = ''
+        const scanner = new Html5Qrcode('pos-qr-reader')
+        instanceRef.current = scanner
+        doStart(scanner, { facingMode: 'environment' })
 
         return () => { stopScanner() }
     }, [])

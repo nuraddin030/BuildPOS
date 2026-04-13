@@ -33,16 +33,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwtUtil.isValid(token)) {
                 String username = jwtUtil.getUsername(token);
-                System.out.println(">>> USERNAME: " + username);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                System.out.println(">>> AUTHORITIES: " + userDetails.getAuthorities());
-
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails, null, userDetails.getAuthorities()
                         );
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                System.out.println(">>> AUTH SET: " + SecurityContextHolder.getContext().getAuthentication().getName());
             }
         }
 

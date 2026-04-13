@@ -26,11 +26,38 @@ public class FileUploadService {
     @Value("${server.port:8080}")
     private String serverPort;
 
-    private static final Set<String> ALLOWED_TYPES = Set.of(
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
     );
 
-    private static final long MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+    /**
+     * Magic bytes tekshiruvi — fayl boshidagi imzo (signature) orqali
+     * haqiqiy rasm ekanligini tasdiqlaydi.
+     * Content-Type header soxtalashtirish mumkin, lekin magic bytes yo'q.
+     */
+    private void validateMagicBytes(MultipartFile file) {
+        try {
+            byte[] bytes = file.getBytes();
+            if (bytes.length < 4) {
+                throw new BadRequestException("Fayl noto'g'ri formatda");
+            }
+            // JPEG: FF D8 FF
+            if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 && bytes[2] == (byte) 0xFF) return;
+            // PNG: 89 50 4E 47
+            if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return;
+            // GIF: 47 49 46 38
+            if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) return;
+            // WebP: 52 49 46 46 ... 57 45 42 50 (RIFF....WEBP)
+            if (bytes.length >= 12 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+                    && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) return;
+
+            throw new BadRequestException("Fayl haqiqiy rasm emas");
+        } catch (IOException e) {
+            throw new BadRequestException("Faylni o'qishda xatolik");
+        }
+    }
 
     // ── Dinamik base URL — so'rov kelgan IP dan olinadi ──────────
     private String getBaseUrl() {
@@ -56,12 +83,14 @@ public class FileUploadService {
         if (file.isEmpty()) {
             throw new BadRequestException("Fayl bo'sh");
         }
-        if (!ALLOWED_TYPES.contains(file.getContentType())) {
-            throw new BadRequestException("Faqat rasm fayllari qabul qilinadi (JPEG, PNG, WebP)");
+        if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+            throw new BadRequestException("Faqat rasm fayllari qabul qilinadi (JPEG, PNG, WebP, GIF)");
         }
         if (file.getSize() > MAX_SIZE) {
-            throw new BadRequestException("Fayl hajmi 10MB dan oshmasligi kerak");
+            throw new BadRequestException("Fayl hajmi 5MB dan oshmasligi kerak");
         }
+        // Magic bytes tekshiruvi — Content-Type spoofing oldini olish
+        validateMagicBytes(file);
 
         try {
             Path uploadPath = Paths.get(uploadDir, "products");

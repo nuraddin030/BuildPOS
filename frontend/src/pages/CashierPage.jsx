@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { jsPDF } from 'jspdf'
 import ReactDOM from 'react-dom'
 import {
     Search, X, Plus, Minus, Trash2, User, CreditCard,
@@ -450,15 +451,6 @@ function PaymentModal({ sale, onClose, onCompleted, onCustomerSet }) {
 // ─── Chek modali ──────────────────────────────
 function ReceiptModal({ sale, onClose }) {
     const dl = async () => {
-        if (!window.jspdf) {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script')
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-                script.onload = resolve; script.onerror = reject
-                document.head.appendChild(script)
-            })
-        }
-        const { jsPDF } = window.jspdf
         const doc = new jsPDF({ unit: 'mm', format: [80, 200], orientation: 'portrait' })
         const W = 80; let y = 8
 

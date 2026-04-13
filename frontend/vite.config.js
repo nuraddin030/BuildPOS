@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
   server: {
     host: true,      // 0.0.0.0 — tarmoqdagi barcha qurilmalar kirishi mumkin
@@ -11,10 +11,21 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    sourcemap: false,   // Source map production da ko'rinmasin
+    minify: 'esbuild',
   },
-})
+  // Production build da console.log va debugger o'chiriladi
+  esbuild: command === 'build' ? {
+    drop: ['debugger'],
+    pure: ['console.log', 'console.warn', 'console.debug'],
+  } : {},
+}))

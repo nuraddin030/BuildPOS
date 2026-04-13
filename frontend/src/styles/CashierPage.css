@@ -1070,8 +1070,8 @@
     .pos-last-sale { display: none; }
 
     .pos-main {
+        position: relative;
         flex-direction: column;
-        padding-bottom: 70px;
     }
 
     .pos-left  {
@@ -1085,8 +1085,16 @@
         display: none;
     }
 
-    .pos-left.pos-tab-visible  { display: flex; flex: 1; min-height: 0; }
-    .pos-right.pos-tab-visible { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    .pos-left.pos-tab-visible {
+        display: flex;
+        position: absolute;
+        top: 0; right: 0; bottom: 70px; left: 0;
+    }
+    .pos-right.pos-tab-visible {
+        display: flex;
+        position: absolute;
+        top: 0; right: 0; bottom: 70px; left: 0;
+    }
 
     .pos-tab-bar { display: flex; }
 

@@ -9,8 +9,6 @@
 .sidebar {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
-    height: 100vh;
-    height: 100dvh; /* mobil brauzer UI (address bar) ni hisobga oladi */
     background: var(--sidebar-bg);
     position: fixed;
     left: 0;
@@ -504,9 +502,17 @@
     .page-content { padding: 20px; }
 
     /* Sidebar scroll fix: min-height: 0 flex itemda overflow ishlashi uchun zarur */
+    /* padding-bottom: brauzer toolbar (≈50px) + iOS safe area + zapas */
     .sidebar-nav {
         min-height: 0;
         overflow-y: auto;
+        padding-bottom: 100px;
+    }
+    .sidebar-nav::after {
+        content: '';
+        display: block;
+        height: 100px;
+        flex-shrink: 0;
     }
 }
 
@@ -541,5 +547,5 @@
     .page-content  { padding: 12px; }
     .mobile-menu-btn { width: 36px; height: 36px; margin-right: 8px; }
 
-    .sidebar { height: 100%; min-height: 100vh; overflow-y: auto; }
+    .sidebar { overflow-y: auto; }
 }

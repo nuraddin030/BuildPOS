@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Console — barcha profillarda -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%level] %logger{30} — %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Access log fayli — kunlik, 30 kun saqlanadi -->
+    <springProfile name="prod">
+        <appender name="ACCESS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/access.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>logs/access.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>500MB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!-- Xato loglari -->
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/error.log</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>logs/error.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+                <maxHistory>90</maxHistory>
+            </rollingPolicy>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %level %logger{50} — %msg%n%ex</pattern>
+            </encoder>
+        </appender>
+
+        <logger name="ACCESS" level="INFO" additivity="false">
+            <appender-ref ref="ACCESS_FILE"/>
+        </logger>
+
+        <logger name="com.buildpos" level="INFO">
+            <appender-ref ref="ERROR_FILE"/>
+        </logger>
+
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- Dev profil — faqat console -->
+    <springProfile name="dev,default">
+        <logger name="ACCESS" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>

@@ -2,6 +2,7 @@ package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.request.EmployeeRequest;
 import com.buildpos.buildpos.dto.request.GrantPermissionRequest;
+import com.buildpos.buildpos.security.PasswordValidator;
 import com.buildpos.buildpos.dto.response.EmployeeResponse;
 import com.buildpos.buildpos.dto.response.PermissionGroupResponse;
 import com.buildpos.buildpos.dto.response.PermissionResponse;
@@ -44,6 +45,7 @@ public class EmployeeService {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new AlreadyExistsException("Bu username allaqachon mavjud: " + request.getUsername());
         }
+        PasswordValidator.validate(request.getPassword());
 
         Role role = roleRepository.findById(request.getRoleId())
                 .orElseThrow(() -> new NotFoundException("Rol topilmadi: " + request.getRoleId()));
@@ -104,6 +106,7 @@ public class EmployeeService {
         user.setRole(role);
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            PasswordValidator.validate(request.getPassword());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 

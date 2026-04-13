@@ -1,6 +1,8 @@
 package com.buildpos.buildpos.config;
 
+import com.buildpos.buildpos.security.AuditLogFilter;
 import com.buildpos.buildpos.security.JwtFilter;
+import com.buildpos.buildpos.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -30,6 +33,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final RateLimitFilter rateLimitFilter;
+    private final AuditLogFilter auditLogFilter;
 
     @Value("${app.cors.allowed-origins:*}")
     private String allowedOrigins;
@@ -42,8 +47,18 @@ public class SecurityConfig {
                 .sessionManagement(s -> s
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        .contentTypeOptions(ct -> {})
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/refresh").permitAll()
                         .requestMatchers("/api/auth/logout").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -58,7 +73,9 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(auditLogFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

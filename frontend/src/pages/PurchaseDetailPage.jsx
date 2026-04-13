@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
     ShoppingCart, ArrowLeft, CheckCircle, XCircle, CreditCard,
@@ -253,23 +255,6 @@ export default function PurchaseDetailPage() {
                 ? new Date(purchase.createdAt).toLocaleDateString('ru-RU')
                 : '—'
 
-            // jsPDF CDN dan yuklaymiz
-            if (!window.jspdf?.jsPDF) {
-                await new Promise((res, rej) => {
-                    const s = document.createElement('script')
-                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-                    s.onload = res; s.onerror = rej
-                    document.head.appendChild(s)
-                })
-                await new Promise((res, rej) => {
-                    const s = document.createElement('script')
-                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
-                    s.onload = res; s.onerror = rej
-                    document.head.appendChild(s)
-                })
-            }
-
-            const { jsPDF } = window.jspdf
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
 
             // ── Sarlavha ──────────────────────────────────────────

@@ -1,8 +1,9 @@
 /**
  * BuildPOS — Export Utilities
  * CSV va PDF export uchun umumiy funksiyalar
- * Joylashuv: src/utils/exportUtils.js
  */
+import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
 
 // ── CSV Export ────────────────────────────────────────────────────
 export function exportToCSV(filename, headers, rows) {
@@ -21,34 +22,9 @@ export function exportToCSV(filename, headers, rows) {
     URL.revokeObjectURL(url)
 }
 
-// ── jsPDF CDN loader ──────────────────────────────────────────────
-let _loaded = false
-
-async function loadJsPDF() {
-    if (_loaded || window.jspdf?.jsPDF) { _loaded = true; return }
-
-    await new Promise((resolve, reject) => {
-        const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-        s.onload = resolve; s.onerror = reject
-        document.head.appendChild(s)
-    })
-
-    await new Promise((resolve, reject) => {
-        const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
-        s.onload = resolve; s.onerror = reject
-        document.head.appendChild(s)
-    })
-
-    _loaded = true
-}
-
 // ── PDF Export ────────────────────────────────────────────────────
 export async function exportToPDF({ filename, title, subtitle, headers, rows, summary }) {
     try {
-        await loadJsPDF()
-        const { jsPDF } = window.jspdf
         const doc = new jsPDF({
             orientation: rows[0]?.length > 6 ? 'landscape' : 'portrait',
             unit: 'mm', format: 'a4'
@@ -88,7 +64,6 @@ export async function exportToPDF({ filename, title, subtitle, headers, rows, su
 
         doc.save(`${filename}.pdf`)
     } catch (e) {
-        console.error('PDF export xatosi:', e)
         exportToCSV(filename, headers, rows)
     }
 }

@@ -1,15 +1,18 @@
 package com.buildpos.buildpos.security;
 
+import com.buildpos.buildpos.service.TokenBlacklistService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Collections;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
@@ -20,14 +23,14 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private Long expiration;
 
-    // Logout qilingan tokenlar (server restart bo'lsa tozalanadi)
-    private final Set<String> blacklist = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    @Lazy
+    @Autowired
+    private TokenBlacklistService blacklistService;
 
     private Key getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // Token yaratish
     public String generateToken(String username, String role) {
         return Jwts.builder()
                 .subject(username)
@@ -38,30 +41,40 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Username olish
     public String getUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    // Role olish
     public String getRole(String token) {
         return getClaims(token).get("role", String.class);
     }
 
-    // Token tekshirish (blacklist ham tekshiriladi)
+    /** Token muddati tugashini LocalDateTime sifatida qaytaradi */
+    public LocalDateTime getExpiresAt(String token) {
+        Date exp = getClaims(token).getExpiration();
+        return Instant.ofEpochMilli(exp.getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+    }
+
+    /** Token tekshirish — DB blacklist orqali */
     public boolean isValid(String token) {
         try {
-            if (blacklist.contains(token)) return false;
-            getClaims(token);
-            return true;
+            getClaims(token); // signature + expiry tekshirish
+            return !blacklistService.contains(token);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
-    // Tokenni blacklist ga qo'shish (logout)
+    /** Tokenni blacklist ga qo'shish (logout) — DB ga yoziladi */
     public void invalidate(String token) {
-        blacklist.add(token);
+        try {
+            LocalDateTime expiresAt = getExpiresAt(token);
+            blacklistService.add(token, expiresAt);
+        } catch (JwtException | IllegalArgumentException ignored) {
+            // Yaroqsiz token — blacklist ga qo'shishning hojati yo'q
+        }
     }
 
     private Claims getClaims(String token) {
