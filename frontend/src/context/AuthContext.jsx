@@ -65,7 +65,14 @@ export function AuthProvider({ children }) {
 
             return { success: true }
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || 'Xatolik' }
+            const data = err.response?.data || {}
+            return {
+                success: false,
+                message: data.message || 'Xatolik',
+                locked: !!data.locked,
+                minutesLeft: data.minutesLeft || null,
+                remainingAttempts: data.remainingAttempts || null,
+            }
         } finally {
             setLoading(false)
         }

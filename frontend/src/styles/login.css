@@ -167,6 +167,12 @@
     75% { transform: translateX(4px); }
 }
 
+.login-alert--locked {
+    background: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+
 /* Field */
 .login-field {
     margin-bottom: 20px;

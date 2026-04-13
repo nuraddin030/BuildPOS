@@ -18,6 +18,7 @@ import org.springframework.security.authentication.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 // 5 ta noto'g'ri paroldan keyin 15 daqiqa bloklash
@@ -44,9 +45,13 @@ public class AuthController {
         // Foydalanuvchi mavjudligini va bloklanganligi tekshiramiz
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
         if (user != null && user.isLocked()) {
+            long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), user.getLockedUntil()) + 1;
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(Map.of("message",
-                            "Hisob vaqtincha bloklangan. " + LOCK_MINUTES + " daqiqadan so'ng urinib ko'ring."));
+                    .body(Map.of(
+                            "message", "Hisob bloklangan. " + minutesLeft + " daqiqadan so'ng urinib ko'ring.",
+                            "locked", true,
+                            "minutesLeft", minutesLeft
+                    ));
         }
 
         try {
@@ -65,10 +70,19 @@ public class AuthController {
                     user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));
                     userRepository.save(user);
                     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                            .body(Map.of("message",
-                                    "Ko'p marta noto'g'ri parol kiritildi. Hisob " + LOCK_MINUTES + " daqiqaga bloklandi."));
+                            .body(Map.of(
+                                    "message", "Ko'p marta noto'g'ri parol. Hisob " + LOCK_MINUTES + " daqiqaga bloklandi.",
+                                    "locked", true,
+                                    "minutesLeft", (long) LOCK_MINUTES
+                            ));
                 }
                 userRepository.save(user);
+                int remaining = MAX_ATTEMPTS - attempts;
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of(
+                                "message", "Parol noto'g'ri. Yana " + remaining + " ta urinish qoldi.",
+                                "remainingAttempts", remaining
+                        ));
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Login yoki parol noto'g'ri"));

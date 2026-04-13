@@ -11,17 +11,20 @@ export default function LoginPage() {
 
     const [form, setForm] = useState({ username: '', password: '' })
     const [error, setError] = useState('')
+    const [locked, setLocked] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')
+        setLocked(false)
         const result = await login(form.username, form.password)
 
         if (result.success) {
             navigate('/')
         } else {
-            setError(t('login.error'))
+            setError(result.message || t('login.error'))
+            setLocked(!!result.locked)
         }
     }
 
@@ -79,11 +82,20 @@ export default function LoginPage() {
                     <p className="login-subtitle">{t('login.subtitle') || t('login.name')}</p>
 
                     {error && (
-                        <div className="login-alert">
+                        <div className={`login-alert${locked ? ' login-alert--locked' : ''}`}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                {locked ? (
+                                    <>
+                                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <circle cx="12" cy="12" r="10" />
+                                        <line x1="12" y1="8" x2="12" y2="12" />
+                                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                                    </>
+                                )}
                             </svg>
                             {error}
                         </div>
