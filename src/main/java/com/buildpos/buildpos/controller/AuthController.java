@@ -56,7 +56,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Access tokenni yangilash")
+    @Operation(summary = "Access tokenni yangilash (rotation)")
     public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
         String refreshTokenStr = body.get("refreshToken");
         if (refreshTokenStr == null || refreshTokenStr.isBlank()) {
@@ -66,9 +66,15 @@ public class AuthController {
         return refreshTokenService.validate(refreshTokenStr)
                 .map(rt -> {
                     User user = rt.getUser();
-                    String newAccessToken = jwtUtil.generateToken(
-                            user.getUsername(), user.getRole().getName());
-                    return ResponseEntity.ok(Map.of("token", newAccessToken));
+                    // Rotation: eski tokenni bekor qilish
+                    refreshTokenService.revoke(refreshTokenStr);
+                    // Yangi tokenlar berish
+                    String newAccessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
+                    RefreshToken newRefresh = refreshTokenService.create(user);
+                    return ResponseEntity.ok(Map.of(
+                            "token",        newAccessToken,
+                            "refreshToken", newRefresh.getToken()
+                    ));
                 })
                 .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("message", "Refresh token yaroqsiz yoki muddati o'tgan")));
