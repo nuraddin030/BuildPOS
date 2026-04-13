@@ -1,5 +1,65 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-13 (5) — CORS, jwt.secret, Refresh Rotation, Account Lockout
+
+### Bajarilgan ishlar
+
+#### CORS — lokal tarmoq bilan cheklash
+- Dev profil: `*` → `http://localhost:*`, `http://127.0.0.1:*`, `http://192.168.*`
+- SecurityConfig: `setAllowedOriginPatterns()` — wildcard qo'llab-quvvatlanadi
+- Prod allaqachon `https://primestroy.uz` bilan cheklangan ✅
+
+#### jwt.secret — kuchli qiymat (dev)
+- Eski: `buildpos-secret-key-2025-very-long-string-for-security` — taxmin qilish mumkin
+- Yangi: 64 belgi random hex (256-bit, `openssl rand -hex 32`)
+
+#### Refresh Token Rotation
+- **Muammo:** eski `/api/auth/refresh` faqat yangi access token berardi — refresh token qayta-qayta ishlaydi
+- **Yechim:** eski refresh token revoke → yangi refresh token + yangi access token
+- `AuthController.refresh()` yangilandi
+- `api.js`: yangi refresh token ham sessionStorage ga saqlanadi
+
+#### Account Lockout (B-16)
+- **V33:** `users` jadvaliga `failed_attempts` va `locked_until` ustunlar qo'shildi
+- **User.isLocked():** `locked_until` bo'lsa va hozirdan katta bo'lsa — `true`
+- **AuthController.login():**
+  - Login qayta urinishdan oldin `isLocked()` tekshiruvi
+  - `BadCredentialsException` → `failed_attempts++`
+  - 5 ta noto'g'ri parol → `locked_until = now + 15 daqiqa` → 429 qaytariladi
+  - Muvaffaqiyatli kirish → `failed_attempts = 0`, `locked_until = null`
+
+### Yangi fayllar
+- `V33__user_account_lockout.sql`
+
+### Kiberxavfsizlik — YAKUNIY holat
+- ✅ B-01 JWT Refresh Token
+- ✅ B-02 HTTPS (nginx.conf)
+- ✅ B-04 Rate Limiting (IP bo'yicha)
+- ✅ B-05 .env.example
+- ✅ B-07 SQL Injection audit
+- ✅ B-08 Token Blacklist DB
+- ✅ B-09 Input Validation
+- ✅ B-10 File Upload xavfsizligi
+- ✅ B-11 Audit Log
+- ✅ B-12 Error handler
+- ✅ B-13 Parol validator
+- ✅ B-14 PostgreSQL lokal (docker-compose)
+- ✅ B-15 HTTP Headers
+- ✅ B-16 Account Lockout (5 urinish → 15 daqiqa blok)
+- ✅ B-17 Request Logging
+- ✅ F-01 sessionStorage + refresh interceptor
+- ✅ F-02 CSP meta tag
+- ✅ F-03 CDN → npm
+- ✅ F-04 dangerouslySetInnerHTML — yo'q
+- ✅ F-06 Vite build config
+- ✅ F-08 robots.txt
+- ✅ F-09 Harakatsizlik timeout
+- ✅ Refresh Token Rotation
+- ✅ CORS lokal tarmoq cheklash
+- ✅ jwt.secret kuchaytirish
+
+---
+
 ## Session: 2026-04-13 (4) — B-08 Token Blacklist DB
 
 ### Bajarilgan ishlar
