@@ -30,11 +30,12 @@ public class ReportService {
         LocalDateTime dtTo   = to.atTime(LocalTime.MAX);
 
         // ── Asosiy ko'rsatkichlar ──────────────────────────────────
-        Object[] summary = saleRepository.getPLSummary(dtFrom, dtTo);
-        long       saleCount = summary[0] != null ? ((Number) summary[0]).longValue() : 0L;
-        BigDecimal revenue   = bd(summary[1]);
-        BigDecimal discounts = bd(summary[2]);
-        BigDecimal cogs      = bd(summary[3]);
+        List<Object[]> summaryList = saleRepository.getPLSummary(dtFrom, dtTo);
+        Object[] summary  = (summaryList != null && !summaryList.isEmpty()) ? summaryList.get(0) : null;
+        long       saleCount = (summary != null && summary[0] != null) ? ((Number) summary[0]).longValue() : 0L;
+        BigDecimal revenue   = summary != null ? bd(summary[1]) : BigDecimal.ZERO;
+        BigDecimal discounts = summary != null ? bd(summary[2]) : BigDecimal.ZERO;
+        BigDecimal cogs      = summary != null ? bd(summary[3]) : BigDecimal.ZERO;
         BigDecimal profit    = revenue.subtract(cogs);
         BigDecimal margin    = revenue.compareTo(BigDecimal.ZERO) > 0
                 ? profit.divide(revenue, 4, RoundingMode.HALF_UP)

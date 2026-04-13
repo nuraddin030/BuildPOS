@@ -209,7 +209,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
           AND s.completed_at >= :from
           AND s.completed_at <= :to
     """, nativeQuery = true)
-    Object[] getPLSummary(
+    List<Object[]> getPLSummary(
             @Param("from") LocalDateTime from,
             @Param("to")   LocalDateTime to
     );
@@ -241,7 +241,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
         WHERE s.status = 'COMPLETED'
           AND s.completed_at >= :from12
         GROUP BY TO_CHAR(s.completed_at, 'YYYY-MM')
-        ORDER BY month
+        ORDER BY TO_CHAR(s.completed_at, 'YYYY-MM')
     """, nativeQuery = true)
     List<Object[]> getPLMonthlyTrend(@Param("from12") LocalDateTime from12);
 
@@ -263,7 +263,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
           AND s.completed_at >= :from
           AND s.completed_at <= :to
         GROUP BY p.name, u.symbol
-        ORDER BY profit DESC
+        ORDER BY (SUM(si.total_price) - SUM(si.quantity * pu.cost_price)) DESC
         LIMIT 10
     """, nativeQuery = true)
     List<Object[]> getPLTopProducts(
