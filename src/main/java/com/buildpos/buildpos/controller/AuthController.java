@@ -17,13 +17,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+
+// 5 ta noto'g'ri paroldan keyin 15 daqiqa bloklash
+// Muvaffaqiyatli kirishda hisoblagich tozalanadi
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "Autentifikatsiya")
 public class AuthController {
+
+    private static final int    MAX_ATTEMPTS   = 5;
+    private static final int    LOCK_MINUTES   = 15;
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -32,18 +39,48 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Tizimga kirish")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        // Foydalanuvchi mavjudligini va bloklanganligi tekshiramiz
+        User user = userRepository.findByUsername(request.getUsername()).orElse(null);
+        if (user != null && user.isLocked()) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("message",
+                            "Hisob vaqtincha bloklangan. " + LOCK_MINUTES + " daqiqadan so'ng urinib ko'ring."));
+        }
 
-        User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException | DisabledException e) {
+            // Noto'g'ri parol — urinishlar sonini oshirish
+            if (user != null) {
+                int attempts = user.getFailedAttempts() + 1;
+                user.setFailedAttempts(attempts);
+                if (attempts >= MAX_ATTEMPTS) {
+                    user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));
+                    userRepository.save(user);
+                    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                            .body(Map.of("message",
+                                    "Ko'p marta noto'g'ri parol kiritildi. Hisob " + LOCK_MINUTES + " daqiqaga bloklandi."));
+                }
+                userRepository.save(user);
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Login yoki parol noto'g'ri"));
+        }
 
-        String accessToken  = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
+        // Muvaffaqiyatli kirish — hisoblagichni tozalash
+        user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+        user.setFailedAttempts(0);
+        user.setLockedUntil(null);
+        userRepository.save(user);
+
+        String accessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         RefreshToken refresh = refreshTokenService.create(user);
 
         return ResponseEntity.ok(new LoginResponse(
