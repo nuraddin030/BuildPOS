@@ -12,6 +12,6 @@ public class LoginRequest {
     private String username;
 
     @NotBlank(message = "Parol bo'sh bo'lmasligi kerak")
-    @Size(min = 4, max = 100)
+    @Size(max = 100)
     private String password;
 }
