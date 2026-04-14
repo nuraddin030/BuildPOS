@@ -54,9 +54,15 @@ export default function SettingsPage() {
             .catch(() => showToast('O\'chirib bo\'lmadi'))
     }
 
-    function handleTestSend() {
+    function handleTestDebt() {
         api.post('/api/v1/reports/debt-reminder/send')
-            .then(() => showToast('Test xabar yuborildi!'))
+            .then(() => showToast('Nasiya xabari yuborildi!'))
+            .catch(() => showToast('Yuborishda xatolik'))
+    }
+
+    function handleTestStock() {
+        api.post('/api/v1/reports/low-stock/send')
+            .then(() => showToast('Kam zaxira xabari yuborildi!'))
             .catch(() => showToast('Yuborishda xatolik'))
     }
 
@@ -80,10 +86,16 @@ export default function SettingsPage() {
                         <p className="page-subtitle">Telegram xabarnoma obunachilari</p>
                     </div>
                 </div>
-                <button className="btn-outline-primary" onClick={handleTestSend}>
-                    <Send size={15} />
-                    Test xabar yuborish
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-outline-primary" onClick={handleTestDebt}>
+                        <Send size={15} />
+                        Nasiya test
+                    </button>
+                    <button className="btn-outline-primary" onClick={handleTestStock}>
+                        <Send size={15} />
+                        Zaxira test
+                    </button>
+                </div>
             </div>
 
             {/* Bot qo'llanma */}

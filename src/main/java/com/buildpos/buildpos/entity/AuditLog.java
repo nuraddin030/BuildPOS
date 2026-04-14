@@ -36,6 +36,9 @@ public class AuditLog {
     @Column(name = "ip_address", nullable = false, length = 45)
     private String ipAddress;
 
+    @Column(name = "user_agent", length = 500)
+    private String userAgent;
+
     @Column(name = "request_uri", length = 500)
     private String requestUri;
 

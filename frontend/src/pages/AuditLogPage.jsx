@@ -1,0 +1,190 @@
+import { useState, useEffect } from 'react'
+import { ShieldCheck, Search, Loader2, AlertTriangle, Monitor, Smartphone } from 'lucide-react'
+import api from '../api/api'
+import '../styles/AuditLogPage.css'
+
+const ACTION_COLORS = {
+    LOGIN:      { bg: '#d1fae5', color: '#065f46', label: 'Kirish' },
+    LOGIN_FAIL: { bg: '#fee2e2', color: '#991b1b', label: 'Xato parol' },
+    LOCKED:     { bg: '#fff7ed', color: '#c2410c', label: 'Bloklandi' },
+    CREATE:     { bg: '#dbeafe', color: '#1e40af', label: 'Yaratildi' },
+    UPDATE:     { bg: '#fef9c3', color: '#854d0e', label: 'Yangilandi' },
+    DELETE:     { bg: '#fee2e2', color: '#991b1b', label: 'O\'chirildi' },
+}
+
+function parseDevice(userAgent) {
+    if (!userAgent) return { icon: 'monitor', name: 'Noma\'lum' }
+    const ua = userAgent.toLowerCase()
+    const isMobile = /mobile|android|iphone|ipad/.test(ua)
+    let browser = 'Noma\'lum'
+    if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome'
+    else if (ua.includes('firefox')) browser = 'Firefox'
+    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari'
+    else if (ua.includes('edg')) browser = 'Edge'
+    let os = ''
+    if (ua.includes('windows')) os = 'Windows'
+    else if (ua.includes('android')) os = 'Android'
+    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS'
+    else if (ua.includes('mac')) os = 'macOS'
+    else if (ua.includes('linux')) os = 'Linux'
+    return { icon: isMobile ? 'mobile' : 'monitor', name: `${browser}${os ? ' / ' + os : ''}` }
+}
+
+function fmtDate(dt) {
+    if (!dt) return '—'
+    const d = new Date(dt)
+    const pad = n => String(n).padStart(2, '0')
+    return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export default function AuditLogPage() {
+    const [logs,    setLogs]    = useState([])
+    const [total,   setTotal]   = useState(0)
+    const [page,    setPage]    = useState(0)
+    const [loading, setLoading] = useState(true)
+    const [error,   setError]   = useState('')
+
+    const [username, setUsername] = useState('')
+    const [action,   setAction]   = useState('')
+    const [from,     setFrom]     = useState('')
+    const [to,       setTo]       = useState('')
+
+    useEffect(() => {
+        let alive = true
+        const params = new URLSearchParams({ page, size: 50 })
+        if (username) params.set('username', username)
+        if (action)   params.set('action', action)
+        if (from)     params.set('from', from)
+        if (to)       params.set('to', to)
+
+        api.get(`/api/v1/audit-logs?${params}`)
+            .then(r => { if (alive) { setLogs(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
+            .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
+        return () => { alive = false }
+    }, [page, username, action, from, to])
+
+    function handleSearch(e) {
+        e.preventDefault()
+        setPage(0)
+    }
+
+    return (
+        <div className="al-wrapper">
+            {/* Header */}
+            <div className="products-header">
+                <div className="products-header-left">
+                    <div className="page-icon-wrap" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
+                        <ShieldCheck size={22} />
+                    </div>
+                    <div>
+                        <h1 className="page-title">Audit Journal</h1>
+                        <p className="page-subtitle">Tizimga kirish va amallar tarixi · Jami: {total}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filter */}
+            <div className="al-filter">
+                <input className="al-input" placeholder="Foydalanuvchi..."
+                    value={username} onChange={e => { setUsername(e.target.value); setPage(0) }} />
+                <select className="al-input al-select"
+                    value={action} onChange={e => { setAction(e.target.value); setPage(0) }}>
+                    <option value="">Barcha amallar</option>
+                    <option value="LOGIN">Kirish</option>
+                    <option value="LOGIN_FAIL">Xato parol</option>
+                    <option value="LOCKED">Bloklandi</option>
+                    <option value="CREATE">Yaratildi</option>
+                    <option value="UPDATE">Yangilandi</option>
+                    <option value="DELETE">O'chirildi</option>
+                </select>
+                <input type="date" className="al-input" value={from}
+                    onChange={e => { setFrom(e.target.value); setPage(0) }} />
+                <input type="date" className="al-input" value={to}
+                    onChange={e => { setTo(e.target.value); setPage(0) }} />
+                <button className="btn-primary al-search-btn" onClick={handleSearch}>
+                    <Search size={15} /> Qidirish
+                </button>
+            </div>
+
+            {/* Table */}
+            {loading ? (
+                <div className="table-loading" style={{ minHeight: 200 }}>
+                    <Loader2 size={28} className="spin" style={{ color: 'var(--primary)' }} />
+                    <p>Yuklanmoqda...</p>
+                </div>
+            ) : error ? (
+                <div className="table-empty">
+                    <AlertTriangle size={36} strokeWidth={1} />
+                    <p>{error}</p>
+                </div>
+            ) : (
+                <div className="al-card">
+                    <div className="al-table-wrap">
+                        <table className="ptable">
+                            <thead>
+                                <tr>
+                                    <th>Amal</th>
+                                    <th>Foydalanuvchi</th>
+                                    <th>IP manzil</th>
+                                    <th>Qurilma</th>
+                                    <th>Ob'ekt</th>
+                                    <th className="th-right">Vaqt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {logs.length === 0 ? (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
+                                ) : logs.map(log => {
+                                    const ac = ACTION_COLORS[log.action] || { bg: 'var(--border-color)', color: 'var(--text-muted)', label: log.action }
+                                    const dev = parseDevice(log.userAgent)
+                                    return (
+                                        <tr key={log.id}>
+                                            <td>
+                                                <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>
+                                                    {ac.label}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="cell-name">{log.username || '—'}</div>
+                                            </td>
+                                            <td>
+                                                <code className="al-ip">{log.ipAddress}</code>
+                                            </td>
+                                            <td>
+                                                <div className="al-device">
+                                                    {dev.icon === 'mobile'
+                                                        ? <Smartphone size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                                                        : <Monitor size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
+                                                    <span>{dev.name}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className="cell-muted" style={{ fontSize: 12 }}>
+                                                    {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
+                                                </span>
+                                            </td>
+                                            <td className="th-right">
+                                                <span className="cell-muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                                                    {fmtDate(log.createdAt)}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {total > 50 && (
+                        <div className="al-pagination">
+                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="al-page-info">{page + 1} / {Math.ceil(total / 50)}</span>
+                            <button className="al-page-btn" disabled={(page + 1) * 50 >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}

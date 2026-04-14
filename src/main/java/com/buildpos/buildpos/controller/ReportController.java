@@ -2,6 +2,7 @@ package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.dto.response.ProfitLossResponse;
 import com.buildpos.buildpos.service.DebtReminderScheduler;
+import com.buildpos.buildpos.service.LowStockNotifier;
 import com.buildpos.buildpos.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +21,7 @@ public class ReportController {
 
     private final ReportService reportService;
     private final DebtReminderScheduler debtReminderScheduler;
+    private final LowStockNotifier lowStockNotifier;
 
     @GetMapping("/pl")
     @Operation(summary = "Foyda va zarar hisoboti")
@@ -37,5 +39,13 @@ public class ReportController {
     public String sendDebtReminder() {
         debtReminderScheduler.triggerManually();
         return "Eslatma yuborildi";
+    }
+
+    @PostMapping("/low-stock/send")
+    @Operation(summary = "Kam zaxira xabarini hozir yuborish (test)")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    public String sendLowStockAlert() {
+        lowStockNotifier.triggerManually();
+        return "Xabar yuborildi";
     }
 }

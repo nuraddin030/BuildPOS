@@ -65,6 +65,7 @@ public class AuditLogFilter extends OncePerRequestFilter {
                     .entityType(entityType)
                     .entityId(entityId)
                     .ipAddress(ip)
+                    .userAgent(request.getHeader("User-Agent"))
                     .requestUri(uri)
                     .build();
 

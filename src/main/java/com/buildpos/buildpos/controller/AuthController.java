@@ -52,7 +52,7 @@ public class AuthController {
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
         if (user != null && user.isLocked()) {
             long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), user.getLockedUntil()) + 1;
-            saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest.getRequestURI());
+            saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest);
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(Map.of(
                             "message", "Hisob bloklangan. " + minutesLeft + " daqiqadan so'ng urinib ko'ring.",
@@ -76,7 +76,7 @@ public class AuthController {
                 if (attempts >= MAX_ATTEMPTS) {
                     user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));
                     userRepository.save(user);
-                    saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest.getRequestURI());
+                    saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest);
                     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                             .body(Map.of(
                                     "message", "Ko'p marta noto'g'ri parol. Hisob " + LOCK_MINUTES + " daqiqaga bloklandi.",
@@ -86,14 +86,14 @@ public class AuthController {
                 }
                 userRepository.save(user);
                 int remaining = MAX_ATTEMPTS - attempts;
-                saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest.getRequestURI());
+                saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of(
                                 "message", "Parol noto'g'ri. Yana " + remaining + " ta urinish qoldi.",
                                 "remainingAttempts", remaining
                         ));
             }
-            saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest.getRequestURI());
+            saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Login yoki parol noto'g'ri"));
         }
@@ -104,7 +104,7 @@ public class AuthController {
         user.setLockedUntil(null);
         userRepository.save(user);
 
-        saveAuthLog("LOGIN", request.getUsername(), ip, httpRequest.getRequestURI());
+        saveAuthLog("LOGIN", request.getUsername(), ip, httpRequest);
 
         String accessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         RefreshToken refresh = refreshTokenService.create(user);
@@ -118,14 +118,15 @@ public class AuthController {
         ));
     }
 
-    private void saveAuthLog(String action, String username, String ip, String uri) {
+    private void saveAuthLog(String action, String username, String ip, HttpServletRequest req) {
         try {
             auditLogRepository.save(AuditLog.builder()
                     .action(action)
                     .username(username)
                     .entityType("Auth")
                     .ipAddress(ip)
-                    .requestUri(uri)
+                    .userAgent(req.getHeader("User-Agent"))
+                    .requestUri(req.getRequestURI())
                     .build());
         } catch (Exception ignored) {}
     }

@@ -35,11 +35,6 @@ public class DebtReminderScheduler {
         long openCount = debtRepository.countOpenDebts();
         BigDecimal openTotal = debtRepository.sumTotalRemainingDebt();
 
-        if (overdueCount == 0) {
-            log.info("Muddati o'tgan nasiyalar yo'q");
-            return;
-        }
-
         String msg = buildMessage(today, overdueCount, overdueTotal, openCount, openTotal);
         telegramService.sendToAll(msg);
         log.info("Nasiya eslatmasi yuborildi: {} ta muddati o'tgan", overdueCount);
@@ -47,20 +42,23 @@ public class DebtReminderScheduler {
 
     private String buildMessage(LocalDate today, long overdueCount, BigDecimal overdueTotal,
                                  long openCount, BigDecimal openTotal) {
-        String today_str = today.format(FMT);
-        return String.format("""
-                ⚠️ <b>Nasiya eslatmasi — %s</b>
+        String todayStr = today.format(FMT);
+        String overdueIcon = overdueCount > 0 ? "🔴" : "✅";
+        String overdueLabel = overdueCount > 0
+                ? overdueCount + " ta nasiya\n   Summa: <b>" + fmt(overdueTotal) + " UZS</b>"
+                : "Yo'q";
 
-                🔴 <b>Muddati o'tgan:</b> %d ta nasiya
-                   Summa: <b>%s UZS</b>
+        return String.format("""
+                📊 <b>Kunlik nasiya hisoboti — %s</b>
+
+                %s <b>Muddati o'tgan:</b> %s
 
                 📋 <b>Jami ochiq nasiyalar:</b> %d ta
                    Summa: <b>%s UZS</b>
 
                 👉 Tafsilot uchun POS tizimini oching.""",
-                today_str,
-                overdueCount,
-                fmt(overdueTotal),
+                todayStr,
+                overdueIcon, overdueLabel,
                 openCount,
                 fmt(openTotal)
         );
