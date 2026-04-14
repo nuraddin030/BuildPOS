@@ -2,8 +2,10 @@ package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.dto.LoginRequest;
 import com.buildpos.buildpos.dto.LoginResponse;
+import com.buildpos.buildpos.entity.AuditLog;
 import com.buildpos.buildpos.entity.RefreshToken;
 import com.buildpos.buildpos.entity.User;
+import com.buildpos.buildpos.repository.AuditLogRepository;
 import com.buildpos.buildpos.repository.UserRepository;
 import com.buildpos.buildpos.security.JwtUtil;
 import com.buildpos.buildpos.service.RefreshTokenService;
@@ -37,15 +39,20 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
+    private final AuditLogRepository auditLogRepository;
 
     @PostMapping("/login")
     @Operation(summary = "Tizimga kirish")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
+                                   HttpServletRequest httpRequest) {
+
+        String ip = getClientIp(httpRequest);
 
         // Foydalanuvchi mavjudligini va bloklanganligi tekshiramiz
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
         if (user != null && user.isLocked()) {
             long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), user.getLockedUntil()) + 1;
+            saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest.getRequestURI());
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(Map.of(
                             "message", "Hisob bloklangan. " + minutesLeft + " daqiqadan so'ng urinib ko'ring.",
@@ -69,6 +76,7 @@ public class AuthController {
                 if (attempts >= MAX_ATTEMPTS) {
                     user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));
                     userRepository.save(user);
+                    saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest.getRequestURI());
                     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                             .body(Map.of(
                                     "message", "Ko'p marta noto'g'ri parol. Hisob " + LOCK_MINUTES + " daqiqaga bloklandi.",
@@ -78,12 +86,14 @@ public class AuthController {
                 }
                 userRepository.save(user);
                 int remaining = MAX_ATTEMPTS - attempts;
+                saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest.getRequestURI());
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of(
                                 "message", "Parol noto'g'ri. Yana " + remaining + " ta urinish qoldi.",
                                 "remainingAttempts", remaining
                         ));
             }
+            saveAuthLog("LOGIN_FAIL", request.getUsername(), ip, httpRequest.getRequestURI());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Login yoki parol noto'g'ri"));
         }
@@ -93,6 +103,8 @@ public class AuthController {
         user.setFailedAttempts(0);
         user.setLockedUntil(null);
         userRepository.save(user);
+
+        saveAuthLog("LOGIN", request.getUsername(), ip, httpRequest.getRequestURI());
 
         String accessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         RefreshToken refresh = refreshTokenService.create(user);
@@ -104,6 +116,24 @@ public class AuthController {
                 user.getRole().getName(),
                 user.getFullName()
         ));
+    }
+
+    private void saveAuthLog(String action, String username, String ip, String uri) {
+        try {
+            auditLogRepository.save(AuditLog.builder()
+                    .action(action)
+                    .username(username)
+                    .entityType("Auth")
+                    .ipAddress(ip)
+                    .requestUri(uri)
+                    .build());
+        } catch (Exception ignored) {}
+    }
+
+    private String getClientIp(HttpServletRequest req) {
+        String xff = req.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
+        return req.getRemoteAddr();
     }
 
     @PostMapping("/refresh")

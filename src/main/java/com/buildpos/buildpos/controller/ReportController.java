@@ -1,6 +1,7 @@
 package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.dto.response.ProfitLossResponse;
+import com.buildpos.buildpos.service.DebtReminderScheduler;
 import com.buildpos.buildpos.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 public class ReportController {
 
     private final ReportService reportService;
+    private final DebtReminderScheduler debtReminderScheduler;
 
     @GetMapping("/pl")
     @Operation(summary = "Foyda va zarar hisoboti")
@@ -27,5 +29,13 @@ public class ReportController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         return reportService.getProfitLoss(from, to);
+    }
+
+    @PostMapping("/debt-reminder/send")
+    @Operation(summary = "Nasiya eslatmasini hozir yuborish (test)")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    public String sendDebtReminder() {
+        debtReminderScheduler.triggerManually();
+        return "Eslatma yuborildi";
     }
 }

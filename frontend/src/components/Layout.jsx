@@ -20,13 +20,14 @@ import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
 import InventoryPage from '../pages/InventoryPage'
 import ReportsPage from '../pages/ReportsPage'
+import SettingsPage from '../pages/SettingsPage'
 
 import { useState, useEffect, useRef } from 'react'
 import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
@@ -54,6 +55,7 @@ const navItems = [
     { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
     { path: '/partners',   key: 'partners',   icon: Handshake,       permission: 'PARTNERS_VIEW' },
     { path: '/units',      key: 'units',      icon: Ruler,           permission: 'UNITS_VIEW' },
+    { path: '/settings',   key: 'settings',   icon: Settings,        permission: 'ADMIN' },
 ]
 
 // Ruxsat yo'q sahifa
@@ -415,6 +417,9 @@ export default function Layout() {
                         } />
                         <Route path="/reports" element={
                             <ProtectedRoute permission="REPORTS_VIEW"><ReportsPage /></ProtectedRoute>
+                        } />
+                        <Route path="/settings" element={
+                            <ProtectedRoute permission="ADMIN"><SettingsPage /></ProtectedRoute>
                         } />
                         <Route path="/inventory" element={
                             <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>

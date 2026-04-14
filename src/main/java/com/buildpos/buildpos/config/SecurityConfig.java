@@ -71,6 +71,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/telegram/webhook").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
