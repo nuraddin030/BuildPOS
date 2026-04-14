@@ -122,30 +122,66 @@ public class AuthController {
 
     private void saveAuthLog(String action, String username, String ip, HttpServletRequest req) {
         try {
+            String ua = req.getHeader("User-Agent");
             auditLogRepository.save(AuditLog.builder()
                     .action(action)
                     .username(username)
                     .entityType("Auth")
                     .ipAddress(ip)
-                    .userAgent(req.getHeader("User-Agent"))
+                    .userAgent(ua)
                     .requestUri(req.getRequestURI())
                     .build());
 
-            if ("LOCKED".equals(action)) {
-                telegramService.sendToAll(String.format(
+            String device = parseDevice(ua);
+            String time   = java.time.LocalTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+
+            String msg = switch (action) {
+                case "LOGIN" -> String.format(
+                        "✅ <b>Tizimga kirdi</b>\n\n" +
+                        "👤 Foydalanuvchi: <code>%s</code>\n" +
+                        "🌐 IP: <code>%s</code>\n" +
+                        "📱 Qurilma: %s\n" +
+                        "🕐 Vaqt: %s",
+                        username, ip, device, time);
+                case "LOGIN_FAIL" -> String.format(
+                        "⚠️ <b>Noto'g'ri parol!</b>\n\n" +
+                        "👤 Foydalanuvchi: <code>%s</code>\n" +
+                        "🌐 IP: <code>%s</code>\n" +
+                        "📱 Qurilma: %s\n" +
+                        "🕐 Vaqt: %s",
+                        username, ip, device, time);
+                case "LOCKED" -> String.format(
                         "🔒 <b>Hisob bloklandi!</b>\n\n" +
                         "👤 Foydalanuvchi: <code>%s</code>\n" +
                         "🌐 IP: <code>%s</code>\n" +
+                        "📱 Qurilma: %s\n" +
+                        "🕐 Vaqt: %s\n" +
                         "⏱ %d daqiqaga bloklandi",
-                        username, ip, LOCK_MINUTES));
-            } else if ("LOGIN_FAIL".equals(action)) {
-                telegramService.sendToAll(String.format(
-                        "⚠️ <b>Noto'g'ri parol!</b>\n\n" +
-                        "👤 Foydalanuvchi: <code>%s</code>\n" +
-                        "🌐 IP: <code>%s</code>",
-                        username, ip));
-            }
+                        username, ip, device, time, LOCK_MINUTES);
+                default -> null;
+            };
+            if (msg != null) telegramService.sendToAll(msg);
         } catch (Exception ignored) {}
+    }
+
+    private String parseDevice(String ua) {
+        if (ua == null || ua.isBlank()) return "Noma'lum";
+        String u = ua.toLowerCase();
+        String browser;
+        if      (u.contains("edg"))                           browser = "Edge";
+        else if (u.contains("chrome") && !u.contains("edg")) browser = "Chrome";
+        else if (u.contains("firefox"))                       browser = "Firefox";
+        else if (u.contains("safari") && !u.contains("chrome")) browser = "Safari";
+        else                                                  browser = "Noma'lum";
+        String os;
+        if      (u.contains("android"))                       os = "Android";
+        else if (u.contains("iphone") || u.contains("ipad")) os = "iOS";
+        else if (u.contains("windows"))                       os = "Windows";
+        else if (u.contains("mac"))                           os = "macOS";
+        else if (u.contains("linux"))                         os = "Linux";
+        else                                                  os = "Noma'lum";
+        return browser + " / " + os;
     }
 
     private String getClientIp(HttpServletRequest req) {
