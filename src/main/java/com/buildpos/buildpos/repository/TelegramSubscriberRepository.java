@@ -12,6 +12,8 @@ public interface TelegramSubscriberRepository extends JpaRepository<TelegramSubs
 
     List<TelegramSubscriber> findAllByOrderByCreatedAtDesc();
 
+    List<TelegramSubscriber> findAllByStatusOrderByCreatedAtDesc(String status);
+
     Optional<TelegramSubscriber> findByChatId(String chatId);
 
     boolean existsByChatId(String chatId);

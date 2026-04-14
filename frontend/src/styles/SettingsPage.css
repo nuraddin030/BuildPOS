@@ -227,6 +227,68 @@
     border-radius: 20px;
 }
 
+.badge-pending {
+    font-size: 11px;
+    font-weight: 600;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+
+.badge-rejected {
+    font-size: 11px;
+    font-weight: 600;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+
+.st-pending-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+
+.st-approve-btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    border: 1px solid #10b981;
+    border-radius: 6px;
+    background: transparent;
+    color: #10b981;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.st-approve-btn:hover {
+    background: #10b981;
+    color: #fff;
+}
+
+.st-reject-btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+
+.st-reject-btn:hover {
+    background: #fee2e2;
+}
+
 .st-sub-actions {
     display: flex;
     align-items: center;

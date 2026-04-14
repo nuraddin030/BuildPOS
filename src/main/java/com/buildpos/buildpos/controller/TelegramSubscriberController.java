@@ -36,6 +36,27 @@ public class TelegramSubscriberController {
         return service.create(req);
     }
 
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "Kutayotgan so'rovlar")
+    public List<TelegramSubscriberResponse> getPending() {
+        return service.getPending();
+    }
+
+    @PatchMapping("/{id}/approve")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "So'rovni tasdiqlash")
+    public TelegramSubscriberResponse approve(@PathVariable Long id) {
+        return service.approve(id);
+    }
+
+    @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "So'rovni rad etish")
+    public TelegramSubscriberResponse reject(@PathVariable Long id) {
+        return service.reject(id);
+    }
+
     @PatchMapping("/{id}/toggle")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     @Operation(summary = "Faol/Nofaol o'tkazish")

@@ -28,6 +28,17 @@ public class TelegramSubscriber {
     @Builder.Default
     private Boolean isActive = true;
 
+    /** ACTIVE | PENDING | REJECTED */
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private String status = "ACTIVE";
+
+    @Column(length = 100)
+    private String firstName;
+
+    @Column(length = 100)
+    private String telegramUsername;
+
     @Column(length = 255)
     private String note;
 

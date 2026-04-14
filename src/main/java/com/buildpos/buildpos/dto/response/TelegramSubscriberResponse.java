@@ -12,6 +12,9 @@ public class TelegramSubscriberResponse {
     private String name;
     private String chatId;
     private Boolean isActive;
+    private String status;
+    private String firstName;
+    private String telegramUsername;
     private String note;
     private LocalDateTime createdAt;
 }

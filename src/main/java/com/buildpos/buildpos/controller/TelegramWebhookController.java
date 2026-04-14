@@ -1,6 +1,8 @@
 package com.buildpos.buildpos.controller;
 
+import com.buildpos.buildpos.entity.TelegramSubscriber;
 import com.buildpos.buildpos.service.TelegramService;
+import com.buildpos.buildpos.service.TelegramSubscriberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class TelegramWebhookController {
 
     private final TelegramService telegramService;
+    private final TelegramSubscriberService subscriberService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleWebhook(@RequestBody Map<String, Object> update) {
@@ -40,15 +43,27 @@ public class TelegramWebhookController {
             String firstName = nameObj != null ? nameObj.toString() : "";
 
             if (text.startsWith("/start") || text.startsWith("/myid") || text.startsWith("/id")) {
-                String reply = String.format(
-                        "Salom, %s! 👋\n\n" +
-                        "Sizning Telegram Chat ID:\n" +
-                        "<code>%s</code>\n\n" +
-                        "Bu ID ni POS tizimidagi Sozlamalar sahifasiga kiriting.",
-                        firstName, chatId
-                );
+                Object usernameObj = chat.get("username");
+                String username    = usernameObj != null ? usernameObj.toString() : null;
+
+                TelegramSubscriber saved = subscriberService.registerFromBot(chatId, firstName, username);
+
+                String reply;
+                if ("ACTIVE".equals(saved.getStatus())) {
+                    reply = String.format(
+                            "Salom, %s! 👋\n\n" +
+                            "Siz allaqachon tizimga ulangansiz.\n" +
+                            "Xabarlarni qabul qilishda davom etasiz.",
+                            firstName);
+                } else {
+                    reply = String.format(
+                            "Salom, %s! 👋\n\n" +
+                            "So'rovingiz adminga yuborildi.\n" +
+                            "Tasdiqlangandan so'ng xabarlar kela boshlaydi.",
+                            firstName);
+                }
                 telegramService.sendTo(chatId, reply);
-                log.info("Webhook: /start — chatId={}, name={}", chatId, firstName);
+                log.info("Webhook: /start — chatId={}, name={}, status={}", chatId, firstName, saved.getStatus());
             }
         } catch (Exception e) {
             log.warn("Webhook xatosi: {}", e.getMessage());

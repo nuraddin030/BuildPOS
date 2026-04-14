@@ -19,12 +19,22 @@ public class TelegramSubscriberService {
 
     public List<TelegramSubscriberResponse> getAll() {
         return repo.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .filter(s -> !"PENDING".equals(s.getStatus()))
+                .map(this::toDto).toList();
+    }
+
+    public List<TelegramSubscriberResponse> getPending() {
+        return repo.findAllByStatusOrderByCreatedAtDesc("PENDING")
                 .stream().map(this::toDto).toList();
     }
 
     public List<String> getActiveChatIds() {
         return repo.findAllByIsActiveTrueOrderByCreatedAtDesc()
-                .stream().map(TelegramSubscriber::getChatId).toList();
+                .stream()
+                .filter(s -> "ACTIVE".equals(s.getStatus()))
+                .map(TelegramSubscriber::getChatId)
+                .toList();
     }
 
     @Transactional
@@ -37,7 +47,53 @@ public class TelegramSubscriberService {
                 .chatId(req.getChatId())
                 .note(req.getNote())
                 .isActive(true)
+                .status("ACTIVE")
                 .build();
+        return toDto(repo.save(sub));
+    }
+
+    /**
+     * Bot orqali /start yuborgan foydalanuvchini PENDING sifatida saqlaydi.
+     * Agar allaqachon mavjud bo'lsa, ma'lumotlarini yangilaydi.
+     */
+    @Transactional
+    public TelegramSubscriber registerFromBot(String chatId, String firstName, String telegramUsername) {
+        return repo.findByChatId(chatId).map(existing -> {
+            // REJECTED bo'lsa yoki PENDING bo'lsa — yangilaymiz
+            if ("REJECTED".equals(existing.getStatus())) {
+                existing.setStatus("PENDING");
+            }
+            existing.setFirstName(firstName);
+            existing.setTelegramUsername(telegramUsername);
+            return repo.save(existing);
+        }).orElseGet(() -> {
+            TelegramSubscriber sub = TelegramSubscriber.builder()
+                    .name(firstName != null ? firstName : "Telegram foydalanuvchi")
+                    .chatId(chatId)
+                    .firstName(firstName)
+                    .telegramUsername(telegramUsername)
+                    .isActive(false)
+                    .status("PENDING")
+                    .build();
+            return repo.save(sub);
+        });
+    }
+
+    @Transactional
+    public TelegramSubscriberResponse approve(Long id) {
+        TelegramSubscriber sub = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Topilmadi: " + id));
+        sub.setStatus("ACTIVE");
+        sub.setIsActive(true);
+        return toDto(repo.save(sub));
+    }
+
+    @Transactional
+    public TelegramSubscriberResponse reject(Long id) {
+        TelegramSubscriber sub = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Topilmadi: " + id));
+        sub.setStatus("REJECTED");
+        sub.setIsActive(false);
         return toDto(repo.save(sub));
     }
 
@@ -60,6 +116,9 @@ public class TelegramSubscriberService {
                 .name(s.getName())
                 .chatId(s.getChatId())
                 .isActive(s.getIsActive())
+                .status(s.getStatus())
+                .firstName(s.getFirstName())
+                .telegramUsername(s.getTelegramUsername())
                 .note(s.getNote())
                 .createdAt(s.getCreatedAt())
                 .build();

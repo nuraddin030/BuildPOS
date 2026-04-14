@@ -1,22 +1,36 @@
 import { useState, useEffect } from 'react'
-import { Settings, Send, Plus, Trash2, ToggleLeft, ToggleRight, Loader2, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Settings, Send, Plus, Trash2, ToggleLeft, ToggleRight, Loader2, AlertTriangle, CheckCircle, Clock, Check, X } from 'lucide-react'
 import api from '../api/api'
 import '../styles/SettingsPage.css'
 
 export default function SettingsPage() {
     const [subs,    setSubs]    = useState([])
+    const [pending, setPending] = useState([])
     const [loading, setLoading] = useState(true)
     const [error,   setError]   = useState('')
     const [form,    setForm]    = useState({ name: '', chatId: '', note: '' })
     const [saving,  setSaving]  = useState(false)
     const [toast,   setToast]   = useState('')
 
-    useEffect(() => {
+    function loadAll() {
         let alive = true
-        api.get('/api/v1/settings/telegram')
-            .then(r => { if (alive) { setSubs(r.data); setError(''); setLoading(false) } })
-            .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
+        Promise.all([
+            api.get('/api/v1/settings/telegram'),
+            api.get('/api/v1/settings/telegram/pending')
+        ]).then(([subsRes, pendingRes]) => {
+            if (!alive) return
+            setSubs(subsRes.data)
+            setPending(pendingRes.data)
+            setError('')
+            setLoading(false)
+        }).catch(() => {
+            if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) }
+        })
         return () => { alive = false }
+    }
+
+    useEffect(() => {
+        return loadAll()
     }, [])
 
     function showToast(msg) {
@@ -50,8 +64,30 @@ export default function SettingsPage() {
     function handleDelete(id) {
         if (!window.confirm('Rostdan ham o\'chirasizmi?')) return
         api.delete(`/api/v1/settings/telegram/${id}`)
-            .then(() => setSubs(prev => prev.filter(s => s.id !== id)))
+            .then(() => {
+                setSubs(prev => prev.filter(s => s.id !== id))
+                setPending(prev => prev.filter(s => s.id !== id))
+            })
             .catch(() => showToast('O\'chirib bo\'lmadi'))
+    }
+
+    function handleApprove(id) {
+        api.patch(`/api/v1/settings/telegram/${id}/approve`)
+            .then(r => {
+                setPending(prev => prev.filter(s => s.id !== id))
+                setSubs(prev => [r.data, ...prev])
+                showToast('Tasdiqlandi!')
+            })
+            .catch(() => showToast('Xatolik'))
+    }
+
+    function handleReject(id) {
+        api.patch(`/api/v1/settings/telegram/${id}/reject`)
+            .then(() => {
+                setPending(prev => prev.filter(s => s.id !== id))
+                showToast('Rad etildi')
+            })
+            .catch(() => showToast('Xatolik'))
     }
 
     function handleTestDebt() {
@@ -100,13 +136,58 @@ export default function SettingsPage() {
 
             {/* Bot qo'llanma */}
             <div className="st-info-card">
-                <div className="st-info-title">Telegram ID ni qanday olish mumkin?</div>
+                <div className="st-info-title">Telegram orqali qanday ulaning?</div>
                 <ol className="st-info-steps">
                     <li>Telegramda <strong>@primestroy_pos_bot</strong> botini toping</li>
-                    <li><strong>/start</strong> yozing — bot sizning Chat ID ni xabar qiladi</li>
-                    <li>O'sha ID ni quyidagi formaga kiriting</li>
+                    <li><strong>/start</strong> yozing — so'rovingiz adminga yuboriladi</li>
+                    <li>Admin so'rovingizni tasdiqlaydi va xabarlar kela boshlaydi</li>
                 </ol>
             </div>
+
+            {/* Kutayotgan so'rovlar */}
+            {loading ? null : pending.length > 0 && (
+                <div className="st-card">
+                    <div className="st-card-header">
+                        <Clock size={15} style={{ color: '#f59e0b' }} />
+                        <h6>Kutayotgan so'rovlar</h6>
+                        <span className="st-pending-badge">{pending.length} ta</span>
+                    </div>
+                    <div className="st-sub-list">
+                        {pending.map(sub => (
+                            <div key={sub.id} className="st-sub-row">
+                                <div className="st-sub-info">
+                                    <div className="st-sub-name">
+                                        {sub.firstName || sub.name}
+                                        {sub.telegramUsername && (
+                                            <span className="st-sub-note" style={{ marginLeft: 6 }}>@{sub.telegramUsername}</span>
+                                        )}
+                                    </div>
+                                    <div className="st-sub-meta">
+                                        <code className="st-sub-id">{sub.chatId}</code>
+                                    </div>
+                                </div>
+                                <div className="st-sub-status">
+                                    <span className="badge-pending">Kutmoqda</span>
+                                </div>
+                                <div className="st-sub-actions">
+                                    <button className="st-approve-btn" title="Tasdiqlash" onClick={() => handleApprove(sub.id)}>
+                                        <Check size={13} style={{ display: 'inline', marginRight: 3 }} />
+                                        Tasdiqlash
+                                    </button>
+                                    <button className="st-reject-btn" title="Rad etish" onClick={() => handleReject(sub.id)}>
+                                        <X size={13} style={{ display: 'inline', marginRight: 3 }} />
+                                        Rad
+                                    </button>
+                                    <button className="st-icon-btn st-icon-btn--del" title="O'chirish"
+                                        onClick={() => handleDelete(sub.id)}>
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Qo'shish formasi */}
             <div className="st-card">
@@ -149,7 +230,7 @@ export default function SettingsPage() {
                 <div className="st-card-header">
                     <Send size={15} />
                     <h6>Obunachilар ro'yxati</h6>
-                    <span className="st-badge">{subs.filter(s => s.isActive).length} aktiv</span>
+                    <span className="st-badge">{subs.filter(s => s.isActive && s.status === 'ACTIVE').length} aktiv</span>
                 </div>
 
                 {loading ? (
