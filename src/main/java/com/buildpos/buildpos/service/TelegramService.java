@@ -3,6 +3,8 @@ package com.buildpos.buildpos.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,6 +25,9 @@ public class TelegramService {
 
     @Value("${telegram.bot.token:}")
     private String botToken;
+
+    @Value("${app.base-url:}")
+    private String baseUrl;
 
     /**
      * Barcha aktiv obunachilarga xabar yuboradi
@@ -63,5 +68,21 @@ public class TelegramService {
 
     public String getBotToken() {
         return botToken;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void registerWebhookOnStartup() {
+        if (botToken.isBlank() || baseUrl.isBlank()) {
+            log.info("Telegram webhook ro'yxatdan o'tkazilmadi: token yoki baseUrl yo'q");
+            return;
+        }
+        try {
+            String webhookUrl = baseUrl + "/api/telegram/webhook";
+            String apiUrl = "https://api.telegram.org/bot" + botToken + "/setWebhook?url=" + webhookUrl;
+            String result = restTemplate.postForObject(apiUrl, null, String.class);
+            log.info("Telegram webhook ro'yxatdan o'tkazildi: {}", result);
+        } catch (Exception e) {
+            log.warn("Telegram webhook ro'yxatdan o'tkazishda xato: {}", e.getMessage());
+        }
     }
 }
