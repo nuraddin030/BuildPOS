@@ -9,6 +9,7 @@ import com.buildpos.buildpos.repository.AuditLogRepository;
 import com.buildpos.buildpos.repository.UserRepository;
 import com.buildpos.buildpos.security.JwtUtil;
 import com.buildpos.buildpos.service.RefreshTokenService;
+import com.buildpos.buildpos.service.TelegramService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
     private final AuditLogRepository auditLogRepository;
+    private final TelegramService telegramService;
 
     @PostMapping("/login")
     @Operation(summary = "Tizimga kirish")
@@ -128,6 +130,21 @@ public class AuthController {
                     .userAgent(req.getHeader("User-Agent"))
                     .requestUri(req.getRequestURI())
                     .build());
+
+            if ("LOCKED".equals(action)) {
+                telegramService.sendToAll(String.format(
+                        "🔒 <b>Hisob bloklandi!</b>\n\n" +
+                        "👤 Foydalanuvchi: <code>%s</code>\n" +
+                        "🌐 IP: <code>%s</code>\n" +
+                        "⏱ %d daqiqaga bloklandi",
+                        username, ip, LOCK_MINUTES));
+            } else if ("LOGIN_FAIL".equals(action)) {
+                telegramService.sendToAll(String.format(
+                        "⚠️ <b>Noto'g'ri parol!</b>\n\n" +
+                        "👤 Foydalanuvchi: <code>%s</code>\n" +
+                        "🌐 IP: <code>%s</code>",
+                        username, ip));
+            }
         } catch (Exception ignored) {}
     }
 
