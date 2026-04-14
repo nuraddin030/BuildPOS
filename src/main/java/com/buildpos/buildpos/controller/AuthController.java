@@ -52,7 +52,10 @@ public class AuthController {
 
         // Foydalanuvchi mavjudligini va bloklanganligi tekshiramiz
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
-        if (user != null && user.isLocked()) {
+        boolean isPrivileged = user != null && user.getRole() != null &&
+                ("OWNER".equals(user.getRole().getName()) || "ADMIN".equals(user.getRole().getName()));
+
+        if (!isPrivileged && user != null && user.isLocked()) {
             long minutesLeft = ChronoUnit.MINUTES.between(LocalDateTime.now(), user.getLockedUntil()) + 1;
             saveAuthLog("LOCKED", request.getUsername(), ip, httpRequest);
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
@@ -71,8 +74,8 @@ public class AuthController {
                     )
             );
         } catch (BadCredentialsException | DisabledException e) {
-            // Noto'g'ri parol — urinishlar sonini oshirish
-            if (user != null) {
+            // Noto'g'ri parol — urinishlar sonini oshirish (OWNER/ADMIN uchun emas)
+            if (user != null && !isPrivileged) {
                 int attempts = user.getFailedAttempts() + 1;
                 user.setFailedAttempts(attempts);
                 if (attempts >= MAX_ATTEMPTS) {
