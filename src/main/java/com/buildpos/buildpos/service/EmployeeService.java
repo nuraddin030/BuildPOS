@@ -123,6 +123,14 @@ public class EmployeeService {
         return toResponse(userRepository.save(user));
     }
 
+    @Transactional
+    public EmployeeResponse unlock(Long id) {
+        User user = findById(id);
+        user.setFailedAttempts(0);
+        user.setLockedUntil(null);
+        return toResponse(userRepository.save(user));
+    }
+
     // ─────────────────────────────────────────
     // PERMISSION BERISH
     // ─────────────────────────────────────────
@@ -203,6 +211,8 @@ public class EmployeeService {
                 .phone(user.getPhone())
                 .roleName(roleName)
                 .isActive(user.getIsActive())
+                .isLocked(user.isLocked())
+                .lockedUntil(user.getLockedUntil())
                 .createdAt(user.getCreatedAt())
                 .permissionGroups(permissionGroups)
                 .roleId(user.getRole() != null ? user.getRole().getId() : null)

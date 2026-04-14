@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import {
     Users, Plus, Pencil, Lock, Unlock, X, AlertCircle,
     Loader2, Search, Shield, ShieldCheck, ShieldOff,
-    ChevronDown, ChevronRight, Trash2, Key, MoreVertical
+    ChevronDown, ChevronRight, Trash2, Key, MoreVertical, LockOpen
 } from 'lucide-react'
 import {
-    getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus,
+    getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, unlockEmployee,
     getEmployeeById, grantPermission, revokePermission,
     getPermissionGroups, createPermissionGroup, createPermission,
     deletePermission, deletePermissionGroup, getRoles
@@ -129,6 +129,11 @@ export default function EmployeesPage() {
 
     const handleToggle = async (emp) => {
         try { await toggleEmployeeStatus(emp.id); loadEmployees() }
+        catch (e) { alert(e.response?.data?.message || 'Xatolik') }
+    }
+
+    const handleUnlock = async (emp) => {
+        try { await unlockEmployee(emp.id); loadEmployees() }
         catch (e) { alert(e.response?.data?.message || 'Xatolik') }
     }
 
@@ -306,9 +311,16 @@ export default function EmployeesPage() {
                                                     }}>{emp.roleName || '—'}</span>
                                             </td>
                                             <td className="th-center">
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                                                     <span className={`status-badge ${emp.isActive ? 'status-active' : 'status-inactive'}`}>
                                                         {emp.isActive ? 'Faol' : 'Noaktiv'}
                                                     </span>
+                                                    {emp.isLocked && (
+                                                        <span className="status-badge" style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
+                                                            Bloklangan
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td>
                                                 <div className="action-group">
@@ -323,6 +335,13 @@ export default function EmployeesPage() {
                                                                     style={{ color: 'var(--info, #0891b2)' }}
                                                                     onClick={() => openPerms(emp)}>
                                                                 <Key size={14} />
+                                                            </button>
+                                                        )}
+                                                        {hasPermission('EMPLOYEES_EDIT') && emp.isLocked && (
+                                                            <button className="act-btn" title="Blokni ochish"
+                                                                    style={{ color: '#c2410c' }}
+                                                                    onClick={() => handleUnlock(emp)}>
+                                                                <LockOpen size={14} />
                                                             </button>
                                                         )}
                                                         {hasPermission('EMPLOYEES_EDIT') && (
@@ -353,6 +372,13 @@ export default function EmployeesPage() {
                                                                         <Key size={14} /> Permissionlar
                                                                     </button>
                                                                 )}
+                                                                {hasPermission('EMPLOYEES_EDIT') && emp.isLocked && (
+                                                                    <button className="act-btn" style={{ color: '#c2410c' }}
+                                                                            onClick={() => { handleUnlock(emp); setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                                        <LockOpen size={14} />
+                                                                        Blokni ochish
+                                                                    </button>
+                                                                )}
                                                                 {hasPermission('EMPLOYEES_EDIT') && (
                                                                     <button className={`act-btn ${emp.isActive ? 'act-lock' : ''}`}
                                                                             onClick={() => { handleToggle(emp); setOpenMenuId(null); setMenuAnchor(null) }}>
@@ -377,9 +403,16 @@ export default function EmployeesPage() {
                                     <div key={emp.id} className="emp-card">
                                         <div className="emp-card-top">
                                             <span className="emp-card-name">{emp.fullName}</span>
-                                            <span className={`status-badge ${emp.isActive ? 'status-active' : 'status-inactive'}`}>
-                                                {emp.isActive ? 'Faol' : 'Noaktiv'}
-                                            </span>
+                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                                <span className={`status-badge ${emp.isActive ? 'status-active' : 'status-inactive'}`}>
+                                                    {emp.isActive ? 'Faol' : 'Noaktiv'}
+                                                </span>
+                                                {emp.isLocked && (
+                                                    <span className="status-badge" style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
+                                                        Bloklangan
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="emp-card-meta">
                                             <span className="emp-card-username">@{emp.username}</span>
@@ -397,6 +430,13 @@ export default function EmployeesPage() {
                                                         style={{ color: 'var(--info, #0891b2)' }}
                                                         onClick={() => openPerms(emp)}>
                                                     <Key size={14} />
+                                                </button>
+                                            )}
+                                            {hasPermission('EMPLOYEES_EDIT') && emp.isLocked && (
+                                                <button className="act-btn" title="Blokni ochish"
+                                                        style={{ color: '#c2410c' }}
+                                                        onClick={() => handleUnlock(emp)}>
+                                                    <LockOpen size={14} />
                                                 </button>
                                             )}
                                             {hasPermission('EMPLOYEES_EDIT') && (

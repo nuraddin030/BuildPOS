@@ -15,6 +15,8 @@ public class EmployeeResponse {
     private String phone;
     private String roleName;
     private Boolean isActive;
+    private Boolean isLocked;
+    private LocalDateTime lockedUntil;
     private LocalDateTime createdAt;
     private Long roleId;
 

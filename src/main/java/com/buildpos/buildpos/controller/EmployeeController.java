@@ -70,6 +70,13 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.toggleStatus(id));
     }
 
+    @PatchMapping("/{id}/unlock")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "Hisob blokini ochish (failed_attempts reset)")
+    public ResponseEntity<EmployeeResponse> unlock(@PathVariable Long id) {
+        return ResponseEntity.ok(employeeService.unlock(id));
+    }
+
     @PostMapping("/{id}/permissions")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
     @Operation(summary = "Xodimga permission berish")

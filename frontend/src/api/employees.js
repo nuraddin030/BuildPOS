@@ -5,6 +5,7 @@ export const getEmployeeById = (id) => api.get(`/api/v1/employees/${id}`)
 export const createEmployee = (data) => api.post('/api/v1/employees', data)
 export const updateEmployee = (id, data) => api.put(`/api/v1/employees/${id}`, data)
 export const toggleEmployeeStatus = (id) => api.patch(`/api/v1/employees/${id}/toggle-status`)
+export const unlockEmployee = (id) => api.patch(`/api/v1/employees/${id}/unlock`)
 export const grantPermission = (id, data) => api.post(`/api/v1/employees/${id}/permissions`, data)
 export const revokePermission = (id, permissionId) => api.delete(`/api/v1/employees/${id}/permissions/${permissionId}`)
 
