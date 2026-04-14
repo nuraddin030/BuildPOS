@@ -149,7 +149,7 @@ export default function ReportsPage() {
                     <span className="rp-date-sep">—</span>
                     <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
                         className="rp-date-input" />
-                    <button className="btn-primary rp-load-btn" onClick={load}
+                    <button className="rp-load-btn" onClick={load}
                         disabled={!customFrom || !customTo}>
                         Ko'rsatish
                     </button>
