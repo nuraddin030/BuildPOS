@@ -9,7 +9,9 @@
 .env.local
 .env.production
 CLAUDE.md
+**/CLAUDE.md
 journal.md
+**/journal.md
 
 # --------------------------------
 # Java / Maven (Spring Boot)
