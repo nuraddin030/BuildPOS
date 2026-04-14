@@ -87,11 +87,11 @@ export default function SettingsPage() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-outline-primary" onClick={handleTestDebt}>
+                    <button className="btn-outline" onClick={handleTestDebt}>
                         <Send size={15} />
                         Nasiya test
                     </button>
-                    <button className="btn-outline-primary" onClick={handleTestStock}>
+                    <button className="btn-outline" onClick={handleTestStock}>
                         <Send size={15} />
                         Zaxira test
                     </button>
@@ -131,7 +131,7 @@ export default function SettingsPage() {
                             <input className="st-input" placeholder="Masalan: Bosh hisobchi"
                                 value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} />
                         </div>
-                        <button type="submit" className="btn-primary st-add-btn" disabled={saving || !form.name || !form.chatId}>
+                        <button type="submit" className="btn-save st-add-btn" disabled={saving || !form.name || !form.chatId}>
                             {saving ? <Loader2 size={15} className="spin" /> : <Plus size={15} />}
                             Qo'shish
                         </button>

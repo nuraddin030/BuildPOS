@@ -101,7 +101,7 @@ export default function AuditLogPage() {
                     onChange={e => { setFrom(e.target.value); setPage(0) }} />
                 <input type="date" className="al-input" value={to}
                     onChange={e => { setTo(e.target.value); setPage(0) }} />
-                <button className="btn-primary al-search-btn" onClick={handleSearch}>
+                <button className="btn-save al-search-btn" onClick={handleSearch}>
                     <Search size={15} /> Qidirish
                 </button>
             </div>
