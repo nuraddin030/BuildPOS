@@ -90,4 +90,12 @@ public class ExpenseController {
     public Map<String, Object> shiftTotal(@PathVariable Long shiftId) {
         return Map.of("total", service.getShiftTotal(shiftId));
     }
+
+    @GetMapping("/period-total")
+    @Operation(summary = "Davr bo'yicha harajatlar jami")
+    public Map<String, Object> periodTotal(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return Map.of("total", service.getPeriodTotal(from, to));
+    }
 }

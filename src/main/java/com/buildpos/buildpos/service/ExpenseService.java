@@ -88,6 +88,10 @@ public class ExpenseService {
         return expenseRepo.sumByShift(shiftId);
     }
 
+    public BigDecimal getPeriodTotal(LocalDate from, LocalDate to) {
+        return expenseRepo.sumByDateRange(from, to);
+    }
+
     private ExpenseResponse toDto(Expense e) {
         return ExpenseResponse.builder()
                 .id(e.getId())

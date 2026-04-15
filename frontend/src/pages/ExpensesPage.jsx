@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-    Receipt, Plus, Trash2, X, Loader2, Tag, Calendar, Filter,
-    RotateCcw, ChevronDown
+    Receipt, Plus, Trash2, X, Loader2, Tag, Calendar,
+    Filter, RotateCcw, ChevronDown, ChevronUp, Wallet,
 } from 'lucide-react'
 import api from '../api/api'
 import '../styles/ExpensesPage.css'
@@ -15,29 +15,163 @@ const fmtDate = (d) => {
     return `${day}.${m}.${y}`
 }
 
-const fmtDT = (dt) => {
-    if (!dt) return '—'
-    const d = new Date(dt)
-    return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-}
-
 function todayStr() {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function monthStartStr() {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+// ── Summary karta ──────────────────────────────────────────────
+function SummaryCard({ label, value, sub, color, icon: Icon }) {
+    return (
+        <div className="exp-sum-card" style={{ borderTop: `3px solid ${color}` }}>
+            <div className="exp-sum-icon" style={{ background: color + '18', color }}>
+                <Icon size={18} />
+            </div>
+            <div className="exp-sum-body">
+                <span className="exp-sum-label">{label}</span>
+                <span className="exp-sum-value">{fmt(value)} <span className="exp-sum-unit">UZS</span></span>
+                {sub != null && <span className="exp-sum-sub">{sub}</span>}
+            </div>
+        </div>
+    )
+}
+
+// ── Kategoriyalar modali ───────────────────────────────────────
+function CategoriesModal({ categories, onClose, onRefresh }) {
+    const [catName, setCatName]         = useState('')
+    const [catSaving, setCatSaving]     = useState(false)
+    const [confirmId, setConfirmId]     = useState(null)
+    const [deletingId, setDeletingId]   = useState(null)
+
+    const handleAdd = async (e) => {
+        e.preventDefault()
+        if (!catName.trim()) return
+        setCatSaving(true)
+        try {
+            await api.post('/api/v1/expenses/categories', { name: catName.trim() })
+            setCatName('')
+            onRefresh()
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setCatSaving(false)
+        }
+    }
+
+    const handleDelete = async (id) => {
+        setDeletingId(id)
+        try {
+            await api.delete(`/api/v1/expenses/categories/${id}`)
+            onRefresh()
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setDeletingId(null)
+            setConfirmId(null)
+        }
+    }
+
+    return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+            <div className="modal-box products-modal" style={{ maxWidth: 420 }}>
+                <div className="modal-header">
+                    <div className="modal-header-left">
+                        <div className="exp-modal-icon" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
+                            <Tag size={20} />
+                        </div>
+                        <div>
+                            <h3 className="modal-title">Kategoriyalar</h3>
+                            <p className="modal-subtitle">Harajat kategoriyalarini boshqarish</p>
+                        </div>
+                    </div>
+                    <button className="modal-close-btn" onClick={onClose}><X size={18} /></button>
+                </div>
+
+                <div className="modal-body">
+                    {/* Yangi kategoriya qo'shish */}
+                    <form onSubmit={handleAdd} className="exp-cat-add-row">
+                        <input
+                            type="text"
+                            className="modal-input"
+                            placeholder="Yangi kategoriya nomi..."
+                            value={catName}
+                            onChange={e => setCatName(e.target.value)}
+                            maxLength={100}
+                            autoFocus
+                        />
+                        <button type="submit" className="btn-save exp-cat-save-btn"
+                                disabled={catSaving || !catName.trim()}>
+                            {catSaving ? <Loader2 size={14} className="spin" /> : <Plus size={14} />}
+                            Qo'shish
+                        </button>
+                    </form>
+
+                    {/* Kategoriyalar ro'yxati */}
+                    <div className="exp-cat-modal-list">
+                        {categories.length === 0 ? (
+                            <div className="table-empty" style={{ padding: '20px 0' }}>
+                                <Tag size={28} strokeWidth={1} />
+                                <p>Kategoriya yo'q</p>
+                            </div>
+                        ) : categories.map(cat => (
+                            <div key={cat.id} className="exp-cat-modal-item">
+                                <div className="exp-cat-modal-name">
+                                    <span className="exp-cat-dot" />
+                                    {cat.name}
+                                </div>
+                                {confirmId === cat.id ? (
+                                    <div className="exp-cat-confirm-btns">
+                                        <button className="btn-cancel exp-cat-confirm-no"
+                                                onClick={() => setConfirmId(null)}>Yo'q</button>
+                                        <button className="btn-delete exp-cat-confirm-yes"
+                                                onClick={() => handleDelete(cat.id)}
+                                                disabled={deletingId === cat.id}>
+                                            {deletingId === cat.id
+                                                ? <Loader2 size={12} className="spin" />
+                                                : "Ha, o'chir"}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="exp-cat-del-btn"
+                                            onClick={() => setConfirmId(cat.id)}>
+                                        <Trash2 size={13} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="modal-footer">
+                    <button className="btn-save" onClick={onClose}>Yopish</button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ════════════════════════════════════════════════════════════════
+// Asosiy komponent
+// ════════════════════════════════════════════════════════════════
 export default function ExpensesPage() {
     const [categories, setCategories]   = useState([])
     const [expenses, setExpenses]       = useState([])
     const [todayTotal, setTodayTotal]   = useState(null)
+    const [monthTotal, setMonthTotal]   = useState(null)
     const [loading, setLoading]         = useState(false)
 
-    // Kategoriya qo'shish
-    const [catName, setCatName]         = useState('')
-    const [catSaving, setCatSaving]     = useState(false)
+    // Modallar
+    const [showAddModal, setShowAddModal]   = useState(false)
+    const [showCatModal, setShowCatModal]   = useState(false)
+    const [confirmId, setConfirmId]         = useState(null)
+    const [deletingId, setDeletingId]       = useState(null)
 
-    // Harajat qo'shish
-    const [showForm, setShowForm]       = useState(false)
+    // Harajat forma
     const [formDate, setFormDate]       = useState(todayStr())
     const [formCatId, setFormCatId]     = useState('')
     const [formAmount, setFormAmount]   = useState('')
@@ -48,16 +182,9 @@ export default function ExpensesPage() {
     const [filterFrom, setFilterFrom]   = useState('')
     const [filterTo, setFilterTo]       = useState('')
     const [filterCat, setFilterCat]     = useState('')
+    const [filterOpen, setFilterOpen]   = useState(false)
 
-    // O'chirish tasdiqlash
-    const [deletingId, setDeletingId]   = useState(null)
-    const [confirmId, setConfirmId]     = useState(null)
-
-    // Kategoriya o'chirish tasdiqlash
-    const [confirmCatId, setConfirmCatId] = useState(null)
-    const [deletingCatId, setDeletingCatId] = useState(null)
-
-    const [catOpen, setCatOpen]         = useState(false)
+    const hasFilter = filterFrom || filterTo || filterCat
 
     const loadCategories = useCallback(() => {
         api.get('/api/v1/expenses/categories').then(r => setCategories(r.data)).catch(console.error)
@@ -75,41 +202,23 @@ export default function ExpensesPage() {
             .finally(() => setLoading(false))
     }, [filterFrom, filterTo, filterCat])
 
-    const loadTodayTotal = useCallback(() => {
-        api.get('/api/v1/expenses/today-total').then(r => setTodayTotal(r.data.total)).catch(console.error)
+    const loadTotals = useCallback(() => {
+        api.get('/api/v1/expenses/today-total')
+            .then(r => setTodayTotal(r.data.total))
+            .catch(console.error)
+        const today = todayStr()
+        const monthStart = monthStartStr()
+        api.get(`/api/v1/expenses/period-total?from=${monthStart}&to=${today}`)
+            .then(r => setMonthTotal(r.data.total))
+            .catch(console.error)
     }, [])
 
     useEffect(() => { loadCategories() }, [loadCategories])
-    useEffect(() => { loadExpenses() }, [loadExpenses])
-    useEffect(() => { loadTodayTotal() }, [loadTodayTotal])
+    useEffect(() => { loadExpenses() },   [loadExpenses])
+    useEffect(() => { loadTotals() },     [loadTotals])
 
-    const handleAddCategory = async (e) => {
-        e.preventDefault()
-        if (!catName.trim()) return
-        setCatSaving(true)
-        try {
-            await api.post('/api/v1/expenses/categories', { name: catName.trim() })
-            setCatName('')
-            loadCategories()
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setCatSaving(false)
-        }
-    }
-
-    const handleDeleteCategory = async (id) => {
-        setDeletingCatId(id)
-        try {
-            await api.delete(`/api/v1/expenses/categories/${id}`)
-            setCategories(prev => prev.filter(c => c.id !== id))
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setDeletingCatId(null)
-            setConfirmCatId(null)
-        }
-    }
+    // Filtrlangan ro'yxatning jami
+    const filteredTotal = expenses.reduce((s, e) => s + Number(e.amount), 0)
 
     const handleAddExpense = async (e) => {
         e.preventDefault()
@@ -122,13 +231,13 @@ export default function ExpensesPage() {
                 amount:     formAmount,
                 note:       formNote || null,
             })
-            setShowForm(false)
+            setShowAddModal(false)
             setFormAmount('')
             setFormNote('')
             setFormDate(todayStr())
             setFormCatId('')
             loadExpenses()
-            loadTodayTotal()
+            loadTotals()
         } catch (err) {
             console.error(err)
         } finally {
@@ -141,7 +250,7 @@ export default function ExpensesPage() {
         try {
             await api.delete(`/api/v1/expenses/${id}`)
             setExpenses(prev => prev.filter(e => e.id !== id))
-            loadTodayTotal()
+            loadTotals()
         } catch (err) {
             console.error(err)
         } finally {
@@ -156,22 +265,10 @@ export default function ExpensesPage() {
         setFilterCat('')
     }
 
-    // Kategoriyalar bo'yicha kunlik jami (joriy filter bo'yicha)
-    const byCategory = categories
-        .map(cat => ({
-            name:   cat.name,
-            total:  expenses
-                .filter(e => e.categoryId === cat.id)
-                .reduce((s, e) => s + Number(e.amount), 0),
-        }))
-        .filter(c => c.total > 0)
-        .sort((a, b) => b.total - a.total)
-
-    const grandTotal = expenses.reduce((s, e) => s + Number(e.amount), 0)
-
     return (
         <div className="exp-wrapper">
-            {/* Header */}
+
+            {/* ── Header ─────────────────────────────────── */}
             <div className="products-header">
                 <div className="products-header-left">
                     <div className="page-icon-wrap" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
@@ -180,242 +277,221 @@ export default function ExpensesPage() {
                     <div>
                         <h1 className="page-title">
                             Harajatlar
+                            <span className="page-count">({expenses.length} ta)</span>
                         </h1>
                         <p className="page-subtitle">Kunlik xarajatlar va kategoriyalar</p>
                     </div>
                 </div>
                 <div className="products-header-right">
-                    {todayTotal != null && (
-                        <div className="exp-today-badge">
-                            <span className="exp-today-label">Bugun:</span>
-                            <span className="exp-today-value">{fmt(todayTotal)} UZS</span>
-                        </div>
-                    )}
-                    <button className="btn-add" onClick={() => setShowForm(true)}>
+                    <button className="btn-reset" onClick={() => setShowCatModal(true)}>
+                        <Tag size={14} /> Kategoriyalar
+                    </button>
+                    <button className="btn-add" onClick={() => setShowAddModal(true)}>
                         <Plus size={16} /> Harajat qo'shish
                     </button>
                 </div>
             </div>
 
-            <div className="exp-layout">
-                {/* Chap panel — kategoriyalar */}
-                <div className="exp-sidebar-panel">
-                    {/* Kategoriyalar boshqaruvi */}
-                    <div className="exp-cat-block">
-                        <button
-                            className="exp-cat-toggle"
-                            onClick={() => setCatOpen(o => !o)}
-                        >
-                            <span className="exp-cat-toggle-left">
-                                <Tag size={14} /> Kategoriyalar
-                                <span className="exp-cat-count">{categories.length}</span>
-                            </span>
-                            <ChevronDown size={14} className={`exp-chevron ${catOpen ? 'open' : ''}`} />
-                        </button>
+            {/* ── Summary kartalar ───────────────────────── */}
+            <div className="exp-sum-grid">
+                <SummaryCard
+                    label="Bugun"
+                    value={todayTotal}
+                    icon={Receipt}
+                    color="#ef4444"
+                    sub="Bugungi harajatlar"
+                />
+                <SummaryCard
+                    label="Joriy oy"
+                    value={monthTotal}
+                    icon={Calendar}
+                    color="#f59e0b"
+                    sub="Shu oy davomida"
+                />
+                {hasFilter && (
+                    <SummaryCard
+                        label="Filtr bo'yicha"
+                        value={filteredTotal}
+                        icon={Wallet}
+                        color="#2563eb"
+                        sub={`${expenses.length} ta harajat`}
+                    />
+                )}
+            </div>
 
-                        {catOpen && (
-                            <div className="exp-cat-body">
-                                <form onSubmit={handleAddCategory} className="exp-cat-form">
-                                    <input
-                                        type="text"
-                                        className="exp-cat-input"
-                                        placeholder="Yangi kategoriya nomi"
-                                        value={catName}
-                                        onChange={e => setCatName(e.target.value)}
-                                        maxLength={100}
-                                    />
-                                    <button type="submit" className="exp-cat-add-btn" disabled={catSaving || !catName.trim()}>
-                                        {catSaving ? <Loader2 size={14} className="spin" /> : <Plus size={14} />}
-                                    </button>
-                                </form>
+            {/* ── Filter bar ─────────────────────────────── */}
+            <div className="filter-bar exp-filter-bar">
+                <button
+                    className={`exp-filter-toggle ${filterOpen || hasFilter ? 'active' : ''}`}
+                    onClick={() => setFilterOpen(o => !o)}
+                >
+                    <Filter size={14} />
+                    Filtr
+                    {hasFilter && <span className="exp-filter-dot" />}
+                    {filterOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
 
-                                <div className="exp-cat-list">
-                                    {categories.map(cat => (
-                                        <div key={cat.id} className="exp-cat-item">
-                                            <span className="exp-cat-name">{cat.name}</span>
-                                            <button
-                                                className="exp-cat-del"
-                                                onClick={() => setConfirmCatId(cat.id)}
-                                                disabled={deletingCatId === cat.id}
-                                            >
-                                                {deletingCatId === cat.id
-                                                    ? <Loader2 size={12} className="spin" />
-                                                    : <Trash2 size={12} />}
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {categories.length === 0 && (
-                                        <div className="exp-cat-empty">Kategoriya yo'q</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Kategoriyalar bo'yicha jami */}
-                    {byCategory.length > 0 && (
-                        <div className="exp-summary-block">
-                            <div className="exp-summary-title">Jami (filtr bo'yicha)</div>
-                            {byCategory.map(c => (
-                                <div key={c.name} className="exp-summary-row">
-                                    <span className="exp-summary-name">{c.name}</span>
-                                    <span className="exp-summary-amount">{fmt(c.total)} UZS</span>
-                                </div>
-                            ))}
-                            <div className="exp-summary-total">
-                                <span>Hammasi</span>
-                                <span>{fmt(grandTotal)} UZS</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* O'ng panel — harajatlar jadvali */}
-                <div className="exp-main-panel">
-                    {/* Filter */}
-                    <div className="filter-bar exp-filter-bar">
-                        <div className="exp-date-inputs">
-                            <Calendar size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                {(filterOpen || hasFilter) && (
+                    <div className="exp-filter-fields">
+                        <div className="exp-filter-date-group">
+                            <Calendar size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                             <input type="date" className="filter-search"
                                    value={filterFrom}
-                                   onChange={e => setFilterFrom(e.target.value)}
-                                   placeholder="Boshlanish" />
+                                   onChange={e => setFilterFrom(e.target.value)} />
                             <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>—</span>
                             <input type="date" className="filter-search"
                                    value={filterTo}
-                                   onChange={e => setFilterTo(e.target.value)}
-                                   placeholder="Tugash" />
+                                   onChange={e => setFilterTo(e.target.value)} />
                         </div>
-                        <div className="exp-filter-select-wrap">
-                            <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-                            <select className="filter-search exp-cat-select"
-                                    value={filterCat}
-                                    onChange={e => setFilterCat(e.target.value)}>
-                                <option value="">Barcha kategoriyalar</option>
-                                {categories.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <button className="btn-reset" onClick={handleReset}>
-                            <RotateCcw size={14} /> Tozalash
-                        </button>
-                    </div>
-
-                    {/* Jadval */}
-                    <div className="table-card">
-                        {loading ? (
-                            <div className="table-loading">
-                                <Loader2 size={28} className="spin" />
-                                <p>Yuklanmoqda...</p>
-                            </div>
-                        ) : expenses.length === 0 ? (
-                            <div className="table-empty">
-                                <Receipt size={40} strokeWidth={1} />
-                                <p>Harajatlar topilmadi</p>
-                            </div>
-                        ) : (
-                            <>
-                            <div className="exp-table-wrap">
-                                <table className="ptable">
-                                    <thead>
-                                    <tr>
-                                        <th className="th-num">#</th>
-                                        <th>Sana</th>
-                                        <th>Kategoriya</th>
-                                        <th>Izoh</th>
-                                        <th>Qo'shgan</th>
-                                        <th className="th-right">Summa</th>
-                                        <th className="th-center">Amallar</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {expenses.map((e, i) => (
-                                        <tr key={e.id}>
-                                            <td className="cell-num">{i + 1}</td>
-                                            <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(e.date)}</td>
-                                            <td>
-                                                {e.categoryName && e.categoryName !== '—'
-                                                    ? <span className="exp-cat-badge">{e.categoryName}</span>
-                                                    : <span className="cell-muted">—</span>
-                                                }
-                                            </td>
-                                            <td style={{ maxWidth: 200 }}>
-                                                <span className="cell-muted" style={{ fontSize: 13 }}>
-                                                    {e.note || '—'}
-                                                </span>
-                                            </td>
-                                            <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                                {e.createdByName || '—'}
-                                            </td>
-                                            <td className="th-right">
-                                                <span style={{ fontWeight: 700, color: '#ef4444' }}>
-                                                    {fmt(e.amount)} UZS
-                                                </span>
-                                            </td>
-                                            <td className="th-center">
-                                                <button
-                                                    className="act-btn act-del"
-                                                    onClick={() => setConfirmId(e.id)}
-                                                    disabled={deletingId === e.id}
-                                                >
-                                                    {deletingId === e.id
-                                                        ? <Loader2 size={13} className="spin" />
-                                                        : <Trash2 size={13} />}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Mobil kard ko'rinishi */}
-                            <div className="exp-cards">
-                                {expenses.map((e) => (
-                                    <div key={e.id} className="exp-card">
-                                        <div className="exp-card-top">
-                                            <div className="exp-card-left">
-                                                <span className="exp-card-date">{fmtDate(e.date)}</span>
-                                                {e.categoryName && e.categoryName !== '—' && (
-                                                    <span className="exp-cat-badge">{e.categoryName}</span>
-                                                )}
-                                            </div>
-                                            <span className="exp-card-amount">{fmt(e.amount)} UZS</span>
-                                        </div>
-                                        {e.note && <div className="exp-card-note">{e.note}</div>}
-                                        <div className="exp-card-footer">
-                                            <span className="exp-card-by">{e.createdByName}</span>
-                                            <button
-                                                className="act-btn act-del"
-                                                onClick={() => setConfirmId(e.id)}
-                                                disabled={deletingId === e.id}
-                                            >
-                                                {deletingId === e.id
-                                                    ? <Loader2 size={13} className="spin" />
-                                                    : <Trash2 size={13} />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            </>
+                        <select className="filter-search exp-cat-select"
+                                value={filterCat}
+                                onChange={e => setFilterCat(e.target.value)}>
+                            <option value="">Barcha kategoriyalar</option>
+                            {categories.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        {hasFilter && (
+                            <button className="btn-reset" onClick={handleReset}>
+                                <RotateCcw size={13} /> Tozalash
+                            </button>
                         )}
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Harajat qo'shish modali */}
-            {showForm && (
-                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
+            {/* ── Jadval ─────────────────────────────────── */}
+            <div className="table-card">
+                {loading ? (
+                    <div className="table-loading">
+                        <Loader2 size={28} className="spin" />
+                        <p>Yuklanmoqda...</p>
+                    </div>
+                ) : expenses.length === 0 ? (
+                    <div className="table-empty">
+                        <Receipt size={44} strokeWidth={1} />
+                        <p>{hasFilter ? 'Filtr bo\'yicha harajat topilmadi' : 'Harajatlar yo\'q'}</p>
+                        <button className="btn-add" onClick={() => setShowAddModal(true)}>
+                            <Plus size={14} /> Birinchi harajatni qo'shish
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                    {/* Desktop jadval */}
+                    <div className="exp-table-wrap">
+                        <table className="ptable">
+                            <thead>
+                            <tr>
+                                <th className="th-num">#</th>
+                                <th>Sana</th>
+                                <th>Kategoriya</th>
+                                <th>Izoh</th>
+                                <th style={{ fontSize: 12, color: 'var(--text-muted)' }}>Qo'shgan</th>
+                                <th className="th-right">Summa</th>
+                                <th className="th-center" style={{ width: 60 }}></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {expenses.map((e, i) => (
+                                <tr key={e.id}>
+                                    <td className="cell-num">{i + 1}</td>
+                                    <td style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{fmtDate(e.date)}</td>
+                                    <td>
+                                        {e.categoryName && e.categoryName !== '—'
+                                            ? <span className="exp-cat-badge">{e.categoryName}</span>
+                                            : <span className="cell-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span className="cell-muted" style={{ fontSize: 13 }}>
+                                            {e.note || '—'}
+                                        </span>
+                                    </td>
+                                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                        {e.createdByName || '—'}
+                                    </td>
+                                    <td className="th-right">
+                                        <span style={{ fontWeight: 700, color: '#ef4444' }}>
+                                            {fmt(e.amount)} UZS
+                                        </span>
+                                    </td>
+                                    <td className="th-center">
+                                        <button
+                                            className="act-btn act-del"
+                                            onClick={() => setConfirmId(e.id)}
+                                            disabled={deletingId === e.id}
+                                            title="O'chirish"
+                                        >
+                                            {deletingId === e.id
+                                                ? <Loader2 size={13} className="spin" />
+                                                : <Trash2 size={13} />}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                            <tfoot>
+                            <tr className="exp-table-footer">
+                                <td colSpan={5} style={{ textAlign: 'right', fontSize: 13, color: 'var(--text-muted)', paddingRight: 8 }}>
+                                    Jami:
+                                </td>
+                                <td className="th-right" style={{ fontWeight: 700, fontSize: 15, color: '#ef4444' }}>
+                                    {fmt(filteredTotal)} UZS
+                                </td>
+                                <td />
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {/* Mobil kartalar */}
+                    <div className="exp-cards">
+                        {expenses.map((e) => (
+                            <div key={e.id} className="exp-card">
+                                <div className="exp-card-row">
+                                    <div className="exp-card-left">
+                                        <span className="exp-card-date">{fmtDate(e.date)}</span>
+                                        {e.categoryName && e.categoryName !== '—' && (
+                                            <span className="exp-cat-badge">{e.categoryName}</span>
+                                        )}
+                                    </div>
+                                    <span className="exp-card-amount">{fmt(e.amount)} UZS</span>
+                                </div>
+                                {e.note && (
+                                    <div className="exp-card-note">{e.note}</div>
+                                )}
+                                <div className="exp-card-footer">
+                                    <span className="exp-card-by">{e.createdByName || '—'}</span>
+                                    <button
+                                        className="act-btn act-del"
+                                        onClick={() => setConfirmId(e.id)}
+                                        disabled={deletingId === e.id}
+                                    >
+                                        {deletingId === e.id
+                                            ? <Loader2 size={13} className="spin" />
+                                            : <Trash2 size={13} />}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Mobil jami */}
+                        <div className="exp-cards-total">
+                            <span>Jami:</span>
+                            <span style={{ color: '#ef4444', fontWeight: 700 }}>{fmt(filteredTotal)} UZS</span>
+                        </div>
+                    </div>
+                    </>
+                )}
+            </div>
+
+            {/* ══ Harajat qo'shish modali ══════════════════ */}
+            {showAddModal && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
                     <div className="modal-box products-modal">
                         <div className="modal-header">
                             <div className="modal-header-left">
-                                <div style={{
-                                    width: 40, height: 40, borderRadius: 12,
-                                    background: 'rgba(245,158,11,0.1)', color: '#f59e0b',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                }}>
+                                <div className="exp-modal-icon" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
                                     <Receipt size={20} />
                                 </div>
                                 <div>
@@ -423,63 +499,69 @@ export default function ExpensesPage() {
                                     <p className="modal-subtitle">Yangi xarajatni kiritish</p>
                                 </div>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setShowForm(false)}>
+                            <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>
                                 <X size={18} />
                             </button>
                         </div>
                         <form onSubmit={handleAddExpense}>
                             <div className="modal-body">
-                                <div className="modal-field">
-                                    <label className="modal-label">Sana</label>
-                                    <input
-                                        type="date"
-                                        className="modal-input"
-                                        value={formDate}
-                                        onChange={e => setFormDate(e.target.value)}
-                                    />
-                                </div>
-                                <div className="modal-field">
-                                    <label className="modal-label">Kategoriya</label>
-                                    <select
-                                        className="modal-input"
-                                        value={formCatId}
-                                        onChange={e => setFormCatId(e.target.value)}
-                                    >
-                                        <option value="">Kategoriyasiz</option>
-                                        {categories.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="modal-field">
-                                    <label className="modal-label">Summa (UZS) *</label>
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        className="modal-input"
-                                        placeholder="Masalan: 50000"
-                                        value={formAmount}
-                                        onChange={e => setFormAmount(e.target.value.replace(/\D/g, ''))}
-                                        required
-                                        autoFocus
-                                    />
-                                </div>
-                                <div className="modal-field">
-                                    <label className="modal-label">Izoh</label>
-                                    <input
-                                        type="text"
-                                        className="modal-input"
-                                        placeholder="Ixtiyoriy"
-                                        value={formNote}
-                                        onChange={e => setFormNote(e.target.value)}
-                                        maxLength={500}
-                                    />
+                                <div className="exp-form-grid">
+                                    <div className="modal-field">
+                                        <label className="modal-label">Summa (UZS) *</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            className="modal-input exp-amount-input"
+                                            placeholder="0"
+                                            value={formAmount ? fmt(formAmount) : ''}
+                                            onChange={e => setFormAmount(e.target.value.replace(/\D/g, ''))}
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="modal-field">
+                                        <label className="modal-label">Kategoriya</label>
+                                        <select
+                                            className="modal-input"
+                                            value={formCatId}
+                                            onChange={e => setFormCatId(e.target.value)}
+                                        >
+                                            <option value="">Kategoriyasiz</option>
+                                            {categories.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="modal-field">
+                                        <label className="modal-label">Sana</label>
+                                        <input
+                                            type="date"
+                                            className="modal-input"
+                                            value={formDate}
+                                            onChange={e => setFormDate(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="modal-field">
+                                        <label className="modal-label">Izoh</label>
+                                        <input
+                                            type="text"
+                                            className="modal-input"
+                                            placeholder="Ixtiyoriy..."
+                                            value={formNote}
+                                            onChange={e => setFormNote(e.target.value)}
+                                            maxLength={500}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn-cancel" onClick={() => setShowForm(false)}>Bekor</button>
+                                <button type="button" className="btn-cancel" onClick={() => setShowAddModal(false)}>
+                                    Bekor
+                                </button>
                                 <button type="submit" className="btn-save" disabled={formSaving || !formAmount}>
-                                    {formSaving ? <><Loader2 size={14} className="spin" /> Saqlanmoqda...</> : 'Saqlash'}
+                                    {formSaving
+                                        ? <><Loader2 size={14} className="spin" /> Saqlanmoqda...</>
+                                        : 'Saqlash'}
                                 </button>
                             </div>
                         </form>
@@ -487,18 +569,23 @@ export default function ExpensesPage() {
                 </div>
             )}
 
-            {/* Harajat o'chirish tasdiqlash */}
+            {/* ══ Kategoriyalar modali ══════════════════════ */}
+            {showCatModal && (
+                <CategoriesModal
+                    categories={categories}
+                    onClose={() => setShowCatModal(false)}
+                    onRefresh={loadCategories}
+                />
+            )}
+
+            {/* ══ O'chirish tasdiqlash modali ═══════════════ */}
             {confirmId && (
                 <div className="modal-overlay" onClick={() => setConfirmId(null)}>
                     <div className="modal-box products-modal" onClick={e => e.stopPropagation()}
                          style={{ maxWidth: 380 }}>
-                        <div className="modal-body" style={{ textAlign: 'center', padding: '24px 24px 16px' }}>
-                            <div style={{
-                                width: 52, height: 52, borderRadius: 16, background: 'rgba(239,68,68,0.1)',
-                                color: '#ef4444', display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', margin: '0 auto 16px'
-                            }}>
-                                <Trash2 size={24} />
+                        <div className="modal-body" style={{ textAlign: 'center', padding: '28px 24px 16px' }}>
+                            <div className="exp-del-icon">
+                                <Trash2 size={26} />
                             </div>
                             <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>O'chirishni tasdiqlang</h3>
                             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
@@ -511,38 +598,6 @@ export default function ExpensesPage() {
                                     onClick={() => handleDeleteExpense(confirmId)}
                                     disabled={deletingId === confirmId}>
                                 {deletingId === confirmId
-                                    ? <><Loader2 size={14} className="spin" /> O'chirilmoqda...</>
-                                    : "O'chirish"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Kategoriya o'chirish tasdiqlash */}
-            {confirmCatId && (
-                <div className="modal-overlay" onClick={() => setConfirmCatId(null)}>
-                    <div className="modal-box products-modal" onClick={e => e.stopPropagation()}
-                         style={{ maxWidth: 380 }}>
-                        <div className="modal-body" style={{ textAlign: 'center', padding: '24px 24px 16px' }}>
-                            <div style={{
-                                width: 52, height: 52, borderRadius: 16, background: 'rgba(239,68,68,0.1)',
-                                color: '#ef4444', display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', margin: '0 auto 16px'
-                            }}>
-                                <Tag size={24} />
-                            </div>
-                            <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>Kategoriyani o'chirish</h3>
-                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>
-                                Bu kategoriya o'chiriladi. Unga bog'liq harajatlar kategoriyasiz qoladi.
-                            </p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setConfirmCatId(null)}>Bekor</button>
-                            <button className="btn-delete"
-                                    onClick={() => handleDeleteCategory(confirmCatId)}
-                                    disabled={deletingCatId === confirmCatId}>
-                                {deletingCatId === confirmCatId
                                     ? <><Loader2 size={14} className="spin" /> O'chirilmoqda...</>
                                     : "O'chirish"}
                             </button>
