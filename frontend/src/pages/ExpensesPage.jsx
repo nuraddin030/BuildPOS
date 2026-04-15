@@ -28,15 +28,15 @@ function monthStartStr() {
 // ── Summary karta ──────────────────────────────────────────────
 function SummaryCard({ label, value, sub, color, icon: Icon }) {
     return (
-        <div className="exp-sum-card" style={{ borderTop: `3px solid ${color}` }}>
-            <div className="exp-sum-icon" style={{ background: color + '18', color }}>
-                <Icon size={18} />
-            </div>
-            <div className="exp-sum-body">
+        <div className="exp-sum-card">
+            <div className="exp-sum-card-top">
+                <div className="exp-sum-icon" style={{ background: color + '18', color }}>
+                    <Icon size={18} />
+                </div>
                 <span className="exp-sum-label">{label}</span>
-                <span className="exp-sum-value">{fmt(value)} <span className="exp-sum-unit">UZS</span></span>
-                {sub != null && <span className="exp-sum-sub">{sub}</span>}
             </div>
+            <div className="exp-sum-value">{fmt(value)} <span className="exp-sum-unit">UZS</span></div>
+            {sub != null && <div className="exp-sum-sub">{sub}</div>}
         </div>
     )
 }

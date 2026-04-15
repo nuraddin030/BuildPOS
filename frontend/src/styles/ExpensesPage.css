@@ -11,23 +11,27 @@
 /* ── Summary kartalar ───────────────────────── */
 .exp-sum-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
 }
 
 .exp-sum-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.exp-sum-card-top {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .exp-sum-icon {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -35,28 +39,21 @@
     flex-shrink: 0;
 }
 
-.exp-sum-body {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
 .exp-sum-label {
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .exp-sum-value {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: var(--text);
-    white-space: nowrap;
+    margin-top: 2px;
 }
 
 .exp-sum-unit {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 400;
     color: var(--text-muted);
 }
@@ -64,6 +61,7 @@
 .exp-sum-sub {
     font-size: 11px;
     color: var(--text-muted);
+    margin-top: 4px;
 }
 
 /* ── Filter bar ─────────────────────────────── */
@@ -347,13 +345,15 @@
 }
 
 /* ── Responsive ─────────────────────────────── */
+@media (max-width: 900px) {
+    .exp-sum-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
     .exp-form-grid {
         grid-template-columns: 1fr;
-    }
-
-    .exp-sum-grid {
-        grid-template-columns: 1fr 1fr;
     }
 
     .exp-table-wrap table {
