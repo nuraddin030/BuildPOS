@@ -136,7 +136,7 @@ public class AuthController {
                     .build());
 
             String device = parseDevice(ua);
-            String time   = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Tashkent"))
+            String time   = java.time.LocalTime.now()
                     .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
 
             String msg = switch (action) {

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -29,7 +28,7 @@ public class DebtReminderScheduler {
     public void sendDailyDebtReminder() {
         log.info("Kunlik nasiya eslatmasi yuborilmoqda...");
 
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Tashkent"));
+        LocalDate today = LocalDate.now();
         long overdueCount = debtRepository.countOverdueDebts(today);
         BigDecimal overdueTotal = debtRepository.sumOverdueDebtAmount(today);
 
