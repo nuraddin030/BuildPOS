@@ -37,7 +37,7 @@ public class LowStockNotifier {
 
     private String buildMessage(long count, List<Object[]> items) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("⚠️ <b>Kam zaxira ogohlantirishи</b>\n\n"));
+        sb.append(String.format("⚠️ <b>Kam zaxira ogohlantirishi</b>\n\n"));
         sb.append(String.format("Jami <b>%d ta</b> mahsulot minimal darajadan kam:\n\n", count));
 
         for (Object[] row : items) {
@@ -55,7 +55,7 @@ public class LowStockNotifier {
             sb.append(String.format("...va yana %d ta mahsulot\n\n", count - 5));
         }
 
-        sb.append("👉 To'ldirish uchun POS tizimini oching.");
+        sb.append("👉 <a href=\"https://primestroy.uz/inventory\">Inventarizatsiya bo'limini ochish</a>");
         return sb.toString();
     }
 

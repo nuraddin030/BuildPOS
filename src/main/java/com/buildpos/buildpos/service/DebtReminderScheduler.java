@@ -56,7 +56,7 @@ public class DebtReminderScheduler {
                 📋 <b>Jami ochiq nasiyalar:</b> %d ta
                    Summa: <b>%s UZS</b>
 
-                👉 Tafsilot uchun POS tizimini oching.""",
+                👉 <a href="https://primestroy.uz/debts">Nasiyalar bo'limini ochish</a>""",
                 todayStr,
                 overdueIcon, overdueLabel,
                 openCount,
