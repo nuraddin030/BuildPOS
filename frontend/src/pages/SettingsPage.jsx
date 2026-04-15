@@ -11,6 +11,7 @@ export default function SettingsPage() {
     const [form,    setForm]    = useState({ name: '', chatId: '', note: '' })
     const [saving,  setSaving]  = useState(false)
     const [toast,   setToast]   = useState('')
+    const [confirmId, setConfirmId] = useState(null)
 
     function loadAll() {
         let alive = true
@@ -62,7 +63,12 @@ export default function SettingsPage() {
     }
 
     function handleDelete(id) {
-        if (!window.confirm('Rostdan ham o\'chirasizmi?')) return
+        setConfirmId(id)
+    }
+
+    function confirmDelete() {
+        const id = confirmId
+        setConfirmId(null)
         api.delete(`/api/v1/settings/telegram/${id}`)
             .then(() => {
                 setSubs(prev => prev.filter(s => s.id !== id))
@@ -108,6 +114,24 @@ export default function SettingsPage() {
                 <div className="st-toast">
                     <CheckCircle size={15} />
                     {toast}
+                </div>
+            )}
+
+            {confirmId !== null && (
+                <div className="st-modal-overlay" onClick={() => setConfirmId(null)}>
+                    <div className="st-modal" onClick={e => e.stopPropagation()}>
+                        <div className="st-modal-icon">
+                            <Trash2 size={22} />
+                        </div>
+                        <h6 className="st-modal-title">O'chirishni tasdiqlang</h6>
+                        <p className="st-modal-text">Bu obunachini o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.</p>
+                        <div className="st-modal-actions">
+                            <button className="btn-outline" onClick={() => setConfirmId(null)}>Bekor qilish</button>
+                            <button className="st-modal-del-btn" onClick={confirmDelete}>
+                                <Trash2 size={14} /> O'chirish
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
