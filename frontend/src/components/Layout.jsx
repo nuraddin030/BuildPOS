@@ -28,7 +28,7 @@ import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck, BookOpen, Cog
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
@@ -38,26 +38,61 @@ import '../i18n.js'
 
 
 // permission: null => barcha foydalanuvchilar ko'radi (OWNER/ADMIN ham)
+// Guruhsiz (yuqorida alohida)
+const topNavItems = [
+    { path: '/',        key: 'dashboard', icon: LayoutDashboard, permission: 'DASHBOARD_VIEW' },
+    { path: '/cashier', key: 'cashier',   icon: ShoppingCart,    permission: 'SALES_CREATE' },
+]
+
+// Guruhlangan nav itemlar
+const navGroups = [
+    {
+        labelKey: 'nav.group.sales',
+        icon: ShoppingBag,
+        items: [
+            { path: '/sales',     key: 'sales',     icon: ShoppingBag, permission: 'SALES_VIEW' },
+            { path: '/debts',     key: 'debts',     icon: CreditCard,  permission: 'CUSTOMERS_DEBT_VIEW' },
+            { path: '/customers', key: 'customers', icon: Users,       permission: 'CUSTOMERS_VIEW' },
+            { path: '/shifts',    key: 'shifts',    icon: BarChart2,   permission: 'SHIFTS_VIEW' },
+            { path: '/reports',   key: 'reports',   icon: TrendingUp,  permission: 'REPORTS_VIEW' },
+        ]
+    },
+    {
+        labelKey: 'nav.group.warehouse',
+        icon: Package,
+        items: [
+            { path: '/products',        key: 'products',        icon: Package,       permission: 'PRODUCTS_VIEW' },
+            { path: '/purchases',       key: 'purchases',       icon: Truck,         permission: 'PURCHASES_VIEW' },
+            { path: '/inventory',       key: 'inventory',       icon: ClipboardList, permission: 'INVENTORY_VIEW' },
+            { path: '/stock-movements', key: 'stock-movements', icon: ArrowLeftRight, permission: 'STOCK_VIEW' },
+            { path: '/warehouses',      key: 'warehouses',      icon: Warehouse,     permission: 'WAREHOUSES_VIEW' },
+        ]
+    },
+    {
+        labelKey: 'nav.group.reference',
+        icon: BookOpen,
+        items: [
+            { path: '/categories', key: 'categories', icon: FolderTree, permission: 'CATEGORIES_VIEW' },
+            { path: '/units',      key: 'units',      icon: Ruler,      permission: 'UNITS_VIEW' },
+            { path: '/suppliers',  key: 'suppliers',  icon: Factory,    permission: 'SUPPLIERS_VIEW' },
+            { path: '/partners',   key: 'partners',   icon: Handshake,  permission: 'PARTNERS_VIEW' },
+        ]
+    },
+    {
+        labelKey: 'nav.group.system',
+        icon: Cog,
+        items: [
+            { path: '/employees', key: 'employees', icon: UserCog,    permission: 'EMPLOYEES_VIEW' },
+            { path: '/audit-log', key: 'audit-log', icon: ShieldCheck, permission: 'ADMIN' },
+            { path: '/settings',  key: 'settings',  icon: Settings,    permission: 'ADMIN' },
+        ]
+    },
+]
+
+// Barcha itemlar (ruxsat filtri uchun)
 const navItems = [
-    { path: '/',           key: 'dashboard',  icon: LayoutDashboard, permission: 'DASHBOARD_VIEW' },
-    { path: '/cashier',    key: 'cashier',    icon: ShoppingCart,    permission: 'SALES_CREATE' },
-    { path: '/sales',      key: 'sales',      icon: ShoppingBag,     permission: 'SALES_VIEW' },
-    { path: '/debts',      key: 'debts',      icon: CreditCard,      permission: 'CUSTOMERS_DEBT_VIEW' },
-    { path: '/products',   key: 'products',   icon: Package,         permission: 'PRODUCTS_VIEW' },
-    { path: '/customers',  key: 'customers',  icon: Users,           permission: 'CUSTOMERS_VIEW' },
-    { path: '/shifts',     key: 'shifts',         icon: BarChart2,   permission: 'SHIFTS_VIEW'},
-    { path: '/purchases',  key: 'purchases',  icon: Truck,           permission: 'PURCHASES_VIEW' },
-    { path: '/suppliers',  key: 'suppliers',  icon: Factory,         permission: 'SUPPLIERS_VIEW' },
-    { path: '/warehouses', key: 'warehouses', icon: Warehouse,       permission: 'WAREHOUSES_VIEW' },
-    { path: '/reports',        key: 'reports',          icon: TrendingUp,     permission: 'REPORTS_VIEW' },
-    { path: '/inventory',      key: 'inventory',        icon: ClipboardList,  permission: 'INVENTORY_VIEW' },
-    { path: '/stock-movements', key: 'stock-movements', icon: ArrowLeftRight, permission: 'STOCK_VIEW' },
-    { path: '/categories', key: 'categories', icon: FolderTree,      permission: 'CATEGORIES_VIEW' },
-    { path: '/employees',  key: 'employees',  icon: UserCog,         permission: 'EMPLOYEES_VIEW' },
-    { path: '/partners',   key: 'partners',   icon: Handshake,       permission: 'PARTNERS_VIEW' },
-    { path: '/units',      key: 'units',      icon: Ruler,           permission: 'UNITS_VIEW' },
-    { path: '/audit-log',  key: 'audit-log',  icon: ShieldCheck,     permission: 'ADMIN' },
-    { path: '/settings',   key: 'settings',   icon: Settings,        permission: 'ADMIN' },
+    ...topNavItems,
+    ...navGroups.flatMap(g => g.items),
 ]
 
 // Ruxsat yo'q sahifa
@@ -157,6 +192,20 @@ export default function Layout() {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
+    // Guruh ochiq/yopiq holati — localStorage da saqlanadi
+    const [collapsedGroups, setCollapsedGroups] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('sidebar_collapsed') || '{}') }
+        catch { return {} }
+    })
+
+    const toggleGroup = (key) => {
+        setCollapsedGroups(prev => {
+            const next = { ...prev, [key]: !prev[key] }
+            localStorage.setItem('sidebar_collapsed', JSON.stringify(next))
+            return next
+        })
+    }
+
     // Dollar kursi
     const [exchangeRate, setExchangeRate] = useState(null)
     const [showRateModal, setShowRateModal] = useState(false)
@@ -193,11 +242,6 @@ export default function Layout() {
         setLangOpen(false)
     }
 
-    // Sidebar da faqat ruxsat berilgan itemlarni ko'rsatish
-    const visibleNavItems = navItems.filter(item =>
-        item.permission === null || hasPermission(item.permission)
-    )
-
     return (
         <div className="layout-wrapper">
             {mobileMenuOpen && (
@@ -221,27 +265,66 @@ export default function Layout() {
                 </div>
 
                 <div className="sidebar-nav">
-                    {visibleNavItems.map((item) => {
-                        const Icon = item.icon
+                    {/* Guruhsiz yuqori itemlar */}
+                    {topNavItems
+                        .filter(item => hasPermission(item.permission))
+                        .map(item => {
+                            const Icon = item.icon
+                            return (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    end={item.path === '/'}
+                                    className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <span className="sidebar-icon"><Icon size={20} strokeWidth={1.8} /></span>
+                                    {sidebarOpen && <span className="sidebar-text">{t(`nav.${item.key}`)}</span>}
+                                </NavLink>
+                            )
+                        })}
+
+                    {/* Tepadan ajratuvchi chiziq */}
+                    <div className="sidebar-top-divider" />
+
+                    {/* Guruhlangan itemlar */}
+                    {navGroups.map(group => {
+                        const visibleItems = group.items.filter(item => hasPermission(item.permission))
+                        if (visibleItems.length === 0) return null
+                        const isCollapsed = !!collapsedGroups[group.labelKey]
+                        const GroupIcon = group.icon
                         return (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                end={item.path === '/'}
-                                className={({ isActive }) =>
-                                    `sidebar-link ${isActive ? 'active' : ''}`
-                                }
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                <span className="sidebar-icon">
-                    <Icon size={20} strokeWidth={1.8} />
-                </span>
-                                {sidebarOpen && (
-                                    <span className="sidebar-text">
-                        {t(`nav.${item.key}`)}
-                    </span>
+                            <div key={group.labelKey} className="sidebar-group">
+                                {sidebarOpen ? (
+                                    <button
+                                        className="sidebar-group-label"
+                                        onClick={() => toggleGroup(group.labelKey)}
+                                    >
+                                        <span className="sidebar-group-label-inner">
+                                            <span className="sidebar-icon"><GroupIcon size={20} strokeWidth={1.8} /></span>
+                                            <span>{t(group.labelKey)}</span>
+                                        </span>
+                                        <ChevronRight
+                                            size={12}
+                                            className={`sg-chevron ${isCollapsed ? '' : 'sg-chevron--open'}`}
+                                        />
+                                    </button>
+                                ) : (
+                                    <div className="sidebar-group-divider" />
                                 )}
-                            </NavLink>
+                                {!isCollapsed && visibleItems.map(item => (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        end={item.path === '/'}
+                                        className={({ isActive }) => `sidebar-link sidebar-link--child ${isActive ? 'active' : ''}`}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <span className="sidebar-dot" />
+                                        {sidebarOpen && <span className="sidebar-text">{t(`nav.${item.key}`)}</span>}
+                                    </NavLink>
+                                ))}
+                            </div>
                         )
                     })}
                 </div>

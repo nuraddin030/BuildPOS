@@ -11,6 +11,12 @@
     "error": "Login yoki parol noto'g'ri"
   },
   "nav": {
+    "group": {
+      "sales": "Savdo",
+      "warehouse": "Ombor",
+      "reference": "Ma'lumotnoma",
+      "system": "Tizim"
+    },
     "dashboard": "Bosh sahifa",
     "cashier": "Kassa",
     "sales": "Sotuvlar",

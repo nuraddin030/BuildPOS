@@ -11,6 +11,12 @@
     "error": "Invalid username or password"
   },
   "nav": {
+    "group": {
+      "sales": "Sales",
+      "warehouse": "Warehouse",
+      "reference": "Reference",
+      "system": "System"
+    },
     "dashboard": "Dashboard",
     "cashier": "Cashier",
     "sales": "Sales",
