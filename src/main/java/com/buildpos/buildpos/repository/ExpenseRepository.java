@@ -11,10 +11,13 @@ import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
-    @Query("SELECT e FROM Expense e LEFT JOIN FETCH e.category LEFT JOIN FETCH e.createdBy " +
-           "WHERE (:from IS NULL OR e.date >= :from) AND (:to IS NULL OR e.date <= :to) " +
-           "AND (:categoryId IS NULL OR e.category.id = :categoryId) " +
-           "ORDER BY e.date DESC, e.createdAt DESC")
+    @Query(value = """
+            SELECT * FROM expenses
+            WHERE (CAST(:from AS DATE) IS NULL OR date >= CAST(:from AS DATE))
+              AND (CAST(:to   AS DATE) IS NULL OR date <= CAST(:to   AS DATE))
+              AND (CAST(:categoryId AS BIGINT) IS NULL OR category_id = CAST(:categoryId AS BIGINT))
+            ORDER BY date DESC, created_at DESC
+            """, nativeQuery = true)
     List<Expense> findFiltered(
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,

@@ -8,7 +8,7 @@
     gap: 20px;
 }
 
-/* ── Summary kartalar ───────────────────────── */
+/* ── Summary kartalar (rp-kpi uslubida) ────── */
 .exp-sum-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -16,44 +16,50 @@
 }
 
 .exp-sum-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
+    background: var(--surface);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 16px 18px;
-}
-
-.exp-sum-card-top {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
 }
 
 .exp-sum-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
 
+.exp-sum-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
 .exp-sum-label {
     font-size: 12px;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .exp-sum-value {
     font-size: 20px;
-    font-weight: 800;
-    color: var(--text);
-    margin-top: 2px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .exp-sum-unit {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--text-muted);
 }
@@ -61,7 +67,6 @@
 .exp-sum-sub {
     font-size: 11px;
     color: var(--text-muted);
-    margin-top: 4px;
 }
 
 /* ── Filter bar ─────────────────────────────── */
@@ -77,9 +82,9 @@
     gap: 6px;
     padding: 8px 14px;
     border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-secondary);
     font-size: 13px;
     cursor: pointer;
     position: relative;
@@ -129,7 +134,7 @@
 .exp-table-footer td {
     padding-top: 10px;
     padding-bottom: 10px;
-    border-top: 2px solid var(--border);
+    border-top: 2px solid var(--border-color);
     font-size: 14px;
 }
 
@@ -154,8 +159,8 @@
 }
 
 .exp-card {
-    background: var(--hover-bg);
-    border: 1px solid var(--border);
+    background: var(--surface-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 14px;
     display: flex;
@@ -191,7 +196,7 @@
 
 .exp-card-note {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 
 .exp-card-footer {
@@ -212,8 +217,8 @@
     padding: 10px 4px 2px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--text);
-    border-top: 2px solid var(--border);
+    color: var(--text-primary);
+    border-top: 2px solid var(--border-color);
     margin-top: 4px;
 }
 
@@ -256,13 +261,13 @@
     justify-content: space-between;
     padding: 10px 12px;
     border-radius: 10px;
-    background: var(--hover-bg);
+    background: var(--surface-secondary);
     gap: 10px;
     transition: background 0.15s;
 }
 
 .exp-cat-modal-item:hover {
-    background: var(--border);
+    background: var(--surface-hover);
 }
 
 .exp-cat-modal-name {
@@ -270,7 +275,7 @@
     align-items: center;
     gap: 10px;
     font-size: 14px;
-    color: var(--text);
+    color: var(--text-primary);
 }
 
 .exp-cat-dot {

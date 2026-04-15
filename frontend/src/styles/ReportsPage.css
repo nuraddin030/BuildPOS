@@ -155,6 +155,67 @@
     font-weight: 600;
 }
 
+/* ── Harajatlar banner ───────────────────────────────────────── */
+.rp-expense-banner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.rp-expense-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+}
+
+.rp-expense-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rp-expense-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.rp-expense-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.rp-expense-unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.rp-expense-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.rp-expense-arrow {
+    font-size: 22px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    opacity: 0.4;
+}
+
 /* ── Cards ───────────────────────────────────────────────────── */
 .rp-mid {
     display: grid;
@@ -369,6 +430,20 @@
 
     .rp-table-wrap {
         display: none;
+    }
+
+    .rp-expense-banner {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .rp-expense-arrow {
+        display: none;
+    }
+
+    .rp-expense-item {
+        width: 100%;
     }
 }
 

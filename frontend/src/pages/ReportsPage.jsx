@@ -172,7 +172,7 @@ export default function ReportsPage() {
 
             {!loading && !error && data && (<>
 
-            {/* KPI kartalar */}
+            {/* KPI kartalar — 4 ta asosiy */}
             <div className="rp-kpi-grid">
                 <KpiCard label="Daromad (Sotuv)"   value={fmt(data.revenue)}
                     icon={TrendingUp}  color="#2563eb"
@@ -187,17 +187,45 @@ export default function ReportsPage() {
                     unit="%" icon={Percent}   color="#7c3aed"
                     warn={Number(data.grossMargin) < 10}
                     sub={Number(data.grossMargin) < 10 ? 'Foydalilik past!' : 'Jami sotuvdan ulushi'} />
-                {Number(data.totalExpenses) > 0 && (
-                    <KpiCard label="Harajatlar"     value={fmt(data.totalExpenses)}
-                        icon={TrendingDown} color="#f59e0b"
-                        sub="Davr davomidagi harajatlar" />
-                )}
-                {Number(data.totalExpenses) > 0 && (
-                    <KpiCard label="Sof Foyda"      value={fmt(data.netProfit)}
-                        icon={DollarSign}  color={Number(data.netProfit) >= 0 ? '#0ea5e9' : '#dc2626'}
-                        sub="Yalpi foyda − harajatlar" />
-                )}
             </div>
+
+            {/* Harajatlar banner — faqat harajat kiritilganda */}
+            {Number(data.totalExpenses) > 0 && (
+                <div className="rp-expense-banner">
+                    <div className="rp-expense-item">
+                        <div className="rp-expense-icon" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+                            <TrendingDown size={18} />
+                        </div>
+                        <div>
+                            <div className="rp-expense-label">Harajatlar</div>
+                            <div className="rp-expense-value" style={{ color: '#f59e0b' }}>
+                                {fmt(data.totalExpenses)} <span className="rp-expense-unit">UZS</span>
+                            </div>
+                            <div className="rp-expense-sub">Davr davomidagi xarajatlar</div>
+                        </div>
+                    </div>
+
+                    <div className="rp-expense-arrow">→</div>
+
+                    <div className="rp-expense-item">
+                        <div className="rp-expense-icon" style={{
+                            background: Number(data.netProfit) >= 0 ? 'rgba(14,165,233,0.12)' : 'rgba(220,38,38,0.12)',
+                            color: Number(data.netProfit) >= 0 ? '#0ea5e9' : '#dc2626'
+                        }}>
+                            <DollarSign size={18} />
+                        </div>
+                        <div>
+                            <div className="rp-expense-label">Sof Foyda</div>
+                            <div className="rp-expense-value" style={{
+                                color: Number(data.netProfit) >= 0 ? '#0ea5e9' : '#dc2626'
+                            }}>
+                                {Number(data.netProfit) >= 0 ? '' : '−'}{fmt(Math.abs(Number(data.netProfit)))} <span className="rp-expense-unit">UZS</span>
+                            </div>
+                            <div className="rp-expense-sub">Yalpi foyda − harajatlar</div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* O'rta qism */}
             <div className="rp-mid">

@@ -25,18 +25,18 @@ function monthStartStr() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
 }
 
-// ── Summary karta ──────────────────────────────────────────────
+// ── Summary karta (rp-kpi uslubida) ───────────────────────────
 function SummaryCard({ label, value, sub, color, icon: Icon }) {
     return (
         <div className="exp-sum-card">
-            <div className="exp-sum-card-top">
-                <div className="exp-sum-icon" style={{ background: color + '18', color }}>
-                    <Icon size={18} />
-                </div>
-                <span className="exp-sum-label">{label}</span>
+            <div className="exp-sum-icon" style={{ background: color + '18', color }}>
+                <Icon size={20} />
             </div>
-            <div className="exp-sum-value">{fmt(value)} <span className="exp-sum-unit">UZS</span></div>
-            {sub != null && <div className="exp-sum-sub">{sub}</div>}
+            <div className="exp-sum-body">
+                <span className="exp-sum-label">{label}</span>
+                <span className="exp-sum-value">{fmt(value)} <span className="exp-sum-unit">UZS</span></span>
+                {sub != null && <span className="exp-sum-sub">{sub}</span>}
+            </div>
         </div>
     )
 }
@@ -308,15 +308,15 @@ export default function ExpensesPage() {
                     color="#f59e0b"
                     sub="Shu oy davomida"
                 />
-                {hasFilter && (
-                    <SummaryCard
-                        label="Filtr bo'yicha"
-                        value={filteredTotal}
-                        icon={Wallet}
-                        color="#2563eb"
-                        sub={`${expenses.length} ta harajat`}
-                    />
-                )}
+                <SummaryCard
+                    label={hasFilter ? "Filtr bo'yicha" : "Bugun (tanlangan)"}
+                    value={hasFilter ? filteredTotal : todayTotal}
+                    icon={Wallet}
+                    color="#2563eb"
+                    sub={hasFilter
+                        ? `${expenses.length} ta harajat`
+                        : "Filtr berish uchun ustiga bosing"}
+                />
             </div>
 
             {/* ── Filter bar ─────────────────────────────── */}
