@@ -17,6 +17,10 @@ public class ProfitLossResponse {
     private Long       saleCount;     // sotuv soni
     private BigDecimal avgSale;       // o'rtacha chek
 
+    // ── Harajatlar ──────────────────────────────────────────────────
+    private BigDecimal totalExpenses;  // davr harajatlari
+    private BigDecimal netProfit;      // grossProfit - totalExpenses
+
     // ── To'lov usullari ─────────────────────────────────────────────
     private BigDecimal cash;
     private BigDecimal card;

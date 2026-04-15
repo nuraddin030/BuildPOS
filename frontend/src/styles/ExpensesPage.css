@@ -1,0 +1,342 @@
+/* ── ExpensesPage ─────────────────────────────────────────── */
+
+.exp-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Header right */
+.exp-today-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 14px;
+}
+.exp-today-label {
+    color: var(--text-muted);
+}
+.exp-today-value {
+    font-weight: 700;
+    color: #ef4444;
+}
+
+/* Layout */
+.exp-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* ── Chap panel ──────────────────────────────────────────── */
+.exp-sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Kategoriya bloki */
+.exp-cat-block {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.exp-cat-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    gap: 8px;
+}
+.exp-cat-toggle:hover {
+    background: var(--hover-bg);
+}
+.exp-cat-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+}
+.exp-cat-toggle-left svg {
+    color: #f59e0b;
+}
+.exp-cat-count {
+    background: var(--hover-bg);
+    border-radius: 20px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.exp-chevron {
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+.exp-chevron.open {
+    transform: rotate(180deg);
+}
+
+.exp-cat-body {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.exp-cat-form {
+    display: flex;
+    gap: 6px;
+    padding-top: 12px;
+}
+.exp-cat-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+}
+.exp-cat-input:focus {
+    border-color: #f59e0b;
+}
+.exp-cat-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #f59e0b;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.exp-cat-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.exp-cat-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.exp-cat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: var(--hover-bg);
+}
+.exp-cat-item:hover .exp-cat-del {
+    opacity: 1;
+}
+.exp-cat-name {
+    font-size: 13px;
+    color: var(--text);
+}
+.exp-cat-del {
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 4px;
+    transition: opacity 0.15s;
+}
+.exp-cat-del:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+.exp-cat-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 12px 0 4px;
+}
+
+/* Summary */
+.exp-summary-block {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.exp-summary-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+.exp-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    color: var(--text);
+    border-bottom: 1px dashed var(--border);
+}
+.exp-summary-row:last-of-type {
+    border-bottom: none;
+}
+.exp-summary-name {
+    color: var(--text-muted);
+}
+.exp-summary-amount {
+    font-weight: 600;
+    color: #ef4444;
+}
+.exp-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    border-top: 2px solid var(--border);
+    margin-top: 6px;
+}
+
+/* ── O'ng panel ──────────────────────────────────────────── */
+.exp-main-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Filter */
+.exp-filter-bar {
+    flex-wrap: wrap;
+}
+.exp-date-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 240px;
+}
+.exp-filter-select-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.exp-cat-select {
+    min-width: 160px;
+}
+
+/* Jadval wrapper */
+.exp-table-wrap {
+    overflow-x: auto;
+}
+
+/* Kategoriya badge */
+.exp-cat-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* ── Mobil kard ko'rinishi ─────────────────────────────── */
+.exp-cards {
+    display: none;
+}
+.exp-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.exp-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+.exp-card-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.exp-card-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.exp-card-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ef4444;
+    white-space: nowrap;
+}
+.exp-card-note {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.exp-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+.exp-card-by {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .exp-layout {
+        grid-template-columns: 1fr;
+    }
+    .exp-sidebar-panel {
+        order: 2;
+    }
+    .exp-main-panel {
+        order: 1;
+    }
+}
+
+@media (max-width: 640px) {
+    .exp-table-wrap table {
+        display: none;
+    }
+    .exp-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+    }
+    .exp-date-inputs {
+        flex-wrap: wrap;
+    }
+}

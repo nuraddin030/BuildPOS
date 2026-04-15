@@ -14,6 +14,7 @@ import com.buildpos.buildpos.entity.enums.SaleStatus;
 import com.buildpos.buildpos.entity.enums.ShiftStatus;
 import com.buildpos.buildpos.exception.BadRequestException;
 import com.buildpos.buildpos.exception.NotFoundException;
+import com.buildpos.buildpos.repository.ExpenseRepository;
 import com.buildpos.buildpos.repository.SaleRepository;
 import com.buildpos.buildpos.repository.ShiftRepository;
 import com.buildpos.buildpos.repository.UserRepository;
@@ -42,6 +43,7 @@ public class ShiftService {
     private final SaleRepository saleRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final ExpenseRepository expenseRepository;
 
     // ─────────────────────────────────────────
     // SMENA OCHISH
@@ -176,10 +178,14 @@ public class ShiftService {
         String duration = formatDuration(shift.getOpenedAt(),
                 shift.getClosedAt() != null ? shift.getClosedAt() : LocalDateTime.now());
 
-        // Kassa farqi: haqiqiy naqd - (boshlang'ich + smena davomida kelgan naqd)
+        // Smena harajatlari
+        BigDecimal totalExpenses = expenseRepository.sumByShift(shift.getId());
+        if (totalExpenses == null) totalExpenses = BigDecimal.ZERO;
+
+        // Kassa farqi: haqiqiy naqd - (boshlang'ich + smena davomida kelgan naqd - harajatlar)
+        BigDecimal expectedCash = shift.getOpeningCash().add(totalCash).subtract(totalExpenses);
         BigDecimal cashDiff = BigDecimal.ZERO;
         if (shift.getClosingCash() != null) {
-            BigDecimal expectedCash = shift.getOpeningCash().add(totalCash);
             cashDiff = shift.getClosingCash().subtract(expectedCash);
         }
 
@@ -197,6 +203,8 @@ public class ShiftService {
                 .durationFormatted(duration)
                 .openingCash(shift.getOpeningCash())
                 .closingCash(shift.getClosingCash())
+                .totalExpenses(totalExpenses)
+                .expectedCash(expectedCash)
                 .cashDifference(cashDiff)
                 .saleCount(saleCount)
                 .cancelledCount(cancelledCount)

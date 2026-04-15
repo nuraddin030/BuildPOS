@@ -1,6 +1,7 @@
 package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.response.ProfitLossResponse;
+import com.buildpos.buildpos.repository.ExpenseRepository;
 import com.buildpos.buildpos.repository.SaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class ReportService {
 
     private final SaleRepository saleRepository;
+    private final ExpenseRepository expenseRepository;
 
     public ProfitLossResponse getProfitLoss(LocalDate from, LocalDate to) {
         LocalDateTime dtFrom = from.atStartOfDay();
@@ -95,9 +97,15 @@ public class ReportService {
                     .build();
         }).toList();
 
+        // ── Harajatlar ─────────────────────────────────────────────
+        BigDecimal totalExpenses = expenseRepository.sumByDateRange(from, to);
+        if (totalExpenses == null) totalExpenses = BigDecimal.ZERO;
+        BigDecimal netProfit = profit.subtract(totalExpenses);
+
         return ProfitLossResponse.builder()
                 .revenue(revenue).cogs(cogs).grossProfit(profit).grossMargin(margin)
                 .discounts(discounts).saleCount(saleCount).avgSale(avgSale)
+                .totalExpenses(totalExpenses).netProfit(netProfit)
                 .cash(cash).card(card).transfer(transfer).debt(debt)
                 .monthlyTrend(monthlyTrend).topProducts(topProducts)
                 .build();

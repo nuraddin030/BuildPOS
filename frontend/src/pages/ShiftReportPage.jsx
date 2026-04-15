@@ -105,6 +105,8 @@ function ShiftDetailModal({ shiftId, onClose }) {
                 ['Nasiya', fmt(summary.totalDebt) + ' UZS'],
                 ['', ''],
                 ['Boshlang\'ich kassa', fmt(summary.openingCash) + ' UZS'],
+                ['Harajatlar', fmt(summary.totalExpenses) + ' UZS'],
+                ['Kutilayotgan kassa', fmt(summary.expectedCash) + ' UZS'],
                 ['Yakuniy kassa', fmt(summary.closingCash) + ' UZS'],
                 ['Kassa farqi', fmt(summary.cashDifference) + ' UZS'],
             ]
@@ -242,9 +244,25 @@ function ShiftDetailModal({ shiftId, onClose }) {
                                     <span className="debt-info-value">{fmt(summary.openingCash)} UZS</span>
                                 </div>
                                 <div className="debt-info-row">
-                                    <span>Yakuniy kassa</span>
-                                    <span className="debt-info-value">{fmt(summary.closingCash)} UZS</span>
+                                    <span>Naqd tushumlar</span>
+                                    <span className="debt-info-value" style={{ color: '#16a34a' }}>+{fmt(summary.totalCash)} UZS</span>
                                 </div>
+                                {Number(summary.totalExpenses) > 0 && (
+                                    <div className="debt-info-row">
+                                        <span>Harajatlar</span>
+                                        <span className="debt-info-value" style={{ color: '#ef4444' }}>−{fmt(summary.totalExpenses)} UZS</span>
+                                    </div>
+                                )}
+                                <div className="debt-info-row">
+                                    <span>Kutilayotgan kassa</span>
+                                    <span className="debt-info-value" style={{ color: 'var(--primary)', fontWeight: 700 }}>{fmt(summary.expectedCash)} UZS</span>
+                                </div>
+                                {summary.closingCash != null && (
+                                    <div className="debt-info-row">
+                                        <span>Haqiqiy kassa (kiritilgan)</span>
+                                        <span className="debt-info-value">{fmt(summary.closingCash)} UZS</span>
+                                    </div>
+                                )}
                                 <div className="debt-info-row debt-info-main">
                                     <span>Kassa farqi</span>
                                     <span className="debt-info-value" style={{

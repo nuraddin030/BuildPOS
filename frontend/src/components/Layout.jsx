@@ -20,6 +20,7 @@ import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
 import InventoryPage from '../pages/InventoryPage'
 import ReportsPage from '../pages/ReportsPage'
+import ExpensesPage from '../pages/ExpensesPage'
 import SettingsPage from '../pages/SettingsPage'
 import AuditLogPage from '../pages/AuditLogPage'
 
@@ -28,7 +29,7 @@ import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck, BookOpen, Cog
+    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck, BookOpen, Cog, Receipt
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
@@ -54,6 +55,7 @@ const navGroups = [
             { path: '/debts',     key: 'debts',     icon: CreditCard,  permission: 'CUSTOMERS_DEBT_VIEW' },
             { path: '/customers', key: 'customers', icon: Users,       permission: 'CUSTOMERS_VIEW' },
             { path: '/shifts',    key: 'shifts',    icon: BarChart2,   permission: 'SHIFTS_VIEW' },
+            { path: '/expenses',  key: 'expenses',  icon: Receipt,     permission: 'REPORTS_VIEW' },
             { path: '/reports',   key: 'reports',   icon: TrendingUp,  permission: 'REPORTS_VIEW' },
         ]
     },
@@ -499,6 +501,9 @@ export default function Layout() {
                         }/>
                         <Route path="/shifts" element={
                             <ProtectedRoute permission="SHIFTS_VIEW"><ShiftReportPage /></ProtectedRoute>
+                        } />
+                        <Route path="/expenses" element={
+                            <ProtectedRoute permission="REPORTS_VIEW"><ExpensesPage /></ProtectedRoute>
                         } />
                         <Route path="/reports" element={
                             <ProtectedRoute permission="REPORTS_VIEW"><ReportsPage /></ProtectedRoute>

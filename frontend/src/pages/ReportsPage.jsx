@@ -187,6 +187,16 @@ export default function ReportsPage() {
                     unit="%" icon={Percent}   color="#7c3aed"
                     warn={Number(data.grossMargin) < 10}
                     sub={Number(data.grossMargin) < 10 ? 'Foydalilik past!' : 'Jami sotuvdan ulushi'} />
+                {Number(data.totalExpenses) > 0 && (
+                    <KpiCard label="Harajatlar"     value={fmt(data.totalExpenses)}
+                        icon={TrendingDown} color="#f59e0b"
+                        sub="Davr davomidagi harajatlar" />
+                )}
+                {Number(data.totalExpenses) > 0 && (
+                    <KpiCard label="Sof Foyda"      value={fmt(data.netProfit)}
+                        icon={DollarSign}  color={Number(data.netProfit) >= 0 ? '#0ea5e9' : '#dc2626'}
+                        sub="Yalpi foyda − harajatlar" />
+                )}
             </div>
 
             {/* O'rta qism */}

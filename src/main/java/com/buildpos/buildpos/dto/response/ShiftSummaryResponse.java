@@ -22,7 +22,9 @@ public class ShiftSummaryResponse {
     // Kassa
     private BigDecimal openingCash;        // smena boshlanganda
     private BigDecimal closingCash;        // smena yopilganda (haqiqiy)
-    private BigDecimal cashDifference;     // closingCash - (openingCash + totalCash)
+    private BigDecimal totalExpenses;      // smena davomidagi harajatlar
+    private BigDecimal expectedCash;       // openingCash + totalCash - totalExpenses
+    private BigDecimal cashDifference;     // closingCash - expectedCash
 
     // Sotuv statistikasi
     private Integer saleCount;             // COMPLETED sotuvlar soni
