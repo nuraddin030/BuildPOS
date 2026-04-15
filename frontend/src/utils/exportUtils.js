@@ -22,50 +22,60 @@ export function exportToCSV(filename, headers, rows) {
     URL.revokeObjectURL(url)
 }
 
+// O'zbek apostroflarini PDF uchun xavfsiz belgiga aylantiradi
+function sanitize(val) {
+    return String(val ?? '').replace(/[''`]/g, "'")
+}
+
+function sanitizeArr(arr) {
+    return arr.map(v => sanitize(v))
+}
+
 // ── PDF Export ────────────────────────────────────────────────────
 export async function exportToPDF({ filename, title, subtitle, headers, rows, summary }) {
-    try {
-        const doc = new jsPDF({
-            orientation: rows[0]?.length > 6 ? 'landscape' : 'portrait',
-            unit: 'mm', format: 'a4'
-        })
+    const doc = new jsPDF({
+        orientation: rows[0]?.length > 6 ? 'landscape' : 'portrait',
+        unit: 'mm', format: 'a4'
+    })
 
-        doc.setFontSize(15)
-        doc.setTextColor(30, 30, 30)
-        doc.text(title, 14, 16)
+    const safeTitle    = sanitize(title)
+    const safeSubtitle = sanitize(subtitle)
+    const safeHeaders  = sanitizeArr(headers)
+    const safeRows     = rows.map(sanitizeArr)
 
-        let y = 22
+    doc.setFontSize(15)
+    doc.setTextColor(30, 30, 30)
+    doc.text(safeTitle, 14, 16)
 
-        if (subtitle) {
-            doc.setFontSize(9); doc.setTextColor(100, 100, 100)
-            doc.text(subtitle, 14, y); y += 6
-        }
+    let y = 22
 
-        doc.setFontSize(8); doc.setTextColor(130, 130, 130)
-        doc.text(
-            `Sana: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
-            14, y
-        )
-        y += 5
-
-        if (summary?.length) {
-            doc.setFontSize(9); doc.setTextColor(50, 50, 50)
-            doc.text(summary.map(s => `${s.label}: ${s.value}`).join('    |    '), 14, y + 3)
-            y += 9
-        }
-
-        doc.autoTable({
-            head: [headers], body: rows, startY: y + 2,
-            styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
-            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-            alternateRowStyles: { fillColor: [248, 249, 250] },
-            margin: { left: 14, right: 14 },
-        })
-
-        doc.save(`${filename}.pdf`)
-    } catch (e) {
-        exportToCSV(filename, headers, rows)
+    if (safeSubtitle) {
+        doc.setFontSize(9); doc.setTextColor(100, 100, 100)
+        doc.text(safeSubtitle, 14, y); y += 6
     }
+
+    doc.setFontSize(8); doc.setTextColor(130, 130, 130)
+    doc.text(
+        `Sana: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
+        14, y
+    )
+    y += 5
+
+    if (summary?.length) {
+        doc.setFontSize(9); doc.setTextColor(50, 50, 50)
+        doc.text(summary.map(s => `${sanitize(s.label)}: ${sanitize(s.value)}`).join('    |    '), 14, y + 3)
+        y += 9
+    }
+
+    doc.autoTable({
+        head: [safeHeaders], body: safeRows, startY: y + 2,
+        styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
+        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [248, 249, 250] },
+        margin: { left: 14, right: 14 },
+    })
+
+    doc.save(`${filename}.pdf`)
 }
 
 // ── Yordamchi formatlar ───────────────────────────────────────────
