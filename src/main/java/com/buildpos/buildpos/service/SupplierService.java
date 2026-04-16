@@ -9,6 +9,7 @@ import com.buildpos.buildpos.entity.SupplierDebt;
 import com.buildpos.buildpos.exception.NotFoundException;
 import com.buildpos.buildpos.repository.SupplierDebtRepository;
 import com.buildpos.buildpos.repository.SupplierRepository;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -73,7 +74,9 @@ public class SupplierService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        return toResponse(supplierRepository.save(supplier));
+        Supplier saved = supplierRepository.save(supplier);
+        AuditDetailsHolder.setEntityName(saved.getName());
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────
@@ -82,6 +85,7 @@ public class SupplierService {
     @Transactional
     public SupplierResponse update(Long id, SupplierRequest request) {
         Supplier supplier = findById(id);
+        AuditDetailsHolder.setEntityName(supplier.getName());
         supplier.setName(request.getName());
         supplier.setCompany(request.getCompany());
         supplier.setPhone(request.getPhone());
@@ -99,6 +103,7 @@ public class SupplierService {
     @Transactional
     public void delete(Long id) {
         Supplier supplier = findById(id);
+        AuditDetailsHolder.setEntityName(supplier.getName());
         supplier.setIsActive(false);
         supplier.setUpdatedAt(LocalDateTime.now());
         supplierRepository.save(supplier);

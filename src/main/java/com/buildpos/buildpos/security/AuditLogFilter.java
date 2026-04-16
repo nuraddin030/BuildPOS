@@ -48,6 +48,13 @@ public class AuditLogFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         if (!LOGGED_METHODS.contains(method)) return;
 
+        // Faqat muvaffaqiyatli so'rovlar (2xx) loglanadi
+        int status = response.getStatus();
+        if (status < 200 || status >= 300) {
+            AuditDetailsHolder.clear();
+            return;
+        }
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) return;
 

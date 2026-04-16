@@ -13,6 +13,7 @@ import com.buildpos.buildpos.exception.NotFoundException;
 import com.buildpos.buildpos.repository.CustomerDebtRepository;
 import com.buildpos.buildpos.repository.CustomerRepository;
 import com.buildpos.buildpos.repository.UserRepository;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +57,9 @@ public class CustomerService {
                 .debtLimitStrict(request.getDebtLimitStrict() != null ? request.getDebtLimitStrict() : false)
                 .build();
 
-        return toResponse(customerRepository.save(customer));
+        Customer saved = customerRepository.save(customer);
+        AuditDetailsHolder.setEntityName(saved.getName());
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────
@@ -89,6 +92,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponse update(Long id, CustomerRequest request) {
         Customer customer = findById(id);
+        AuditDetailsHolder.setEntityName(customer.getName());
 
         if (!customer.getPhone().equals(request.getPhone()) &&
                 customerRepository.existsByPhone(request.getPhone())) {

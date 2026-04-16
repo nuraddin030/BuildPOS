@@ -10,6 +10,7 @@ import com.buildpos.buildpos.entity.*;
 import com.buildpos.buildpos.exception.AlreadyExistsException;
 import com.buildpos.buildpos.exception.BadRequestException;
 import com.buildpos.buildpos.exception.NotFoundException;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import com.buildpos.buildpos.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -59,7 +60,9 @@ public class EmployeeService {
                 .isActive(true)
                 .build();
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+        AuditDetailsHolder.setEntityName(saved.getFullName());
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────
@@ -91,6 +94,7 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse update(Long id, EmployeeRequest request) {
         User user = findById(id);
+        AuditDetailsHolder.setEntityName(user.getFullName());
 
         if (!user.getUsername().equals(request.getUsername()) &&
                 userRepository.existsByUsername(request.getUsername())) {

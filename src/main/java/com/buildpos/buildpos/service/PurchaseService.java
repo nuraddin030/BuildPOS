@@ -10,6 +10,7 @@ import com.buildpos.buildpos.entity.enums.PurchaseStatus;
 import com.buildpos.buildpos.entity.enums.StockMovementType;
 import com.buildpos.buildpos.exception.BadRequestException;
 import com.buildpos.buildpos.exception.NotFoundException;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import com.buildpos.buildpos.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -74,6 +75,7 @@ public class PurchaseService {
 
         recalculateTotals(purchase);
         purchaseRepository.save(purchase);
+        AuditDetailsHolder.setEntityName(purchase.getReferenceNo() + " — " + supplier.getName());
 
         return toResponse(purchase);
     }
