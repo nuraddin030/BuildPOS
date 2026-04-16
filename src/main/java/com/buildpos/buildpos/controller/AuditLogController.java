@@ -2,6 +2,8 @@ package com.buildpos.buildpos.controller;
 
 import com.buildpos.buildpos.entity.AuditLog;
 import com.buildpos.buildpos.repository.AuditLogRepository;
+
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class AuditLogController {
             @RequestParam(required = false) String action,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "true") boolean excludeAuth,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "50") int size
     ) {
@@ -38,8 +41,21 @@ public class AuditLogController {
         LocalDateTime dtTo   = to   != null ? to.atTime(LocalTime.MAX) : null;
 
         return auditLogRepository.findFiltered(
-                username, action, dtFrom, dtTo,
+                username, action, dtFrom, dtTo, excludeAuth,
                 PageRequest.of(page, size)
         );
+    }
+
+    @GetMapping("/failed-attempts")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "Muvaffaqiyatsiz login urinishlari (sessiyalar tab uchun)")
+    public List<AuditLog> getFailedAttempts(
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        LocalDateTime dtFrom = from != null ? from.atStartOfDay() : null;
+        LocalDateTime dtTo   = to   != null ? to.atTime(LocalTime.MAX) : null;
+        return auditLogRepository.findFailedAttempts(username, dtFrom, dtTo);
     }
 }

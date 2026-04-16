@@ -66,6 +66,7 @@ function AuditTab() {
         if (action)   params.set('action', action)
         if (from)     params.set('from', from)
         if (to)       params.set('to', to)
+        params.set('excludeAuth', 'true')
         api.get(`/api/v1/audit-logs?${params}`)
             .then(r => { if (alive) { setLogs(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
@@ -80,9 +81,6 @@ function AuditTab() {
                 <select className="al-input al-select"
                     value={action} onChange={e => { setAction(e.target.value); setPage(0) }}>
                     <option value="">Barcha amallar</option>
-                    <option value="LOGIN">Kirish</option>
-                    <option value="LOGIN_FAIL">Xato parol</option>
-                    <option value="LOCKED">Bloklandi</option>
                     <option value="CREATE">Yaratildi</option>
                     <option value="UPDATE">Yangilandi</option>
                     <option value="DELETE">O'chirildi</option>
@@ -172,6 +170,7 @@ function SessionsTab() {
     const [username, setUsername] = useState('')
     const [from,     setFrom]     = useState('')
     const [to,       setTo]       = useState('')
+    const [failed,   setFailed]   = useState([])
 
     useEffect(() => {
         let alive = true
@@ -180,8 +179,19 @@ function SessionsTab() {
         if (username) params.set('username', username)
         if (from)     params.set('from', from)
         if (to)       params.set('to', to)
-        api.get(`/api/v1/sessions?${params}`)
-            .then(r => { if (alive) { setSessions(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
+
+        Promise.all([
+            api.get(`/api/v1/sessions?${params}`),
+            api.get(`/api/v1/audit-logs/failed-attempts?${params}`)
+        ])
+            .then(([sRes, fRes]) => {
+                if (!alive) return
+                setSessions(sRes.data.content)
+                setTotal(sRes.data.totalElements)
+                setFailed(fRes.data)
+                setError('')
+                setLoading(false)
+            })
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
         return () => { alive = false }
     }, [page, username, from, to])
@@ -275,6 +285,60 @@ function SessionsTab() {
                             <button className="al-page-btn" disabled={(page + 1) * 50 >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* ── Muvaffaqiyatsiz urinishlar ── */}
+            {!loading && failed.length > 0 && (
+                <div className="al-card">
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: '#991b1b' }}>Muvaffaqiyatsiz urinishlar</span>
+                        <span className="al-badge" style={{ background: '#fee2e2', color: '#991b1b' }}>{failed.length}</span>
+                    </div>
+                    <div className="al-table-wrap">
+                        <table className="ptable">
+                            <thead>
+                                <tr>
+                                    <th>Foydalanuvchi</th>
+                                    <th>Hodisa</th>
+                                    <th>IP manzil</th>
+                                    <th>Qurilma</th>
+                                    <th className="th-right">Vaqt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {failed.map(f => {
+                                    const dev = parseDevice(f.userAgent)
+                                    return (
+                                        <tr key={f.id}>
+                                            <td><div className="cell-name">{f.username || '—'}</div></td>
+                                            <td>
+                                                <span className="al-badge" style={
+                                                    f.action === 'LOCKED'
+                                                        ? { background: '#fff7ed', color: '#c2410c' }
+                                                        : { background: '#fee2e2', color: '#991b1b' }
+                                                }>
+                                                    {f.action === 'LOCKED' ? 'Bloklandi' : 'Xato parol'}
+                                                </span>
+                                            </td>
+                                            <td><code className="al-ip">{f.ipAddress}</code></td>
+                                            <td>
+                                                <div className="al-device">
+                                                    {dev.icon === 'mobile'
+                                                        ? <Smartphone size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                                                        : <Monitor size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
+                                                    <span>{dev.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="th-right">
+                                                <span className="cell-muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(f.createdAt)}</span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </>
