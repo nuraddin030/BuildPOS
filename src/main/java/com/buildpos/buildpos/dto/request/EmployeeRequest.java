@@ -16,7 +16,6 @@ public class EmployeeRequest {
     @Size(max = 50)
     private String username;
 
-    @NotBlank
     @Size(min = 6, max = 50)
     private String password;
 
