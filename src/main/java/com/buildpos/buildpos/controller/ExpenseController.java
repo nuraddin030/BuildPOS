@@ -66,9 +66,11 @@ public class ExpenseController {
                 ? LocalDate.parse(body.get("date").toString()) : null;
         Long categoryId = body.get("categoryId") != null
                 ? Long.valueOf(body.get("categoryId").toString()) : null;
+        Long shiftId = body.get("shiftId") != null
+                ? Long.valueOf(body.get("shiftId").toString()) : null;
         BigDecimal amount = new BigDecimal(body.get("amount").toString());
         String note = body.get("note") != null ? body.get("note").toString() : null;
-        return service.create(date, categoryId, amount, note);
+        return service.create(date, categoryId, amount, note, shiftId);
     }
 
     @DeleteMapping("/{id}")

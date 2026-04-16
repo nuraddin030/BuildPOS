@@ -50,16 +50,18 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ExpenseResponse create(LocalDate date, Long categoryId, BigDecimal amount, String note) {
+    public ExpenseResponse create(LocalDate date, Long categoryId, BigDecimal amount, String note, Long shiftId) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepo.findByUsername(username).orElse(null);
 
         ExpenseCategory category = categoryId != null
                 ? categoryRepo.findById(categoryId).orElse(null) : null;
 
-        // Ochiq smenani topamiz
+        // shiftId berilgan bo'lsa — uni ishlatamiz; aks holda ochiq smenani topamiz
         Shift shift = null;
-        if (user != null) {
+        if (shiftId != null) {
+            shift = shiftRepo.findById(shiftId).orElse(null);
+        } else if (user != null) {
             shift = shiftRepo.findByCashierIdAndStatus(user.getId(), ShiftStatus.OPEN).orElse(null);
         }
 

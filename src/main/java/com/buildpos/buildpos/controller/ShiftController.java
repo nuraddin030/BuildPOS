@@ -19,7 +19,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/shifts")
@@ -85,6 +87,15 @@ public class ShiftController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(shiftService.getAllFiltered(cashierId, from, to, pageable));
+    }
+
+    // ── SANA BO'YICHA SMENALAR ───────────────────────────────────────
+    @GetMapping("/by-date")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'CASHIER') or hasAuthority('SALES_VIEW')")
+    @Operation(summary = "Berilgan sana bo'yicha smenalar ro'yxati")
+    public ResponseEntity<List<ShiftResponse>> getByDate(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(shiftService.getShiftsByDate(date));
     }
 
     // ── O'Z SMENALARIM ───────────────────────────────────────────────

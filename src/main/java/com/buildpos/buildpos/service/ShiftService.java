@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -230,6 +231,14 @@ public class ShiftService {
     public Page<ShiftResponse> getAllFiltered(Long cashierId, LocalDateTime from,
                                               LocalDateTime to, Pageable pageable) {
         return shiftRepository.findAllFiltered(cashierId, from, to, pageable).map(this::toResponse);
+    }
+
+    // ─────────────────────────────────────────
+    // SANA BO'YICHA SMENALAR (harajat formasi uchun)
+    // ─────────────────────────────────────────
+    public List<ShiftResponse> getShiftsByDate(LocalDate date) {
+        return shiftRepository.findByDate(date)
+                .stream().map(this::toResponse).toList();
     }
 
     public Page<ShiftResponse> getMyCashierShifts(String username, Pageable pageable) {

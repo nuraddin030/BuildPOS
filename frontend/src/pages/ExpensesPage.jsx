@@ -15,6 +15,25 @@ const fmtDate = (d) => {
     return `${day}.${m}.${y}`
 }
 
+const fmtShiftLabel = (s) => {
+    const openDate  = s.openedAt?.slice(0, 10)
+    const closeDate = s.closedAt?.slice(0, 10)
+    const openTime  = s.openedAt?.slice(11, 16)
+    const closeTime = s.closedAt?.slice(11, 16)
+    const d2 = (dateStr) => {
+        if (!dateStr) return ''
+        const [, m, d] = dateStr.split('-')
+        return `${d}.${m}`
+    }
+    // Ismning birinchi so'zi (familiya emas)
+    const firstName = s.cashierName?.split(' ')[0] ?? ''
+    const multiDay  = closeDate && openDate !== closeDate
+    if (multiDay) {
+        return `${firstName}: ${d2(openDate)} ${openTime} – ${d2(closeDate)} ${closeTime}`
+    }
+    return `${firstName}: ${d2(openDate)} ${openTime}${closeTime ? `–${closeTime}` : ' (ochiq)'}`
+}
+
 function todayStr() {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -177,6 +196,9 @@ export default function ExpensesPage() {
     const [formAmount, setFormAmount]   = useState('')
     const [formNote, setFormNote]       = useState('')
     const [formSaving, setFormSaving]   = useState(false)
+    const [formShiftId, setFormShiftId] = useState('')
+    const [dateShifts, setDateShifts]   = useState([])
+    const [shiftsLoading, setShiftsLoading] = useState(false)
 
     // Filter
     const [filterFrom, setFilterFrom]   = useState('')
@@ -217,17 +239,35 @@ export default function ExpensesPage() {
     useEffect(() => { loadExpenses() },   [loadExpenses])
     useEffect(() => { loadTotals() },     [loadTotals])
 
+    // Forma ochilganda yoki sana o'zgarganda — o'sha sananing smenalarini yukla
+    useEffect(() => {
+        if (!showAddModal || !formDate) return
+        setShiftsLoading(true)
+        setFormShiftId('')
+        api.get(`/api/v1/shifts/by-date?date=${formDate}`)
+            .then(r => {
+                setDateShifts(r.data)
+                // Smena(lar) bo'lsa — birinchisini avtomatik tanlash
+                if (r.data.length > 0) setFormShiftId(String(r.data[0].id))
+            })
+            .catch(() => setDateShifts([]))
+            .finally(() => setShiftsLoading(false))
+    }, [showAddModal, formDate])
+
     // Filtrlangan ro'yxatning jami
     const filteredTotal = expenses.reduce((s, e) => s + Number(e.amount), 0)
 
     const handleAddExpense = async (e) => {
         e.preventDefault()
         if (!formAmount) return
+        // Smena(lar) mavjud bo'lsa — tanlash majburiy
+        if (dateShifts.length > 0 && !formShiftId) return
         setFormSaving(true)
         try {
             await api.post('/api/v1/expenses', {
                 date:       formDate || null,
                 categoryId: formCatId || null,
+                shiftId:    formShiftId || null,
                 amount:     formAmount,
                 note:       formNote || null,
             })
@@ -236,6 +276,8 @@ export default function ExpensesPage() {
             setFormNote('')
             setFormDate(todayStr())
             setFormCatId('')
+            setFormShiftId('')
+            setDateShifts([])
             loadExpenses()
             loadTotals()
         } catch (err) {
@@ -487,7 +529,7 @@ export default function ExpensesPage() {
 
             {/* ══ Harajat qo'shish modali ══════════════════ */}
             {showAddModal && (
-                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
+                <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowAddModal(false); setDateShifts([]); setFormShiftId('') } }}>
                     <div className="modal-box products-modal">
                         <div className="modal-header">
                             <div className="modal-header-left">
@@ -499,7 +541,7 @@ export default function ExpensesPage() {
                                     <p className="modal-subtitle">Yangi xarajatni kiritish</p>
                                 </div>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>
+                            <button className="modal-close-btn" onClick={() => { setShowAddModal(false); setDateShifts([]); setFormShiftId('') }}>
                                 <X size={18} />
                             </button>
                         </div>
@@ -541,6 +583,30 @@ export default function ExpensesPage() {
                                             onChange={e => setFormDate(e.target.value)}
                                         />
                                     </div>
+                                    {shiftsLoading ? (
+                                        <div className="modal-field">
+                                            <label className="modal-label">Smena</label>
+                                            <div className="modal-input exp-shift-loading">
+                                                <Loader2 size={13} className="spin" /> Yuklanmoqda...
+                                            </div>
+                                        </div>
+                                    ) : dateShifts.length > 0 ? (
+                                        <div className="modal-field">
+                                            <label className="modal-label">Smena *</label>
+                                            <select
+                                                className="modal-input exp-shift-select"
+                                                value={formShiftId}
+                                                onChange={e => setFormShiftId(e.target.value)}
+                                                required
+                                            >
+                                                {dateShifts.map(s => (
+                                                    <option key={s.id} value={s.id}>
+                                                        {fmtShiftLabel(s)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : null}
                                     <div className="modal-field">
                                         <label className="modal-label">Izoh</label>
                                         <input
@@ -558,7 +624,8 @@ export default function ExpensesPage() {
                                 <button type="button" className="btn-cancel" onClick={() => setShowAddModal(false)}>
                                     Bekor
                                 </button>
-                                <button type="submit" className="btn-save" disabled={formSaving || !formAmount}>
+                                <button type="submit" className="btn-save"
+                                        disabled={formSaving || !formAmount || shiftsLoading || (dateShifts.length > 0 && !formShiftId)}>
                                     {formSaving
                                         ? <><Loader2 size={14} className="spin" /> Saqlanmoqda...</>
                                         : 'Saqlash'}

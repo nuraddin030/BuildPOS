@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ShiftRepository extends JpaRepository<Shift, Long> {
@@ -39,4 +41,13 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
 
     // Mavjud (o'zgartirilmadi)
     Page<Shift> findAllByOrderByOpenedAtDesc(Pageable pageable);
+
+    // Berilgan sanaga tegishli smenalar (ochilgan yoki o'sha kuni yopilgan)
+    @Query(value = """
+        SELECT * FROM shifts s
+        WHERE DATE(s.opened_at) <= CAST(:date AS DATE)
+          AND (s.closed_at IS NULL OR DATE(s.closed_at) >= CAST(:date AS DATE))
+        ORDER BY s.opened_at DESC
+    """, nativeQuery = true)
+    List<Shift> findByDate(@Param("date") LocalDate date);
 }

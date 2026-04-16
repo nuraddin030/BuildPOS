@@ -1,5 +1,45 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-16 — Harajat → Smena bog'lanishi (retroaktiv)
+
+### Muammo
+Yopilgan smenaga tegishli harajat o'sha kuni kiritilmay qolsa, keyingi kuni
+kiritilganda smena hisobotiga (kassa farqi) tushmas edi. Sabab: harajat
+yaratilganda faqat **hozir ochiq** smena qidirilgan, sana e'tiborga olinmagan.
+
+### Bajarilgan ishlar
+
+#### Backend
+- `ShiftRepository`: `findByDate(LocalDate)` — berilgan sanaga tegishli
+  smenalarni topuvchi native SQL query qo'shildi
+- `ShiftService`: `getShiftsByDate(LocalDate)` metodi qo'shildi
+- `ShiftController`: `GET /api/v1/shifts/by-date?date=` yangi endpoint
+- `ExpenseService.create()`: ixtiyoriy `shiftId` parametri qo'shildi —
+  berilsa shu smenaga bog'laydi, berilmasa ochiq smenani avtomatik topadi
+- `ExpenseController.create()`: request body dan `shiftId` o'qiydi
+
+#### Frontend (`ExpensesPage.jsx`)
+- Harajat qo'shish formasiga **smena dropdown** qo'shildi
+- Sana o'zgarganda dropdown avtomatik yangilanadi (`/shifts/by-date` so'rovi)
+- **Mantiq:** o'sha sanada smena(lar) mavjud bo'lsa → tanlash **majburiy**
+  (Saqlash tugmasi ham disable); smena yo'q bo'lsa → maydon yashiriladi
+- Birinchi smena avtomatik tanlanadi (odatda yetarli)
+- Ko'p kunlik smenalar uchun sana ham ko'rsatiladi:
+  `Nuraddin: 08.04 16:51 – 15.04 11:00`
+- `fmtShiftLabel()` yordamchi funksiya qo'shildi
+
+#### CSS (`ExpensesPage.css`)
+- `.exp-shift-select` — smena dropdown uchun: `font-size: 13px`,
+  `padding: 0 12px` (icon padding olib tashlandi), `max-width: 100%`
+- `.exp-shift-loading` — yuklanish holati uchun
+
+### Arxitektura qarori
+"Smenasiz" variant **ataylab olib tashlandi** — barcha harajatlar smenaga
+bog'liq bo'lishi kerak (kassa farqi hisob-kitobi aniq bo'lishi uchun).
+Faqat o'sha sanada hech qanday smena bo'lmagan holatda `shift = null` saqlanadi.
+
+---
+
 ## Session: 2026-04-15 — Harajatlar moduli, Smena hisoboti yangilanishi, ReportsPage UX
 
 ### Bajarilgan ishlar
