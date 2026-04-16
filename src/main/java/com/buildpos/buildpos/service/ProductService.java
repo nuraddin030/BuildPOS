@@ -277,7 +277,8 @@ public class ProductService {
         Product product = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Mahsulot topilmadi: " + id));
 
-        // Audit uchun o'zgarishlarni yig'amiz
+        // Audit: mahsulot nomi (har doim) va o'zgarishlar
+        AuditDetailsHolder.setEntityName(product.getName());
         java.util.List<String> changes = new java.util.ArrayList<>();
         if (request.getName() != null && !request.getName().equals(product.getName())) {
             changes.add("Nomi: \"" + product.getName() + "\" → \"" + request.getName() + "\"");

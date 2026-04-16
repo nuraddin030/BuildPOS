@@ -59,12 +59,14 @@ public class AuditLogFilter extends OncePerRequestFilter {
             String ip         = getClientIp(request);
             String username   = resolveUsername(auth);
             String details    = AuditDetailsHolder.get();
+            String entityName = AuditDetailsHolder.getEntityName();
 
             AuditLog entry = AuditLog.builder()
                     .username(username)
                     .action(action)
                     .entityType(entityType)
                     .entityId(entityId)
+                    .entityName(entityName)
                     .ipAddress(ip)
                     .userAgent(request.getHeader("User-Agent"))
                     .requestUri(uri)

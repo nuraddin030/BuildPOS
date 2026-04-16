@@ -42,6 +42,9 @@ public class AuditLog {
     @Column(name = "request_uri", length = 500)
     private String requestUri;
 
+    @Column(name = "entity_name", length = 200)
+    private String entityName;
+
     @Column(columnDefinition = "TEXT")
     private String details;
 

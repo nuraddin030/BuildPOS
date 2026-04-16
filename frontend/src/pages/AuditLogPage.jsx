@@ -125,9 +125,14 @@ function AuditTab() {
                                             </td>
                                             <td><div className="cell-name">{log.username || '—'}</div></td>
                                             <td>
-                                                <span className="cell-muted" style={{ fontSize: 12 }}>
-                                                    {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
-                                                </span>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                    <span style={{ fontSize: 13, fontWeight: 500 }}>
+                                                        {log.entityName || log.entityType}
+                                                    </span>
+                                                    <span className="cell-muted" style={{ fontSize: 11 }}>
+                                                        {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td style={{ maxWidth: 280 }}>
                                                 {log.details
