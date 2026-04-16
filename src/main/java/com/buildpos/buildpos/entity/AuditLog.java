@@ -42,6 +42,9 @@ public class AuditLog {
     @Column(name = "request_uri", length = 500)
     private String requestUri;
 
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

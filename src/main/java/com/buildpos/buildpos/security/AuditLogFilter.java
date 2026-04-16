@@ -58,6 +58,7 @@ public class AuditLogFilter extends OncePerRequestFilter {
             Long   entityId   = resolveEntityId(uri);
             String ip         = getClientIp(request);
             String username   = resolveUsername(auth);
+            String details    = AuditDetailsHolder.get();
 
             AuditLog entry = AuditLog.builder()
                     .username(username)
@@ -67,11 +68,14 @@ public class AuditLogFilter extends OncePerRequestFilter {
                     .ipAddress(ip)
                     .userAgent(request.getHeader("User-Agent"))
                     .requestUri(uri)
+                    .details(details)
                     .build();
 
             auditLogRepository.save(entry);
         } catch (Exception ex) {
             log.warn("Audit log yozishda xato: {}", ex.getMessage());
+        } finally {
+            AuditDetailsHolder.clear();
         }
     }
 

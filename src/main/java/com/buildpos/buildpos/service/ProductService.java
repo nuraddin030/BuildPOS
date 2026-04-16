@@ -15,6 +15,7 @@ import com.buildpos.buildpos.exception.BadRequestException;
 import com.buildpos.buildpos.exception.NotFoundException;
 import com.buildpos.buildpos.mapper.ProductMapper;
 import com.buildpos.buildpos.repository.*;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -276,6 +277,12 @@ public class ProductService {
         Product product = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Mahsulot topilmadi: " + id));
 
+        // Audit uchun o'zgarishlarni yig'amiz
+        java.util.List<String> changes = new java.util.ArrayList<>();
+        if (request.getName() != null && !request.getName().equals(product.getName())) {
+            changes.add("Nomi: \"" + product.getName() + "\" → \"" + request.getName() + "\"");
+        }
+
         // SKU tekshirish
         if (request.getSku() != null &&
                 !request.getSku().equals(product.getSku()) &&
@@ -351,6 +358,10 @@ public class ProductService {
                     throw new AlreadyExistsException("Bu barcode allaqachon mavjud: " + unitReq.getBarcode());
                 }
 
+                String unitName = pu.getUnit() != null ? pu.getUnit().getName() : "";
+                collectPriceChange(changes, "Tannarx (" + unitName + ")", pu.getCostPrice(), unitReq.getCostPrice());
+                collectPriceChange(changes, "Sotuv narxi (" + unitName + ")", pu.getSalePrice(), unitReq.getSalePrice());
+                collectPriceChange(changes, "Min narx (" + unitName + ")", pu.getMinPrice(), unitReq.getMinPrice());
                 savePriceHistoryIfChanged(pu, "cost_price", pu.getCostPrice(), unitReq.getCostPrice());
                 savePriceHistoryIfChanged(pu, "sale_price", pu.getSalePrice(), unitReq.getSalePrice());
                 savePriceHistoryIfChanged(pu, "min_price", pu.getMinPrice(), unitReq.getMinPrice());
@@ -373,6 +384,10 @@ public class ProductService {
                     }
                 }
             }
+        }
+
+        if (!changes.isEmpty()) {
+            AuditDetailsHolder.set(String.join(" | ", changes));
         }
 
         productRepository.save(product);
@@ -541,6 +556,19 @@ public class ProductService {
                 .replaceAll("[\\s]+", "-")
                 .replaceAll("-+", "-")
                 .replaceAll("^-|-$", "");
+    }
+
+    private void collectPriceChange(java.util.List<String> changes, String label,
+                                    BigDecimal oldVal, BigDecimal newVal) {
+        if (oldVal != null && newVal != null && oldVal.compareTo(newVal) != 0) {
+            changes.add(label + ": " + fmt(oldVal) + " → " + fmt(newVal) + " UZS");
+        }
+    }
+
+    private String fmt(BigDecimal v) {
+        if (v == null) return "—";
+        long rounded = v.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+        return String.format("%,d", rounded).replace(',', ' ');
     }
 
     private void savePriceHistoryIfChanged(ProductUnit pu, String fieldName,

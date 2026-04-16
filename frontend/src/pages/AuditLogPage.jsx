@@ -106,9 +106,9 @@ function AuditTab() {
                                 <tr>
                                     <th>Amal</th>
                                     <th>Foydalanuvchi</th>
-                                    <th>IP manzil</th>
-                                    <th>Qurilma</th>
                                     <th>Ob'ekt</th>
+                                    <th>O'zgarish</th>
+                                    <th>Qurilma</th>
                                     <th className="th-right">Vaqt</th>
                                 </tr>
                             </thead>
@@ -124,7 +124,21 @@ function AuditTab() {
                                                 <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>{ac.label}</span>
                                             </td>
                                             <td><div className="cell-name">{log.username || '—'}</div></td>
-                                            <td><code className="al-ip">{log.ipAddress}</code></td>
+                                            <td>
+                                                <span className="cell-muted" style={{ fontSize: 12 }}>
+                                                    {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
+                                                </span>
+                                            </td>
+                                            <td style={{ maxWidth: 280 }}>
+                                                {log.details
+                                                    ? <span style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                                                        {log.details.split(' | ').map((d, i) => (
+                                                            <span key={i} style={{ display: 'block' }}>{d}</span>
+                                                        ))}
+                                                      </span>
+                                                    : <span className="cell-muted" style={{ fontSize: 12 }}>—</span>
+                                                }
+                                            </td>
                                             <td>
                                                 <div className="al-device">
                                                     {dev.icon === 'mobile'
@@ -132,11 +146,6 @@ function AuditTab() {
                                                         : <Monitor size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
                                                     <span>{dev.name}</span>
                                                 </div>
-                                            </td>
-                                            <td>
-                                                <span className="cell-muted" style={{ fontSize: 12 }}>
-                                                    {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
-                                                </span>
                                             </td>
                                             <td className="th-right">
                                                 <span className="cell-muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(log.createdAt)}</span>
