@@ -10,6 +10,7 @@ import com.buildpos.buildpos.repository.UserRepository;
 import com.buildpos.buildpos.security.JwtUtil;
 import com.buildpos.buildpos.service.RefreshTokenService;
 import com.buildpos.buildpos.service.TelegramService;
+import com.buildpos.buildpos.service.UserSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +43,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final AuditLogRepository auditLogRepository;
     private final TelegramService telegramService;
+    private final UserSessionService userSessionService;
 
     @PostMapping("/login")
     @Operation(summary = "Tizimga kirish")
@@ -110,6 +112,9 @@ public class AuthController {
         userRepository.save(user);
 
         saveAuthLog("LOGIN", request.getUsername(), ip, httpRequest);
+
+        String device = parseDevice(httpRequest.getHeader("User-Agent"));
+        userSessionService.createSession(user.getId(), user.getUsername(), ip, device);
 
         String accessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         RefreshToken refresh = refreshTokenService.create(user);
@@ -224,12 +229,19 @@ public class AuthController {
                                        @RequestBody(required = false) Map<String, String> body) {
         // Access tokenni blacklist ga qo'shish
         String header = request.getHeader("Authorization");
+        String username = null;
         if (header != null && header.startsWith("Bearer ")) {
-            jwtUtil.invalidate(header.substring(7));
+            String token = header.substring(7);
+            try { username = jwtUtil.getUsername(token); } catch (Exception ignored) {}
+            jwtUtil.invalidate(token);
         }
         // Refresh tokenni bekor qilish
         if (body != null && body.containsKey("refreshToken")) {
             refreshTokenService.revoke(body.get("refreshToken"));
+        }
+        // Sessiyani yopish
+        if (username != null) {
+            userSessionService.closeSession(username, "MANUAL");
         }
         return ResponseEntity.noContent().build();
     }

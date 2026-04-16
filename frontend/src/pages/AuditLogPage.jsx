@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ShieldCheck, Search, Loader2, AlertTriangle, Monitor, Smartphone } from 'lucide-react'
+import { ShieldCheck, Search, Loader2, AlertTriangle, Monitor, Smartphone, Clock, LogIn, LogOut } from 'lucide-react'
 import api from '../api/api'
 import '../styles/AuditLogPage.css'
 
@@ -37,13 +37,22 @@ function fmtDate(dt) {
     return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export default function AuditLogPage() {
+function fmtDuration(sec) {
+    if (sec == null) return null // faol
+    if (sec < 60)   return `${sec} son`
+    if (sec < 3600) return `${Math.floor(sec / 60)} daq`
+    const h = Math.floor(sec / 3600)
+    const m = Math.floor((sec % 3600) / 60)
+    return m > 0 ? `${h}s ${m}d` : `${h} soat`
+}
+
+// ── Audit log tab ─────────────────────────────────────────────
+function AuditTab() {
     const [logs,    setLogs]    = useState([])
     const [total,   setTotal]   = useState(0)
     const [page,    setPage]    = useState(0)
     const [loading, setLoading] = useState(true)
     const [error,   setError]   = useState('')
-
     const [username, setUsername] = useState('')
     const [action,   setAction]   = useState('')
     const [from,     setFrom]     = useState('')
@@ -51,39 +60,20 @@ export default function AuditLogPage() {
 
     useEffect(() => {
         let alive = true
+        setLoading(true)
         const params = new URLSearchParams({ page, size: 50 })
         if (username) params.set('username', username)
         if (action)   params.set('action', action)
         if (from)     params.set('from', from)
         if (to)       params.set('to', to)
-
         api.get(`/api/v1/audit-logs?${params}`)
             .then(r => { if (alive) { setLogs(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
         return () => { alive = false }
     }, [page, username, action, from, to])
 
-    function handleSearch(e) {
-        e.preventDefault()
-        setPage(0)
-    }
-
     return (
-        <div className="al-wrapper">
-            {/* Header */}
-            <div className="products-header">
-                <div className="products-header-left">
-                    <div className="page-icon-wrap" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
-                        <ShieldCheck size={22} />
-                    </div>
-                    <div>
-                        <h1 className="page-title">Audit Journal</h1>
-                        <p className="page-subtitle">Tizimga kirish va amallar tarixi · Jami: {total}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Filter */}
+        <>
             <div className="al-filter">
                 <input className="al-input" placeholder="Foydalanuvchi..."
                     value={username} onChange={e => { setUsername(e.target.value); setPage(0) }} />
@@ -101,22 +91,15 @@ export default function AuditLogPage() {
                     onChange={e => { setFrom(e.target.value); setPage(0) }} />
                 <input type="date" className="al-input" value={to}
                     onChange={e => { setTo(e.target.value); setPage(0) }} />
-                <button className="btn-save al-search-btn" onClick={handleSearch}>
-                    <Search size={15} /> Qidirish
-                </button>
             </div>
 
-            {/* Table */}
             {loading ? (
                 <div className="table-loading" style={{ minHeight: 200 }}>
                     <Loader2 size={28} className="spin" style={{ color: 'var(--primary)' }} />
                     <p>Yuklanmoqda...</p>
                 </div>
             ) : error ? (
-                <div className="table-empty">
-                    <AlertTriangle size={36} strokeWidth={1} />
-                    <p>{error}</p>
-                </div>
+                <div className="table-empty"><AlertTriangle size={36} strokeWidth={1} /><p>{error}</p></div>
             ) : (
                 <div className="al-card">
                     <div className="al-table-wrap">
@@ -135,21 +118,15 @@ export default function AuditLogPage() {
                                 {logs.length === 0 ? (
                                     <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
                                 ) : logs.map(log => {
-                                    const ac = ACTION_COLORS[log.action] || { bg: 'var(--border-color)', color: 'var(--text-muted)', label: log.action }
+                                    const ac  = ACTION_COLORS[log.action] || { bg: 'var(--border-color)', color: 'var(--text-muted)', label: log.action }
                                     const dev = parseDevice(log.userAgent)
                                     return (
                                         <tr key={log.id}>
                                             <td>
-                                                <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>
-                                                    {ac.label}
-                                                </span>
+                                                <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>{ac.label}</span>
                                             </td>
-                                            <td>
-                                                <div className="cell-name">{log.username || '—'}</div>
-                                            </td>
-                                            <td>
-                                                <code className="al-ip">{log.ipAddress}</code>
-                                            </td>
+                                            <td><div className="cell-name">{log.username || '—'}</div></td>
+                                            <td><code className="al-ip">{log.ipAddress}</code></td>
                                             <td>
                                                 <div className="al-device">
                                                     {dev.icon === 'mobile'
@@ -164,9 +141,7 @@ export default function AuditLogPage() {
                                                 </span>
                                             </td>
                                             <td className="th-right">
-                                                <span className="cell-muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
-                                                    {fmtDate(log.createdAt)}
-                                                </span>
+                                                <span className="cell-muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(log.createdAt)}</span>
                                             </td>
                                         </tr>
                                     )
@@ -174,8 +149,6 @@ export default function AuditLogPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Pagination */}
                     {total > 50 && (
                         <div className="al-pagination">
                             <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
@@ -185,6 +158,158 @@ export default function AuditLogPage() {
                     )}
                 </div>
             )}
+        </>
+    )
+}
+
+// ── Sessiyalar tab ────────────────────────────────────────────
+function SessionsTab() {
+    const [sessions, setSessions] = useState([])
+    const [total,    setTotal]    = useState(0)
+    const [page,     setPage]     = useState(0)
+    const [loading,  setLoading]  = useState(true)
+    const [error,    setError]    = useState('')
+    const [username, setUsername] = useState('')
+    const [from,     setFrom]     = useState('')
+    const [to,       setTo]       = useState('')
+
+    useEffect(() => {
+        let alive = true
+        setLoading(true)
+        const params = new URLSearchParams({ page, size: 50 })
+        if (username) params.set('username', username)
+        if (from)     params.set('from', from)
+        if (to)       params.set('to', to)
+        api.get(`/api/v1/sessions?${params}`)
+            .then(r => { if (alive) { setSessions(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
+            .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
+        return () => { alive = false }
+    }, [page, username, from, to])
+
+    return (
+        <>
+            <div className="al-filter">
+                <input className="al-input" placeholder="Foydalanuvchi..."
+                    value={username} onChange={e => { setUsername(e.target.value); setPage(0) }} />
+                <input type="date" className="al-input" value={from}
+                    onChange={e => { setFrom(e.target.value); setPage(0) }} />
+                <input type="date" className="al-input" value={to}
+                    onChange={e => { setTo(e.target.value); setPage(0) }} />
+            </div>
+
+            {loading ? (
+                <div className="table-loading" style={{ minHeight: 200 }}>
+                    <Loader2 size={28} className="spin" style={{ color: 'var(--primary)' }} />
+                    <p>Yuklanmoqda...</p>
+                </div>
+            ) : error ? (
+                <div className="table-empty"><AlertTriangle size={36} strokeWidth={1} /><p>{error}</p></div>
+            ) : (
+                <div className="al-card">
+                    <div className="al-table-wrap">
+                        <table className="ptable">
+                            <thead>
+                                <tr>
+                                    <th>Foydalanuvchi</th>
+                                    <th>Kirish</th>
+                                    <th>Chiqish</th>
+                                    <th className="th-center">Davomiylik</th>
+                                    <th>IP / Qurilma</th>
+                                    <th className="th-center">Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sessions.length === 0 ? (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
+                                ) : sessions.map(s => {
+                                    const duration = fmtDuration(s.durationSec)
+                                    const isActive = s.logoutAt == null
+                                    return (
+                                        <tr key={s.id}>
+                                            <td><div className="cell-name">{s.username}</div></td>
+                                            <td>
+                                                <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                                                    {fmtDate(s.loginAt)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className="cell-muted" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                                                    {isActive ? '—' : fmtDate(s.logoutAt)}
+                                                </span>
+                                            </td>
+                                            <td className="th-center">
+                                                {isActive
+                                                    ? <span className="al-duration-active">Faol</span>
+                                                    : <span className="al-duration">{duration}</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                    <code className="al-ip">{s.ipAddress}</code>
+                                                    <span className="al-device" style={{ fontSize: 11 }}>{s.device || '—'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="th-center">
+                                                {isActive ? (
+                                                    <span className="al-badge" style={{ background: '#d1fae5', color: '#065f46' }}>
+                                                        <LogIn size={10} style={{ display: 'inline', marginRight: 3 }} />
+                                                        Tizimda
+                                                    </span>
+                                                ) : (
+                                                    <span className="al-badge" style={{ background: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                                                        <LogOut size={10} style={{ display: 'inline', marginRight: 3 }} />
+                                                        {s.logoutType === 'MANUAL' ? 'Chiqdi' : 'Tugadi'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                    {total > 50 && (
+                        <div className="al-pagination">
+                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="al-page-info">{page + 1} / {Math.ceil(total / 50)}</span>
+                            <button className="al-page-btn" disabled={(page + 1) * 50 >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </>
+    )
+}
+
+// ════════════════════════════════════════════════════════════════
+export default function AuditLogPage() {
+    const [tab, setTab] = useState('audit')
+
+    return (
+        <div className="al-wrapper">
+            <div className="products-header">
+                <div className="products-header-left">
+                    <div className="page-icon-wrap" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
+                        <ShieldCheck size={22} />
+                    </div>
+                    <div>
+                        <h1 className="page-title">Audit Journal</h1>
+                        <p className="page-subtitle">Tizim faoliyati va sessiyalar tarixi</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="al-tabs">
+                <button className={`al-tab ${tab === 'audit' ? 'active' : ''}`} onClick={() => setTab('audit')}>
+                    <ShieldCheck size={14} /> Amallar jurnali
+                </button>
+                <button className={`al-tab ${tab === 'sessions' ? 'active' : ''}`} onClick={() => setTab('sessions')}>
+                    <Clock size={14} /> Sessiyalar
+                </button>
+            </div>
+
+            {tab === 'audit'    && <AuditTab />}
+            {tab === 'sessions' && <SessionsTab />}
         </div>
     )
 }
