@@ -13,6 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    mem_limit: 256m
     networks:
       - internal                    # Faqat ichki network — tashqaridan kirish yo'q
     healthcheck:
@@ -41,6 +42,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       APP_UPLOAD_DIR: /app/uploads
+      JAVA_TOOL_OPTIONS: "-Xmx400m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+    mem_limit: 512m
     volumes:
       - uploads_data:/app/uploads   # Rasmlar saqlanadi
       - maven_cache:/root/.m2       # Maven dependency cache
