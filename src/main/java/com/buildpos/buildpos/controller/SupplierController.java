@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -120,5 +121,15 @@ public class SupplierController {
     public ResponseEntity<List<GroupedDebtResponse>> getGroupedDebts(
             @RequestParam(required = false) String search) {
         return ResponseEntity.ok(supplierService.getGroupedDebts(search));
+    }
+
+    @PatchMapping("/debts/{id}/set-due-date")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN') or hasAuthority('SUPPLIERS_MANAGE')")
+    @Operation(summary = "Yetkazuvchi qarziga muddat belgilash")
+    public ResponseEntity<SupplierDebtResponse> setDueDate(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dueDate,
+            @RequestParam(required = false) String notes) {
+        return ResponseEntity.ok(supplierService.setDebtDueDate(id, dueDate, notes));
     }
 }

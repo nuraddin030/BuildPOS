@@ -2,9 +2,12 @@ package com.buildpos.buildpos.service;
 
 import com.buildpos.buildpos.dto.response.DashboardResponse;
 import com.buildpos.buildpos.dto.response.SaleResponse;
+import com.buildpos.buildpos.entity.CustomerDebt;
+import com.buildpos.buildpos.entity.SupplierDebt;
 import com.buildpos.buildpos.repository.CustomerDebtRepository;
 import com.buildpos.buildpos.repository.PurchaseRepository;
 import com.buildpos.buildpos.repository.SaleRepository;
+import com.buildpos.buildpos.repository.SupplierDebtRepository;
 import com.buildpos.buildpos.repository.WarehouseStockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +30,7 @@ public class DashboardService {
 
     private final SaleRepository saleRepository;
     private final CustomerDebtRepository customerDebtRepository;
+    private final SupplierDebtRepository supplierDebtRepository;
     private final PurchaseRepository purchaseRepository;
     private final WarehouseStockRepository warehouseStockRepository;
     private final SaleService saleService;
@@ -109,6 +113,9 @@ public class DashboardService {
                 .map(saleService::toResponsePublic)
                 .toList();
 
+        // ── Yaqin to'lovlar (keyingi 7 kun + muddati o'tganlar) ────────
+        List<DashboardResponse.UpcomingDebtItem> upcomingDebts = buildUpcomingDebts();
+
         return DashboardResponse.builder()
                 .todaySaleCount(todaySaleCount)
                 .todaySaleAmount(todaySaleAmount)
@@ -130,6 +137,7 @@ public class DashboardService {
                 .recentPurchases(recentPurchases)
                 .weeklySales(weeklySales)
                 .recentSales(recentSales)
+                .upcomingDebts(upcomingDebts)
                 .build();
     }
 
@@ -164,6 +172,58 @@ public class DashboardService {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    private List<DashboardResponse.UpcomingDebtItem> buildUpcomingDebts() {
+        LocalDate endDate = LocalDate.now().plusDays(7);
+        List<DashboardResponse.UpcomingDebtItem> result = new ArrayList<>();
+
+        // Mijoz qarzlari
+        try {
+            for (CustomerDebt cd : customerDebtRepository.findUpcomingDebts(endDate)) {
+                BigDecimal remaining = cd.getAmount().subtract(cd.getPaidAmount());
+                String refNo = null;
+                try { refNo = cd.getSale() != null ? cd.getSale().getReferenceNo() : null; } catch (Exception ignored) {}
+                result.add(DashboardResponse.UpcomingDebtItem.builder()
+                        .id(cd.getId())
+                        .type("CUSTOMER")
+                        .entityName(cd.getCustomer().getName())
+                        .entityPhone(cd.getCustomer().getPhone())
+                        .remainingAmount(remaining)
+                        .dueDate(cd.getDueDate())
+                        .referenceNo(refNo)
+                        .build());
+            }
+        } catch (Exception e) {
+            // log ignored
+        }
+
+        // Yetkazuvchi qarzlari — barcha ochiq qarzlar (dueDate belgilanmagan bo'lsa ham)
+        try {
+            for (SupplierDebt sd : supplierDebtRepository.findAllOpen()) {
+                BigDecimal remaining = sd.getAmount().subtract(sd.getPaidAmount());
+                String refNo = null;
+                try { refNo = sd.getPurchase() != null ? sd.getPurchase().getReferenceNo() : null; } catch (Exception ignored) {}
+                result.add(DashboardResponse.UpcomingDebtItem.builder()
+                        .id(sd.getId())
+                        .type("SUPPLIER")
+                        .entityName(sd.getSupplier().getName())
+                        .entityPhone(sd.getSupplier().getPhone())
+                        .remainingAmount(remaining)
+                        .dueDate(sd.getDueDate())
+                        .referenceNo(refNo)
+                        .build());
+            }
+        } catch (Exception e) {
+            // log ignored
+        }
+
+        // Muddat bo'yicha saralash — null dueDate oxirida
+        result.sort(java.util.Comparator.comparing(
+                DashboardResponse.UpcomingDebtItem::getDueDate,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())
+        ));
+        return result;
     }
 
     private List<DashboardResponse.RecentPurchaseItem> buildRecentPurchases() {

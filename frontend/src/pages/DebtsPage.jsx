@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { customerDebtsApi, supplierDebtsApi, installmentApi, agingApi } from '../api/debts'
 import { salesApi } from '../api/sales'
+import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
 import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
 import DropdownPortal from '../components/DropdownPortal'
@@ -376,7 +377,7 @@ function PayAllDebtsModal({ group, onClose, onDone }) {
 }
 
 // ── ExtendDebtModal ──────────────────────────────────────────────
-function ExtendDebtModal({ debt, onClose, onDone }) {
+function ExtendDebtModal({ debt, type = 'customer', onClose, onDone }) {
     const today = new Date()
     const defaultDate = debt.dueDate
         ? debt.dueDate
@@ -387,14 +388,17 @@ function ExtendDebtModal({ debt, onClose, onDone }) {
     const [saving, setSaving]         = useState(false)
     const [error, setError]           = useState('')
 
+    const isSupplier = type === 'supplier'
+
     const handleSubmit = async () => {
-        if (!newDueDate) { setError('Yangi muddat kiritilmagan'); return }
-        if (newDueDate <= new Date().toISOString().slice(0, 10)) {
-            setError("Muddat bugundan katta bo'lishi kerak"); return
-        }
+        if (!newDueDate) { setError('Muddat kiritilmagan'); return }
         setSaving(true); setError('')
         try {
-            await customerDebtsApi.extend(debt.id, newDueDate, notes || undefined)
+            if (isSupplier) {
+                await supplierDebtsApi.setDueDate(debt.id, newDueDate, notes || undefined)
+            } else {
+                await customerDebtsApi.extend(debt.id, newDueDate, notes || undefined)
+            }
             onDone()
         } catch (e) {
             setError(e.response?.data?.message || 'Xatolik yuz berdi')
@@ -417,8 +421,8 @@ function ExtendDebtModal({ debt, onClose, onDone }) {
                             <Calendar size={20} />
                         </div>
                         <div>
-                            <h3 className="modal-title">Muddatni uzaytirish</h3>
-                            <p className="modal-subtitle">{debt.customerName}</p>
+                            <h3 className="modal-title">{isSupplier ? 'Muddat belgilash' : 'Muddatni uzaytirish'}</h3>
+                            <p className="modal-subtitle">{isSupplier ? debt.supplierName : debt.customerName}</p>
                         </div>
                     </div>
                     <button className="modal-close-btn" onClick={onClose}><X size={18} /></button>
@@ -519,33 +523,85 @@ function ExtendDebtModal({ debt, onClose, onDone }) {
 
 // ── PaySupplierDebtModal ─────────────────────────────────────────
 function PaySupplierDebtModal({ debt, onClose, onDone }) {
-    const [amount, setAmount] = useState('')
-    const [method, setMethod] = useState('CASH')
-    const [notes, setNotes]   = useState('')
-    const [saving, setSaving] = useState(false)
-    const [error, setError]   = useState('')
-
     const remaining = Number(debt.remainingAmount || 0)
 
-    const fmtInput = (val) => {
+    const [cash,     setCash]     = useState('')
+    const [card,     setCard]     = useState('')
+    const [transfer, setTransfer] = useState('')
+
+    const [expCash,     setExpCash]     = useState('')
+    const [expCard,     setExpCard]     = useState('')
+    const [expTransfer, setExpTransfer] = useState('')
+    const [recordExpense, setRecordExpense] = useState(true)
+
+    const [shift,       setShift]       = useState(null)
+    const [notes,       setNotes]       = useState('')
+    const [saving,      setSaving]      = useState(false)
+    const [error,       setError]       = useState('')
+
+    useEffect(() => {
+        shiftsApi.getCurrent()
+            .then(res => setShift(res.data))
+            .catch(() => setShift(null))
+    }, [])
+
+    useEffect(() => {
+        const handler = (e) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [onClose])
+
+    const p = (val) => Number(String(val || '').replace(/\s/g, '')) || 0
+    const fmtI = (val) => {
         const num = String(val).replace(/[^\d]/g, '')
         return num ? num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
     }
-    const parseAmt = (val) => Number(String(val).replace(/\s/g, ''))
+
+    const totalPayment = p(cash) + p(card) + p(transfer)
+
+    const fillAll = () => {
+        setCash(String(remaining)); setCard(''); setTransfer('')
+        if (recordExpense) { setExpCash(String(remaining)); setExpCard(''); setExpTransfer('') }
+    }
+
+    const syncExpenses = () => {
+        setExpCash(cash); setExpCard(card); setExpTransfer(transfer)
+    }
+
+    const handleCashChange = (v) => {
+        setCash(v)
+        if (recordExpense) setExpCash(v)
+    }
+    const handleCardChange = (v) => {
+        setCard(v)
+        if (recordExpense) setExpCard(v)
+    }
+    const handleTransferChange = (v) => {
+        setTransfer(v)
+        if (recordExpense) setExpTransfer(v)
+    }
 
     const handleSubmit = async () => {
-        const amt = parseAmt(amount)
-        if (!amt || amt <= 0) { setError("To'lov summasi kiritilmagan"); return }
-        if (amt > remaining)  { setError(`Qolgan qarz: ${fmt(remaining)} UZS. Ortiq kiritib bo'lmaydi`); return }
+        if (totalPayment <= 0) { setError("To'lov summasi kiritilmagan"); return }
+        if (totalPayment > remaining) { setError(`Qolgan qarz: ${fmt(remaining)} UZS. Ortiq kiritib bo'lmaydi`); return }
+        if (recordExpense && shift) {
+            if (p(expCash)     > p(cash))     { setError("Naqd harajat to'lov summasidan oshib ketdi"); return }
+            if (p(expCard)     > p(card))     { setError("Karta harajat to'lov summasidan oshib ketdi"); return }
+            if (p(expTransfer) > p(transfer)) { setError("O'tkazma harajat to'lov summasidan oshib ketdi"); return }
+        }
         setSaving(true); setError('')
         try {
             await supplierDebtsApi.pay({
-                supplier: { id: debt.supplierId },
-                amount: amt,
-                paymentMethod: method,
+                debtId:         debt.id,
+                supplierId:     debt.supplierId,
+                cashAmount:     p(cash)     || null,
+                cardAmount:     p(card)     || null,
+                transferAmount: p(transfer) || null,
+                expenseCash:     (recordExpense && shift) ? p(expCash)     : null,
+                expenseCard:     (recordExpense && shift) ? p(expCard)     : null,
+                expenseTransfer: (recordExpense && shift) ? p(expTransfer) : null,
                 notes,
             })
-            // SupplierDebt paidAmount ni yangilash (purchase payment orqali emas, to'g'ridan)
             onDone()
         } catch (e) {
             setError(e.response?.data?.message || 'Xatolik yuz berdi')
@@ -554,9 +610,15 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
         }
     }
 
+    const methods = [
+        { label: 'Naqd',     icon: Banknote,   val: cash,     set: handleCashChange,     expVal: expCash,     setExp: setExpCash     },
+        { label: 'Karta',    icon: CreditCard, val: card,     set: handleCardChange,     expVal: expCard,     setExp: setExpCard     },
+        { label: "O'tkazma", icon: Smartphone, val: transfer, set: handleTransferChange, expVal: expTransfer, setExp: setExpTransfer },
+    ]
+
     return ReactDOM.createPortal(
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" style={{ maxWidth: 480 }}>
+            <div className="modal-box" style={{ maxWidth: 500 }}>
                 <div className="modal-header">
                     <div className="modal-header-left">
                         <div style={{
@@ -568,7 +630,7 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                             <Banknote size={20} />
                         </div>
                         <div>
-                            <h3 className="modal-title">Yetkazuvchi qarzini to'lash</h3>
+                            <h3 className="modal-title">Yetkazuvchiga to'lov</h3>
                             <p className="modal-subtitle">{debt.supplierName}</p>
                         </div>
                     </div>
@@ -576,62 +638,93 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                 </div>
 
                 <div className="modal-body">
+                    {/* Qarz ma'lumoti */}
                     <div className="debt-info-box">
                         <div className="debt-info-row">
                             <span>Xarid</span>
                             <span className="cell-barcode">{debt.purchaseReferenceNo || '—'}</span>
                         </div>
                         <div className="debt-info-row">
-                            <span>Dastlabki qarz</span>
-                            <span className="debt-info-value">{fmt(debt.amount)} UZS</span>
-                        </div>
-                        <div className="debt-info-row">
                             <span>To'langan</span>
-                            <span className="debt-info-value" style={{ color: '#16a34a' }}>
-                                {fmt(debt.paidAmount)} UZS
-                            </span>
+                            <span className="debt-info-value" style={{ color: '#16a34a' }}>{fmt(debt.paidAmount)} UZS</span>
                         </div>
                         <div className="debt-info-row debt-info-main">
                             <span>Qolgan qarz</span>
-                            <span className="debt-info-value" style={{ color: '#dc2626', fontSize: 17 }}>
-                                {fmt(remaining)} UZS
-                            </span>
+                            <span className="debt-info-value" style={{ color: '#dc2626', fontSize: 17 }}>{fmt(remaining)} UZS</span>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="form-label-sm">To'lov summasi (UZS)</label>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <input className="modal-input" style={{ flex: 1, fontSize: 16 }}
-                                   placeholder="0"
-                                   value={fmtInput(amount)}
-                                   onChange={e => setAmount(e.target.value)}
-                                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                                   autoFocus />
-                            <button className="btn-outline"
-                                    onClick={() => setAmount(String(remaining))}
-                                    style={{ whiteSpace: 'nowrap' }}>
-                                Hammasi
+                    {/* To'lov bo'limi */}
+                    <div className="spay-section">
+                        <div className="spay-section-header">
+                            <span className="spay-section-title">To'lov</span>
+                            <button className="btn-outline" style={{ fontSize: 12, padding: '3px 10px' }} onClick={fillAll}>
+                                Hammasi naqd
                             </button>
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="form-label-sm">To'lov usuli</label>
-                        <div className="pay-method-group">
-                            {[
-                                { val: 'CASH',     label: 'Naqd',     icon: Banknote   },
-                                { val: 'CARD',     label: 'Karta',    icon: CreditCard },
-                                { val: 'TRANSFER', label: "O'tkazma", icon: Smartphone },
-                            ].map(m => (
-                                <button key={m.val}
-                                        className={`pay-method-btn${method === m.val ? ' active' : ''}`}
-                                        onClick={() => setMethod(m.val)}>
-                                    <m.icon size={15} /> {m.label}
-                                </button>
+                        <div className="spay-methods">
+                            {methods.map(m => (
+                                <div key={m.label} className="spay-method-row">
+                                    <span className="spay-method-label"><m.icon size={14} /> {m.label}</span>
+                                    <input className="modal-input spay-input"
+                                           placeholder="0"
+                                           value={fmtI(m.val)}
+                                           onChange={e => m.set(e.target.value)}
+                                           inputMode="numeric" />
+                                    <span className="spay-currency">UZS</span>
+                                </div>
                             ))}
                         </div>
+                        {totalPayment > 0 && (
+                            <div className="spay-total">
+                                Jami: <strong>{fmt(totalPayment)} UZS</strong>
+                                {totalPayment > remaining && <span className="spay-over"> (limitdan oshdi!)</span>}
+                            </div>
+                        )}
                     </div>
+
+                    {/* Smena harajati bo'limi */}
+                    {shift && (
+                        <div className="spay-section spay-expense-section">
+                            <div className="spay-section-header">
+                                <label className="spay-checkbox-label">
+                                    <input type="checkbox" checked={recordExpense}
+                                           onChange={e => {
+                                               setRecordExpense(e.target.checked)
+                                               if (e.target.checked) syncExpenses()
+                                           }} />
+                                    <span>Joriy smenaga harajat sifatida qayd etish</span>
+                                </label>
+                                {recordExpense && (
+                                    <button className="btn-outline" style={{ fontSize: 12, padding: '3px 10px' }}
+                                            onClick={syncExpenses}>
+                                        To'liq smenadan
+                                    </button>
+                                )}
+                            </div>
+                            {recordExpense && (
+                                <div className="spay-methods">
+                                    {methods.map(m => (
+                                        <div key={m.label} className="spay-method-row">
+                                            <span className="spay-method-label spay-method-label--dim">
+                                                <m.icon size={14} /> {m.label}
+                                            </span>
+                                            <input className="modal-input spay-input"
+                                                   placeholder="0"
+                                                   value={fmtI(m.expVal)}
+                                                   onChange={e => m.setExp(e.target.value)}
+                                                   inputMode="numeric"
+                                                   max={p(m.val)} />
+                                            <span className="spay-currency">UZS</span>
+                                        </div>
+                                    ))}
+                                    <div className="spay-expense-hint">
+                                        Faqat shu smena kassasidan chiqadigan summa. Shaxsiy mablag'dan to'langan qismni 0 qoldiring.
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div>
                         <label className="form-label-sm">Izoh (ixtiyoriy)</label>
@@ -641,17 +734,17 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                     </div>
 
                     {error && (
-                        <div style={{
-                            padding: '10px 14px', background: 'var(--danger-bg)',
-                            borderRadius: 8, fontSize: 13, color: 'var(--danger)'
-                        }}>⚠ {error}</div>
+                        <div style={{ padding: '10px 14px', background: 'var(--danger-bg)', borderRadius: 8, fontSize: 13, color: 'var(--danger)' }}>
+                            ⚠ {error}
+                        </div>
                     )}
                 </div>
 
                 <div className="modal-footer">
                     <button className="btn-cancel" onClick={onClose}>Bekor</button>
                     <button className="btn-save" style={{ background: '#7c3aed' }}
-                            onClick={handleSubmit} disabled={saving || !amount}>
+                            onClick={handleSubmit}
+                            disabled={saving || totalPayment <= 0}>
                         {saving ? <><Loader2 size={15} className="spin" /> To'lanmoqda...</> : "To'lashni tasdiqlash"}
                     </button>
                 </div>
@@ -1357,8 +1450,9 @@ export default function DebtsPage() {
     const navigate = useNavigate()
     const location = useLocation()
 
-    // URL dan customerId o'qish (CustomersPage dan o'tganda)
-    const urlCustomerId = new URLSearchParams(location.search).get('customerId')
+    // URL dan customerId / supplierId o'qish
+    const urlCustomerId  = new URLSearchParams(location.search).get('customerId')
+    const urlSupplierId  = new URLSearchParams(location.search).get('supplierId')
 
     // ── Tab ──────────────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState('customer') // 'customer' | 'supplier'
@@ -1397,15 +1491,19 @@ export default function DebtsPage() {
     const [filterStatus, setFilterStatus] = useState('') // '' | 'open' | 'paid' | 'overdue'
     const [size]                      = useState(20)
 
-    // URL dan customerId kelsa — customer tab + tree da o'sha mijozni ajratib ko'rsatish
+    // URL dan customerId / supplierId kelsa — mos tab + tree da ajratib ko'rsatish
     const highlightCustomerId = urlCustomerId ? Number(urlCustomerId) : null
+    const highlightSupplierId = urlSupplierId ? Number(urlSupplierId) : null
 
     useEffect(() => {
         if (urlCustomerId) {
             setActiveTab('customer')
             setViewMode('tree')
+        } else if (urlSupplierId) {
+            setActiveTab('supplier')
+            setViewMode('tree')
         }
-    }, [urlCustomerId])
+    }, [urlCustomerId, urlSupplierId])
 
     // highlightCustomerId o'zgarganda grouped ni qayta yukla
     useEffect(() => {
@@ -1413,6 +1511,13 @@ export default function DebtsPage() {
             loadCustomerGrouped()
         }
     }, [highlightCustomerId])
+
+    // highlightSupplierId o'zgarganda supplier grouped ni qayta yukla
+    useEffect(() => {
+        if (highlightSupplierId) {
+            loadSupplierGrouped()
+        }
+    }, [highlightSupplierId])
 
     // ── Modallar ─────────────────────────────────────────────────
     const [selectedDebt, setSelectedDebt]       = useState(null)
@@ -1561,11 +1666,15 @@ export default function DebtsPage() {
         supplierDebtsApi.getGrouped(search || undefined)
             .then(res => {
                 setSGrouped(res.data || [])
-                setExpandedIds(new Set()) // default yopiq
+                if (highlightSupplierId) {
+                    setExpandedIds(new Set([`s-${highlightSupplierId}`]))
+                } else {
+                    setExpandedIds(new Set()) // default yopiq
+                }
             })
             .catch(console.error)
             .finally(() => setSTreeLoading(false))
-    }, [search])
+    }, [search, highlightSupplierId])
 
     // ── Yetkazuvchi qarzlari yuklash ─────────────────────────────
     const loadSupplierDebts = useCallback(() => {
@@ -1651,7 +1760,7 @@ export default function DebtsPage() {
         loadSupplierDebts()
         loadSupplierStats()
         loadSupplierGrouped()
-        showToast("Yetkazuvchi qarzi to'landi")
+        showToast("Yetkazuvchiga qarz to'landi")
     }
 
     // ── To'lov tugallandi ────────────────────────────────────────
@@ -1693,7 +1802,7 @@ export default function DebtsPage() {
                     </div>
                     <div>
                         <h1 className="page-title">Nasiyalar</h1>
-                        <p className="page-subtitle">Mijoz va yetkazuvchi qarzlari</p>
+                        <p className="page-subtitle">Mijoz nasiyalari va yetkazuvchilarga qarz</p>
                     </div>
                 </div>
                 {/* View toggle */}
@@ -1754,10 +1863,10 @@ export default function DebtsPage() {
                     </div>
                 </div>
 
-                {/* Yetkazuvchi qarzlari */}
+                {/* Yetkazuvchiga qarz */}
                 <div className="nasiya-stat-group">
                     <div className="nasiya-stat-label">
-                        <Truck size={13} /> Yetkazuvchi qarzi
+                        <Truck size={13} /> Yetkazuvchiga qarz
                     </div>
                     <div className="nasiya-stat-cards">
                         <NasiyaStatCard
@@ -1800,7 +1909,7 @@ export default function DebtsPage() {
                     className={`nasiya-tab${activeTab === 'supplier' ? ' active' : ''}`}
                     onClick={() => setActiveTab('supplier')}>
                     <Truck size={16} />
-                    Yetkazuvchi qarzi
+                    Yetkazuvchiga qarz
                     {sStats?.openCount > 0 && (
                         <span className="tab-badge tab-badge-blue">{sStats.openCount}</span>
                     )}
@@ -1861,10 +1970,11 @@ export default function DebtsPage() {
                     expandedIds={expandedIds}
                     onToggle={toggleExpand}
                     onView={(d) => setSelectedDebt({ ...d, type: activeTab })}
-                    onPay={(d) => setPayDebt(d)}
+                    onPay={(d) => activeTab === 'supplier' ? setPaySupplierDebt(d) : setPayDebt(d)}
                     onPayAll={(g) => setPayAllGroup(g)}
                     onViewSupplier={(id) => navigate(`/purchases?supplierId=${id}`)}
-                    highlightId={activeTab === 'customer' ? highlightCustomerId : null}
+                    onExtend={activeTab === 'supplier' ? (d) => setExtendDebt({ ...d, type: 'supplier' }) : null}
+                    highlightId={activeTab === 'customer' ? highlightCustomerId : highlightSupplierId}
                     hasPermission={hasPermission}
                 />
             ) : (
@@ -1890,7 +2000,8 @@ export default function DebtsPage() {
                         totalPages={sTotalPages}
                         onPageChange={setSPage}
                         onView={(d) => setSelectedDebt({ ...d, type: 'supplier' })}
-                        onPay={null}
+                        onPay={(d) => setPaySupplierDebt(d)}
+                        onExtend={(d) => setExtendDebt({ ...d, type: 'supplier' })}
                         hasPermission={hasPermission}
                     />
             )}
@@ -1910,6 +2021,7 @@ export default function DebtsPage() {
             {extendDebt && (
                 <ExtendDebtModal
                     debt={extendDebt}
+                    type={extendDebt.type || 'customer'}
                     onClose={() => setExtendDebt(null)}
                     onDone={handleExtendDone}
                 />
@@ -2112,7 +2224,7 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
                                             onClick={() => onNavigate(
                                                 isCustomer
                                                     ? `/debts?customerId=${item.entityId}`
-                                                    : `/purchases?supplierId=${item.entityId}`
+                                                    : `/debts?supplierId=${item.entityId}`
                                             )}>
                                             <ArrowUpRight size={14} />
                                         </button>
@@ -2139,7 +2251,7 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
                                     <div className="aging-card-meta">
                                         <span style={{ fontSize: 12, color: item.color, fontWeight: 600 }}>{item.daysOverdue} kun</span>
                                         <button className="act-btn act-edit"
-                                                onClick={() => onNavigate(isCustomer ? `/debts?customerId=${item.entityId}` : `/purchases?supplierId=${item.entityId}`)}>
+                                                onClick={() => onNavigate(isCustomer ? `/debts?customerId=${item.entityId}` : `/debts?supplierId=${item.entityId}`)}>
                                             <ArrowUpRight size={14} />
                                         </button>
                                     </div>
@@ -2161,7 +2273,7 @@ function AgingView({ cAging, sAging, loading, activeTab, onNavigate }) {
 }
 
 // ── DebtTreeView komponenti ──────────────────────────────────────
-function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, onPay, onPayAll, onViewSupplier, highlightId, hasPermission }) {
+function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, onPay, onPayAll, onViewSupplier, onExtend, highlightId, hasPermission }) {
     const isCustomer = type === 'customer'
     const [openMenuId, setOpenMenuId] = useState(null)
     const [menuAnchor, setMenuAnchor] = useState(null)
@@ -2419,6 +2531,12 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                                 <Banknote size={14} />
                                             </button>
                                         )}
+                                        {!isCustomer && !d.isPaid && onExtend && (
+                                            <button className="act-btn act-edit" title="Muddat belgilash"
+                                                    onClick={() => onExtend({ ...d, type: 'supplier' })}>
+                                                <Calendar size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="mob-actions">
                                         <button className="act-btn act-more" onClick={(e) => {
@@ -2435,6 +2553,11 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                                 {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
                                                     <button className="act-dd-item" onClick={() => { onPay(d); setOpenMenuId(null) }}>
                                                         <Banknote size={14} /> To'lash
+                                                    </button>
+                                                )}
+                                                {!isCustomer && !d.isPaid && onExtend && (
+                                                    <button className="act-dd-item" onClick={() => { onExtend({ ...d, type: 'supplier' }); setOpenMenuId(null) }}>
+                                                        <Calendar size={14} /> Muddat belgilash
                                                     </button>
                                                 )}
                                             </DropdownPortal>
@@ -2535,7 +2658,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
 }
 
 // ── DebtTable komponenti ─────────────────────────────────────────
-function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange, onView, onPay, hasPermission }) {
+function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange, onView, onPay, onExtend, hasPermission }) {
     const isCustomer = type === 'customer'
     const [openMenuId, setOpenMenuId] = useState(null)
     const [menuAnchor, setMenuAnchor] = useState(null)
@@ -2638,6 +2761,12 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                                                     <Banknote size={14} />
                                                 </button>
                                             )}
+                                            {!isCustomer && !d.isPaid && (
+                                                <button className="act-btn act-edit" title="Muddat belgilash"
+                                                        onClick={() => onExtend({ ...d, type: 'supplier' })}>
+                                                    <Calendar size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="mob-actions">
                                             <button className="act-btn act-more" onClick={(e) => {
@@ -2654,6 +2783,11 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                                                     {isCustomer && !d.isPaid && hasPermission('CUSTOMERS_DEBT_PAY') && (
                                                         <button className="act-dd-item" onClick={() => { onPay(d); setOpenMenuId(null) }}>
                                                             <Banknote size={14} /> To'lash
+                                                        </button>
+                                                    )}
+                                                    {!isCustomer && !d.isPaid && (
+                                                        <button className="act-dd-item" onClick={() => { onExtend({ ...d, type: 'supplier' }); setOpenMenuId(null) }}>
+                                                            <Calendar size={14} /> Muddat belgilash
                                                         </button>
                                                     )}
                                                 </DropdownPortal>

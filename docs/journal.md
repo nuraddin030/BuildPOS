@@ -1,5 +1,74 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-17 — Yetkazuvchi to'lovi → Smena harajati, DebtsPage tuzatish, Dashboard scroll
+
+### Bajarilgan ishlar
+
+#### 1. "Yetkazuvchiga qarz" nomini o'zgartirish
+- `DashboardPage.jsx` KPI karta: `"Yetkazuvchi qarzi"` → `"Yetkazuvchiga qarz"`
+- `DebtsPage.jsx` barcha UI matni o'zgartirildi
+
+#### 2. Yetkazuvchiga to'lov — smena harajati sifatida qayd etish
+
+**Backend:**
+- `V42__expense_payment_method.sql` (yangi migration):
+  - `expenses` jadvaliga `payment_method VARCHAR(20) DEFAULT 'CASH'` ustuni qo'shildi
+  - `expenses` jadvaliga `supplier_id BIGINT REFERENCES suppliers(id)` qo'shildi
+- `Expense.java`: `paymentMethod` (`entity.enums.PaymentMethod`) va `supplierId` maydonlari qo'shildi
+- `ExpenseCategoryRepository.java`: `findByName(String)` metodi qo'shildi
+- `ExpenseRepository.java`: `sumByShiftAndMethod()` — smenada to'lov usuli bo'yicha yig'indi
+- `SupplierPaymentRequest.java` (yangi DTO):
+  - `debtId`, `supplierId`, `cashAmount`, `cardAmount`, `transferAmount`
+  - `expenseCash`, `expenseCard`, `expenseTransfer`, `notes`
+- `SupplierPaymentService.java` — to'liq qayta yozildi:
+  - `payDebt()`: har usul bo'yicha `SupplierPayment` yozuvlari yaratadi
+  - `SupplierDebt.paidAmount` yangilanadi, `isPaid` belgilanadi
+  - Ochiq smena topib, har usul bo'yicha `Expense` yozuvlari yaratadi
+  - `"Yetkazuvchiga to'lov"` kategoriyasi avtomatik yaratiladi (yo'q bo'lsa)
+- `SupplierPaymentController.java`: `POST /api/supplier-payments/pay-debt` endpoint qo'shildi
+- `ShiftSummaryResponse.java`: `expenseCash`, `expenseCard`, `expenseTransfer` maydonlari qo'shildi
+- `ShiftService.getShiftSummary()`: har usul bo'yicha harajat hisoblanadi; `expectedCash = openingCash + totalCash - expenseCash` (faqat naqd kassa balansini kamaytiradi)
+- `PurchasePaymentRequest.java`: `shiftExpenseAmount` maydoni qo'shildi
+- `PurchaseService.addPayment()`: `shiftExpenseAmount > 0` bo'lsa ochiq smenaga `Expense` yozadi (try-catch — to'lov muvaffaqiyatiga ta'sir qilmaydi)
+
+**Frontend:**
+- `debts.js`: `supplierDebtsApi.pay` → `/api/supplier-payments/pay-debt`
+- `DebtsPage.jsx` — `PaySupplierDebtModal` to'liq qayta yozildi:
+  - Har usul (naqd/karta/o'tkazma) uchun alohida summa inputi
+  - "Joriy smenadan harajat" bo'limi: checkbox + usul bo'yicha harajat summalari
+  - `expenseAmount ≤ paymentAmount` (qisman smena harajati imkoni)
+  - Faqat UZS + ochiq smena mavjud bo'lganda ko'rsatiladi
+- `PurchaseDetailPage.jsx`: to'lov modaliga harajat bo'limi qo'shildi (aynan `DebtsPage` mantiqiga o'xshash)
+- `ShiftReportPage.jsx`: harajatni usul bo'yicha ko'rsatish (naqd/karta/o'tkazma) qo'shildi
+
+#### 3. DebtsPage navigatsiya tuzatishlari
+- `urlSupplierId` URL param qo'shildi (Aging view → yetkazuvchi tab)
+- `useEffect`: `urlSupplierId` bo'lsa `activeTab='supplier'`, `viewMode='tree'` qo'yadi
+- `DebtTreeView.onPay`: yetkazuvchi tabda `setPaySupplierDebt(d)` ga yo'naltirildi (oldin `setPayDebt(d)` edi — mijoz modali ochilardi)
+- `DebtTable` yetkazuvchi `onPay`: `null` → `setPaySupplierDebt(d)`
+- Aging view yetkazuvchi havolasi: `/purchases?supplierId=` → `/debts?supplierId=`
+- "Muddat belgilash" tugmasi Daraxt va Aging ko'rinishlarida ham chiqadigan bo'ldi
+
+#### 4. Dashboard — "Yaqin to'lovlar" paneli scroll tuzatish
+- `UpcomingDebtsPanel` root div: `className="dash-card upd-card"` qilindi
+- Sarlavha va tablar `flex-shrink: 0` bo'lib qotib turadi
+- Ro'yxat `flex: 1; overflow-y: auto` — ichida scroll
+- `DashboardPage.css`:
+  - `.upd-card`: `height: 0; min-height: 100%; overflow: hidden` — row balandligini "Bugungi tushum" belgilaydi, "Yaqin to'lovlar" unga cho'ziladi
+  - `.dash-mid-grid`: `grid-auto-rows: minmax(0, 1fr)` qo'shildi
+  - `.dash-pay-list`: `padding-bottom: 12px` — "Bugungi tushum" paneli ozgina kattaroq
+  - `.upd-right`: `padding-right: 6px` — summa scrollbar'dan uzoqlashadi
+  - Mobil (≤1024px): `upd-card { height: auto; min-height: unset }`, `upd-list { max-height: 300px }`
+
+### Arxitektura qarori
+Yetkazuvchiga to'lov ikkita alohida oqimdan amalga oshirilishi mumkin:
+1. `DebtsPage` → `PaySupplierDebtModal` → `/api/supplier-payments/pay-debt`
+2. `PurchaseDetailPage` → to'lov modali → `/api/v1/purchases/{id}/payments`
+
+Ikkala oqimda ham smena harajati qayd etiladi. `entity.PaymentMethod` (SupplierPayment uchun) va `entity.enums.PaymentMethod` (Expense uchun) — ikki alohida enum, to'liq nom bilan farqlanadi.
+
+---
+
 ## Session: 2026-04-16 — Harajat → Smena bog'lanishi (retroaktiv)
 
 ### Muammo

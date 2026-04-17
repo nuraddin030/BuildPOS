@@ -22,8 +22,11 @@ public class ShiftSummaryResponse {
     // Kassa
     private BigDecimal openingCash;        // smena boshlanganda
     private BigDecimal closingCash;        // smena yopilganda (haqiqiy)
-    private BigDecimal totalExpenses;      // smena davomidagi harajatlar
-    private BigDecimal expectedCash;       // openingCash + totalCash - totalExpenses
+    private BigDecimal totalExpenses;      // smena davomidagi harajatlar (jami)
+    private BigDecimal expenseCash;        // harajat - naqd
+    private BigDecimal expenseCard;        // harajat - karta
+    private BigDecimal expenseTransfer;    // harajat - o'tkazma
+    private BigDecimal expectedCash;       // openingCash + totalCash - expenseCash
     private BigDecimal cashDifference;     // closingCash - expectedCash
 
     // Sotuv statistikasi

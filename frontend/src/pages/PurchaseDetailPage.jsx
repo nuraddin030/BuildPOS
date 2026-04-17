@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { getPurchaseById, receivePurchase, addPayment, cancelPurchase, addItemToPurchase } from '../api/purchases'
 import { getProducts, getProductById, getExchangeRate } from '../api/products'
+import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
 import { exportToPDF, exportToCSV, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
@@ -67,6 +68,9 @@ export default function PurchaseDetailPage() {
     const [paymentCurrency, setPaymentCurrency] = useState('UZS')
     const [paymentSaving, setPaymentSaving] = useState(false)
     const [paymentError, setPaymentError] = useState('')
+    const [currentShift, setCurrentShift] = useState(null)
+    const [recordExpense, setRecordExpense] = useState(true)
+    const [expenseAmount, setExpenseAmount] = useState('')
 
     // Actions loading
     const [receiving, setReceiving] = useState(false)
@@ -129,23 +133,43 @@ export default function PurchaseDetailPage() {
         } finally { setCancelling(false) }
     }
 
+    // To'lov modali ochilganda joriy smenani yuklash
+    useEffect(() => {
+        if (showPayment) {
+            shiftsApi.getCurrent()
+                .then(res => { setCurrentShift(res.data || null); setRecordExpense(true) })
+                .catch(() => setCurrentShift(null))
+        }
+    }, [showPayment])
+
+    // To'lov summasi o'zgarganda expense summasini sinxronlashtirish
+    useEffect(() => {
+        if (recordExpense) setExpenseAmount(paymentAmount)
+    }, [paymentAmount, recordExpense])
+
     const handleAddPayment = async () => {
         if (!paymentAmount || Number(paymentAmount) <= 0) {
             setPaymentError("Summa kiritilishi shart"); return
         }
+        const expAmt = (recordExpense && currentShift)
+            ? Number(String(expenseAmount).replace(/\s/g, '')) || 0
+            : 0
         setPaymentSaving(true); setPaymentError('')
         try {
             await addPayment(id, {
-                amount: Number(paymentAmount),
+                amount: Number(String(paymentAmount).replace(/\s/g, '')),
                 currency: paymentCurrency,
                 paymentMethod,
                 note: paymentNote || undefined,
+                shiftExpenseAmount: expAmt > 0 ? expAmt : undefined,
             })
             setShowPayment(false)
             setPaymentAmount('')
             setPaymentNote('')
             setPaymentMethod('CASH')
             setPaymentCurrency('UZS')
+            setExpenseAmount('')
+            setCurrentShift(null)
             load()
         } catch (e) {
             setPaymentError(e.response?.data?.message || 'Xatolik')
@@ -736,6 +760,45 @@ export default function PurchaseDetailPage() {
                                 <label className="form-label">Izoh</label>
                                 <input className="form-input" value={paymentNote} onChange={e => setPaymentNote(e.target.value)} />
                             </div>
+                            {currentShift && paymentCurrency === 'UZS' && (
+                                <div style={{
+                                    marginTop: 10, padding: '10px 12px',
+                                    border: '1px solid #7c3aed44', borderRadius: 8,
+                                    background: '#faf5ff'
+                                }}>
+                                    <label style={{
+                                        display: 'flex', alignItems: 'center', gap: 7,
+                                        fontSize: 13, fontWeight: 600, color: '#7c3aed',
+                                        cursor: 'pointer', marginBottom: recordExpense ? 10 : 0
+                                    }}>
+                                        <input type="checkbox" checked={recordExpense}
+                                               style={{ width: 15, height: 15, accentColor: '#7c3aed' }}
+                                               onChange={e => {
+                                                   setRecordExpense(e.target.checked)
+                                                   if (e.target.checked) setExpenseAmount(paymentAmount)
+                                               }} />
+                                        Joriy smenaga harajat sifatida qayd etish
+                                    </label>
+                                    {recordExpense && (
+                                        <div>
+                                            <label className="form-label" style={{ fontSize: 12 }}>
+                                                Smenaga kiritiladigan summa (UZS)
+                                            </label>
+                                            <input
+                                                className="form-input"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={fmtPrice(expenseAmount)}
+                                                onChange={e => setExpenseAmount(e.target.value.replace(/\s/g, ''))}
+                                                placeholder="0"
+                                            />
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                                                Shaxsiy mablag'dan to'langan qismni 0 qoldiring
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="modal-footer">
                             <button className="btn-cancel" onClick={() => setShowPayment(false)}>Bekor</button>

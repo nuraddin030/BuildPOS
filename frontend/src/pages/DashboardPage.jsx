@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     TrendingUp, TrendingDown, CalendarDays, AlertTriangle,
     ShoppingCart, Wallet, CreditCard, ArrowRightLeft,
-    BarChart3, Receipt, Inbox, Clock, Package, Truck,
+    BarChart3, Receipt, Clock, Package, Truck,
     CreditCard as NasiyaIcon, AlertCircle, CheckCircle,
-    Loader2, ArrowUpRight
+    Loader2, ArrowUpRight, Bell, Users, Building2,
+    Plus, Trash2, Check, StickyNote
 } from 'lucide-react'
 import api from '../api/api'
 import { shiftsApi } from '../api/shifts'
+import { remindersApi } from '../api/reminders'
 import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 import '../styles/DashboardPage.css'
@@ -62,6 +64,217 @@ function PaymentRow({ icon: Icon, label, value, color, total }) {
             </div>
             <div className="dash-pay-bar-bg">
                 <div className="dash-pay-bar" style={{ width: `${pct}%`, background: color }} />
+            </div>
+        </div>
+    )
+}
+
+// ── Yaqin to'lovlar paneli ────────────────────────────────────────
+const today = new Date().toISOString().slice(0, 10)
+
+function urgencyClass(dueDate) {
+    if (!dueDate) return ''
+    if (dueDate < today) return 'upd-overdue'
+    if (dueDate === today) return 'upd-today'
+    const diff = (new Date(dueDate) - new Date(today)) / 86400000
+    if (diff <= 3) return 'upd-soon'
+    return ''
+}
+
+function urgencyLabel(dueDate) {
+    if (!dueDate) return null
+    if (dueDate < today) {
+        const days = Math.round((new Date(today) - new Date(dueDate)) / 86400000)
+        return `${days} kun o'tdi`
+    }
+    if (dueDate === today) return 'Bugun!'
+    const diff = Math.round((new Date(dueDate) - new Date(today)) / 86400000)
+    return `${diff} kun qoldi`
+}
+
+function fmtDueDate(d) {
+    if (!d) return '—'
+    const [y, m, day] = d.split('-')
+    return `${day}.${m}.${y}`
+}
+
+function UpcomingDebtsPanel({ items, navigate }) {
+    const customerItems = items.filter(it => it.type === 'CUSTOMER')
+    const supplierItems = items.filter(it => it.type === 'SUPPLIER')
+    const overdueCustomer = customerItems.filter(it => it.dueDate < today).length
+    const overdueSupplier = supplierItems.filter(it => it.dueDate < today).length
+
+    const [tab, setTab]                   = useState('customer')
+    const [reminders, setReminders]       = useState([])
+    const [showForm, setShowForm]         = useState(false)
+    const [newText, setNewText]           = useState('')
+    const [newDate, setNewDate]           = useState('')
+    const [saving, setSaving]             = useState(false)
+    const inputRef = useRef(null)
+
+    useEffect(() => {
+        remindersApi.getAll().then(r => setReminders(r.data)).catch(() => {})
+    }, [])
+
+    useEffect(() => {
+        if (showForm) setTimeout(() => inputRef.current?.focus(), 50)
+    }, [showForm])
+
+    function handleAdd() {
+        if (!newText.trim()) return
+        setSaving(true)
+        remindersApi.create(newText.trim(), newDate || null)
+            .then(r => {
+                setReminders(prev => [r.data, ...prev])
+                setNewText('')
+                setNewDate('')
+                setShowForm(false)
+            })
+            .catch(() => {})
+            .finally(() => setSaving(false))
+    }
+
+    function handleDone(id) {
+        remindersApi.markDone(id).then(() => setReminders(prev => prev.filter(r => r.id !== id))).catch(() => {})
+    }
+
+    function handleDelete(id) {
+        remindersApi.delete(id).then(() => setReminders(prev => prev.filter(r => r.id !== id))).catch(() => {})
+    }
+
+    const TABS = [
+        { key: 'customer', label: 'Mijozlar',     count: customerItems.length, overdue: overdueCustomer },
+        { key: 'supplier', label: 'Yetkazuvchilar', count: supplierItems.length, overdue: overdueSupplier },
+        { key: 'reminder', label: 'Eslatmalar',   count: reminders.length,     overdue: 0 },
+    ]
+
+    const activeItems = tab === 'customer' ? customerItems : tab === 'supplier' ? supplierItems : []
+
+    return (
+        <div className="dash-card upd-card">
+            <div className="dash-card-header">
+                <Bell size={15} style={{ color: (overdueCustomer + overdueSupplier) > 0 ? '#ef4444' : 'var(--text-muted)' }} />
+                <h6 className="dash-card-title">Yaqin to'lovlar</h6>
+                {tab === 'reminder' && (
+                    <button className="upd-add-btn" onClick={() => setShowForm(v => !v)} title="Eslatma qo'shish">
+                        <Plus size={14} />
+                    </button>
+                )}
+            </div>
+
+            <div className="upd-body">
+                {/* Tablar */}
+                <div className="upd-tabs">
+                    {TABS.map(t => (
+                        <button key={t.key}
+                                className={`upd-tab${tab === t.key ? ' upd-tab--active' : ''}`}
+                                onClick={() => { setTab(t.key); setShowForm(false) }}>
+                            {t.label}
+                            {t.overdue > 0
+                                ? <span className="upd-tab-badge upd-tab-badge--red">{t.overdue}</span>
+                                : t.count > 0
+                                    ? <span className="upd-tab-badge">{t.count}</span>
+                                    : null
+                            }
+                        </button>
+                    ))}
+                </div>
+
+                {/* Eslatma qo'shish formasi */}
+                {tab === 'reminder' && showForm && (
+                    <div className="upd-form">
+                        <input
+                            ref={inputRef}
+                            className="upd-form-input"
+                            placeholder="Eslatma matni..."
+                            value={newText}
+                            onChange={e => setNewText(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                            maxLength={300}
+                        />
+                        <div className="upd-form-row">
+                            <input
+                                type="date"
+                                className="upd-form-date"
+                                value={newDate}
+                                onChange={e => setNewDate(e.target.value)}
+                            />
+                            <button className="upd-form-save" onClick={handleAdd} disabled={saving || !newText.trim()}>
+                                {saving ? <Loader2 size={13} className="spin" /> : 'Saqlash'}
+                            </button>
+                            <button className="upd-form-cancel" onClick={() => { setShowForm(false); setNewText(''); setNewDate('') }}>
+                                Bekor
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Qarzlar (mijoz yoki yetkazuvchi) */}
+                {tab !== 'reminder' && (
+                    activeItems.length === 0 ? (
+                        <div className="table-empty" style={{ padding: '24px 0' }}>
+                            <CheckCircle size={28} strokeWidth={1} style={{ color: '#10b981' }} />
+                            <p style={{ fontSize: 13 }}>Yaqin to'lovlar yo'q</p>
+                        </div>
+                    ) : (
+                        <div className="upd-list">
+                            {activeItems.map(it => {
+                                const cls = urgencyClass(it.dueDate)
+                                const lbl = urgencyLabel(it.dueDate)
+                                const isCustomer = it.type === 'CUSTOMER'
+                                return (
+                                    <div key={`${it.type}-${it.id}`}
+                                         className={`upd-row ${cls}`}
+                                         onClick={() => navigate(isCustomer ? '/debts' : '/debts?tab=supplier')}>
+                                        <div className={`upd-type-icon ${isCustomer ? 'upd-type-customer' : 'upd-type-supplier'}`}>
+                                            {isCustomer ? <Users size={13} /> : <Building2 size={13} />}
+                                        </div>
+                                        <div className="upd-main">
+                                            <span className="upd-name">{it.entityName}</span>
+                                            {it.referenceNo && <span className="upd-ref">{it.referenceNo}</span>}
+                                        </div>
+                                        <div className="upd-right">
+                                            <span className="upd-amount">{fmt(it.remainingAmount)} UZS</span>
+                                            <span className={`upd-label ${cls}`}>{lbl || fmtDueDate(it.dueDate)}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )
+                )}
+
+                {/* Eslatmalar tab */}
+                {tab === 'reminder' && (
+                    reminders.length === 0 ? (
+                        <div className="table-empty" style={{ padding: '24px 0' }}>
+                            <StickyNote size={28} strokeWidth={1} />
+                            <p style={{ fontSize: 13 }}>Eslatmalar yo'q</p>
+                        </div>
+                    ) : (
+                        <div className="upd-list">
+                            {reminders.map(r => (
+                                <div key={`rem-${r.id}`} className="upd-row upd-row--reminder">
+                                    <div className="upd-type-icon upd-type-reminder">
+                                        <StickyNote size={13} />
+                                    </div>
+                                    <div className="upd-main">
+                                        <span className="upd-name">{r.text}</span>
+                                        {r.dueDate && <span className="upd-ref">{fmtDueDate(r.dueDate)}</span>}
+                                    </div>
+                                    <div className="upd-reminder-actions">
+                                        <button className="upd-action-btn upd-action-done" onClick={() => handleDone(r.id)} title="Bajarildi">
+                                            <Check size={12} />
+                                        </button>
+                                        <button className="upd-action-btn upd-action-del" onClick={() => handleDelete(r.id)} title="O'chirish">
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                )}
             </div>
         </div>
     )
@@ -169,7 +382,7 @@ export default function DashboardPage() {
                          subWarn={data.overdueDebtCount > 0 ? `${data.overdueDebtCount} ta muddati o'tgan` : null}
                          icon={Wallet} color="#f59e0b"
                          onClick={() => navigate('/debts')} />
-                <KpiCard label="Yetkazuvchi qarzi" value={fmt(data.totalSupplierDebt)}
+                <KpiCard label="Yetkazuvchiga qarz" value={fmt(data.totalSupplierDebt)}
                          sub="Yetkazuvchilarga"
                          icon={TrendingDown} color="#ef4444" />
             </div>
@@ -192,33 +405,8 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Haftalik grafik */}
-                <div className="dash-card">
-                    <div className="dash-card-header">
-                        <BarChart3 size={15} />
-                        <h6 className="dash-card-title">Haftalik sotuv</h6>
-                    </div>
-                    <div className="dash-chart">
-                        {data.weeklySales?.map((day, i) => {
-                            const max = Math.max(...(data.weeklySales || []).map(d => Number(d.amount) || 0), 1)
-                            const pct = Math.round((Number(day.amount) || 0) / max * 100)
-                            const isToday = day.date === new Date().toISOString().slice(0, 10)
-                            return (
-                                <div key={i} className="dash-chart-col">
-                                    <span className="dash-chart-amount">{pct > 0 ? fmt(day.amount) : ''}</span>
-                                    <div className="dash-chart-track">
-                                        <div className={`dash-chart-bar${isToday ? ' dash-chart-bar--today' : ''}`}
-                                             style={{ height: `${Math.max(pct, 4)}%` }}
-                                             title={`${day.day}: ${fmt(day.amount)} UZS`} />
-                                    </div>
-                                    <span className={`dash-chart-day${isToday ? ' dash-chart-day--today' : ''}`}>
-                                        {day.day?.slice(0, 2)}
-                                    </span>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
+                {/* Yaqin to'lovlar */}
+                <UpcomingDebtsPanel items={data.upcomingDebts || []} navigate={navigate} />
             </div>
 
             {/* ── Quyi grid ──────────────────────────────────────── */}

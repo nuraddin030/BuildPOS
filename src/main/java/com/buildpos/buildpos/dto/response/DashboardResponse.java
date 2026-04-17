@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -71,6 +72,11 @@ public class DashboardResponse {
     private List<SaleResponse> recentSales;
 
     // ─────────────────────────────────────────
+    // Yaqin to'lovlar (keyingi 7 kun + muddati o'tgan)
+    // ─────────────────────────────────────────
+    private List<UpcomingDebtItem> upcomingDebts;
+
+    // ─────────────────────────────────────────
     // Ichki DTO lar
     // ─────────────────────────────────────────
     @Data
@@ -112,5 +118,17 @@ public class DashboardResponse {
         private BigDecimal totalAmount;
         private String totalDisplay;    // "6 USD" yoki "600 000 UZS" yoki "6 USD + 100 000 UZS"
         private String createdAt;
+    }
+
+    @Data
+    @Builder
+    public static class UpcomingDebtItem {
+        private Long id;
+        private String type;            // "CUSTOMER" yoki "SUPPLIER"
+        private String entityName;      // mijoz yoki yetkazuvchi ismi
+        private String entityPhone;
+        private BigDecimal remainingAmount;
+        private LocalDate dueDate;
+        private String referenceNo;     // sotuv/xarid raqami
     }
 }

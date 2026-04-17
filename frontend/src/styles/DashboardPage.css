@@ -228,8 +228,12 @@
 .dash-mid-grid {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
+    grid-auto-rows: minmax(0, 1fr);
     gap: 14px;
     margin-bottom: 16px;
+}
+.dash-mid-grid > * {
+    min-height: 0;
 }
 
 .dash-bottom-grid {
@@ -244,6 +248,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-bottom: 12px;
 }
 
 .dash-pay-row {
@@ -374,6 +379,362 @@
     font-weight: 700;
 }
 
+/* ── Yaqin to'lovlar paneli ──────────────────────────────────── */
+.upd-card {
+    display: flex;
+    flex-direction: column;
+    height: 0;
+    min-height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.upd-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+.upd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.upd-list::-webkit-scrollbar {
+    width: 4px;
+}
+.upd-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.upd-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.upd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border-color);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+
+.upd-row:last-child {
+    border-bottom: none;
+}
+
+.upd-row:hover {
+    background: var(--hover-bg);
+}
+
+.upd-type-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.upd-type-customer {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+.upd-type-supplier {
+    background: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+}
+
+.upd-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.upd-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upd-ref {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.upd-right {
+    text-align: right;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding-right: 6px;
+}
+
+.upd-amount {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.upd-label {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+.upd-label.upd-overdue {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.upd-label.upd-today {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.upd-label.upd-soon {
+    background: rgba(234, 179, 8, 0.12);
+    color: #b45309;
+}
+
+/* ── Panel ichki tablar ──────────────────────────────────────── */
+.upd-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.upd-tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+
+.upd-tab:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.upd-tab--active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 600;
+}
+
+.upd-tab-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.25);
+    color: inherit;
+    min-width: 16px;
+    text-align: center;
+}
+
+.upd-tab:not(.upd-tab--active) .upd-tab-badge {
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+.upd-tab-badge--red {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+
+.upd-tab--active .upd-tab-badge--red {
+    background: rgba(255,255,255,0.3) !important;
+    color: #fff !important;
+}
+
+/* ── Reminder qatori ─────────────────────────────────────────── */
+.upd-row--reminder {
+    cursor: default;
+}
+
+.upd-type-reminder {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.upd-reminder-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.upd-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s;
+}
+
+.upd-action-done {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.upd-action-done:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.upd-action-del {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+}
+
+.upd-action-del:hover {
+    background: rgba(239, 68, 68, 0.18);
+}
+
+/* ── Eslatma qo'shish formasi ────────────────────────────────── */
+.upd-add-btn {
+    margin-left: auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    flex-shrink: 0;
+}
+
+.upd-add-btn:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.upd-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0 10px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2px;
+}
+
+.upd-form-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text-primary);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.upd-form-input:focus {
+    border-color: var(--primary);
+}
+
+.upd-form-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.upd-form-date {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.upd-form-save {
+    padding: 6px 14px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.upd-form-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.upd-form-cancel {
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Row background tints */
+.upd-row.upd-overdue {
+    background: rgba(239, 68, 68, 0.03);
+}
+
+.upd-row.upd-today {
+    background: rgba(245, 158, 11, 0.04);
+}
+
+/* Badge variant */
+.dash-card-badge--red {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1200px) {
     .dash-kpi-grid {
@@ -384,6 +745,14 @@
 @media (max-width: 1024px) {
     .dash-mid-grid {
         grid-template-columns: 1fr;
+        grid-auto-rows: auto;
+    }
+    .upd-card {
+        height: auto;
+        min-height: unset;
+    }
+    .upd-list {
+        max-height: 300px;
     }
     .dash-bottom-grid {
         grid-template-columns: 1fr;

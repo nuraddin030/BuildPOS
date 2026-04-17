@@ -179,12 +179,21 @@ public class ShiftService {
         String duration = formatDuration(shift.getOpenedAt(),
                 shift.getClosedAt() != null ? shift.getClosedAt() : LocalDateTime.now());
 
-        // Smena harajatlari
-        BigDecimal totalExpenses = expenseRepository.sumByShift(shift.getId());
-        if (totalExpenses == null) totalExpenses = BigDecimal.ZERO;
+        // Smena harajatlari — to'lov usuli bo'yicha
+        BigDecimal expenseCash     = expenseRepository.sumByShiftAndMethod(shift.getId(), com.buildpos.buildpos.entity.enums.PaymentMethod.CASH);
+        BigDecimal expenseCard     = expenseRepository.sumByShiftAndMethod(shift.getId(), com.buildpos.buildpos.entity.enums.PaymentMethod.CARD);
+        BigDecimal expenseTransfer = expenseRepository.sumByShiftAndMethod(shift.getId(), com.buildpos.buildpos.entity.enums.PaymentMethod.TRANSFER);
+        if (expenseCash     == null) expenseCash     = BigDecimal.ZERO;
+        if (expenseCard     == null) expenseCard     = BigDecimal.ZERO;
+        if (expenseTransfer == null) expenseTransfer = BigDecimal.ZERO;
 
-        // Kassa farqi: haqiqiy naqd - (boshlang'ich + smena davomida kelgan naqd - harajatlar)
-        BigDecimal expectedCash = shift.getOpeningCash().add(totalCash).subtract(totalExpenses);
+        // payment_method NULL bo'lgan eski harajatlar (naqd deb hisoblanadi)
+        BigDecimal totalExpensesAll = expenseRepository.sumByShift(shift.getId());
+        if (totalExpensesAll == null) totalExpensesAll = BigDecimal.ZERO;
+        BigDecimal totalExpenses = totalExpensesAll;
+
+        // Kassaga ta'sir qiladigan faqat naqd harajatlar
+        BigDecimal expectedCash = shift.getOpeningCash().add(totalCash).subtract(expenseCash);
         BigDecimal cashDiff = BigDecimal.ZERO;
         if (shift.getClosingCash() != null) {
             cashDiff = shift.getClosingCash().subtract(expectedCash);
@@ -205,6 +214,9 @@ public class ShiftService {
                 .openingCash(shift.getOpeningCash())
                 .closingCash(shift.getClosingCash())
                 .totalExpenses(totalExpenses)
+                .expenseCash(expenseCash)
+                .expenseCard(expenseCard)
+                .expenseTransfer(expenseTransfer)
                 .expectedCash(expectedCash)
                 .cashDifference(cashDiff)
                 .saleCount(saleCount)

@@ -1,5 +1,6 @@
 package com.buildpos.buildpos.entity;
 
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,13 @@ public class Expense {
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "supplier_id")
+    private Long supplierId;
 
     @Column(length = 500)
     private String note;

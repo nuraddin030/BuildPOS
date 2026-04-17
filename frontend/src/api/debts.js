@@ -18,7 +18,12 @@ export const supplierDebtsApi = {
     getStats:      ()       => api.get('/api/suppliers/debts/stats'),
     getGrouped:    (search) => api.get('/api/suppliers/debts/grouped', { params: { search } }),
     getBySupplier: (id)     => api.get(`/api/suppliers/${id}/debts`),
-    pay:           (data)   => api.post('/api/supplier-payments', data),
+    pay:           (data)   => api.post('/api/supplier-payments/pay-debt', data),
+    setDueDate:    (debtId, dueDate, notes) => api.patch(
+        `/api/suppliers/debts/${debtId}/set-due-date`,
+        null,
+        { params: { dueDate, notes } }
+    ),
 }
 
 export const installmentApi = {

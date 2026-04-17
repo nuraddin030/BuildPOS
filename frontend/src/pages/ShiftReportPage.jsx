@@ -248,10 +248,30 @@ function ShiftDetailModal({ shiftId, onClose }) {
                                     <span className="debt-info-value" style={{ color: '#16a34a' }}>+{fmt(summary.totalCash)} UZS</span>
                                 </div>
                                 {Number(summary.totalExpenses) > 0 && (
-                                    <div className="debt-info-row">
-                                        <span>Harajatlar</span>
-                                        <span className="debt-info-value" style={{ color: '#ef4444' }}>−{fmt(summary.totalExpenses)} UZS</span>
-                                    </div>
+                                    <>
+                                        <div className="debt-info-row">
+                                            <span>Harajatlar (jami)</span>
+                                            <span className="debt-info-value" style={{ color: '#ef4444' }}>−{fmt(summary.totalExpenses)} UZS</span>
+                                        </div>
+                                        {Number(summary.expenseCash) > 0 && (
+                                            <div className="debt-info-row" style={{ paddingLeft: 12 }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>· Naqd</span>
+                                                <span className="debt-info-value" style={{ color: '#ef4444', fontSize: 12 }}>−{fmt(summary.expenseCash)} UZS</span>
+                                            </div>
+                                        )}
+                                        {Number(summary.expenseCard) > 0 && (
+                                            <div className="debt-info-row" style={{ paddingLeft: 12 }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>· Karta</span>
+                                                <span className="debt-info-value" style={{ color: '#ef4444', fontSize: 12 }}>−{fmt(summary.expenseCard)} UZS</span>
+                                            </div>
+                                        )}
+                                        {Number(summary.expenseTransfer) > 0 && (
+                                            <div className="debt-info-row" style={{ paddingLeft: 12 }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>· O'tkazma</span>
+                                                <span className="debt-info-value" style={{ color: '#ef4444', fontSize: 12 }}>−{fmt(summary.expenseTransfer)} UZS</span>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                                 <div className="debt-info-row">
                                     <span>Kutilayotgan kassa</span>

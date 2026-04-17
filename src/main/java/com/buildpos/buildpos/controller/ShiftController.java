@@ -56,7 +56,11 @@ public class ShiftController {
     @Operation(summary = "Joriy ochiq smena")
     public ResponseEntity<ShiftResponse> getCurrentShift() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(shiftService.getCurrentShift(username));
+        try {
+            return ResponseEntity.ok(shiftService.getCurrentShift(username));
+        } catch (com.buildpos.buildpos.exception.NotFoundException e) {
+            return ResponseEntity.noContent().build();
+        }
     }
 
     // ── ID BO'YICHA ──────────────────────────────────────────────────

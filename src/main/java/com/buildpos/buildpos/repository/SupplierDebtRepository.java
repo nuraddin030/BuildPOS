@@ -100,6 +100,28 @@ public interface SupplierDebtRepository extends JpaRepository<SupplierDebt, Long
     List<SupplierDebt> findAllOpenForTree(@Param("search") String search);
 
     // ─────────────────────────────────────────
+    // Dashboard — yaqin muddat va muddati o'tgan (dueDate belgilangan)
+    // ─────────────────────────────────────────
+    @Query("""
+        SELECT sd FROM SupplierDebt sd
+        JOIN FETCH sd.supplier
+        WHERE sd.isPaid = false
+          AND sd.dueDate IS NOT NULL
+          AND sd.dueDate <= :endDate
+        ORDER BY sd.dueDate ASC
+    """)
+    List<SupplierDebt> findUpcomingDebts(@Param("endDate") LocalDate endDate);
+
+    // Dashboard — barcha ochiq qarzlar (dueDate bo'lmasa ham)
+    @Query("""
+        SELECT sd FROM SupplierDebt sd
+        JOIN FETCH sd.supplier
+        WHERE sd.isPaid = false
+        ORDER BY sd.dueDate ASC NULLS LAST, sd.createdAt DESC
+    """)
+    List<SupplierDebt> findAllOpen();
+
+    // ─────────────────────────────────────────
     // Aging Report uchun
     // ─────────────────────────────────────────
     @Query(value = """

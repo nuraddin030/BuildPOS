@@ -415,16 +415,22 @@
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
 }
 
+.user-avatar-btn--initials {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
 .user-dropdown {
     position: absolute;
     right: 0;
     top: calc(100% + 8px);
-    width: 240px;
+    min-width: 220px;
     background: var(--surface);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius);
+    border-radius: 14px;
     box-shadow: var(--shadow-lg);
-    padding: 6px;
+    overflow: hidden;
     z-index: 9999;
     animation: dropdown-enter 0.15s ease;
 }
@@ -433,47 +439,89 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    border-radius: var(--radius-sm);
+    padding: 14px;
+    border-bottom: 1px solid var(--border-color);
     background: var(--surface-secondary);
-    margin-bottom: 4px;
 }
 
 .dropdown-avatar {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
-.dropdown-name  { font-weight: 600; font-size: 14px; color: var(--text-primary); }
-.dropdown-role  { font-size: 12px; color: var(--text-secondary); }
-.dropdown-divider { height: 1px; margin: 4px 0; background: var(--border-color); }
+.dropdown-avatar-initials {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-avatar.role--owner  { background: #0891b2; }
+.dropdown-avatar.role--admin  { background: #7c3aed; }
+.dropdown-avatar.role--cashier { background: #059669; }
+
+.dropdown-user-text {
+    min-width: 0;
+}
+
+.dropdown-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-role-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    padding: 1px 8px;
+    border-radius: 20px;
+    margin-top: 3px;
+}
+
+.dropdown-role-badge.role--owner  { background: #0891b2; }
+.dropdown-role-badge.role--admin  { background: #7c3aed; }
+.dropdown-role-badge.role--cashier { background: #059669; }
+
+.dropdown-items-group {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-divider { height: 1px; background: var(--border-color); }
 
 .dropdown-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
-    padding: 8px 10px;
+    padding: 9px 14px;
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-primary);
-    border-radius: var(--radius-sm);
-    transition: var(--transition);
+    transition: background 0.15s;
+    text-align: left;
 }
 
-.dropdown-item:hover  { background: var(--surface-secondary); }
-.dropdown-item.logout { color: var(--danger); }
-.dropdown-item.logout:hover { background: var(--danger-bg); }
+.dropdown-item svg { opacity: 0.5; flex-shrink: 0; }
+.dropdown-item:hover:not(:disabled) { background: var(--surface-hover); }
+.dropdown-item:disabled { opacity: 0.45; cursor: default; }
+.dropdown-item.logout { color: var(--danger); padding: 9px 14px; }
+.dropdown-item.logout svg { opacity: 0.7; }
+.dropdown-item.logout:hover:not(:disabled) { background: var(--danger-bg); }
 
 /* ===========================
    THEME TOGGLE

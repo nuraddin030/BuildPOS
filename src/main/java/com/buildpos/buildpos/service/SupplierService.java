@@ -192,6 +192,24 @@ public class SupplierService {
     }
 
     // ─────────────────────────────────────────
+    // QARZ MUDDAT BELGILASH
+    // ─────────────────────────────────────────
+    @Transactional
+    public SupplierDebtResponse setDebtDueDate(Long debtId, LocalDate dueDate, String notes) {
+        SupplierDebt debt = supplierDebtRepository.findById(debtId)
+                .orElseThrow(() -> new NotFoundException("Qarz topilmadi: " + debtId));
+        if (debt.getIsPaid()) {
+            throw new com.buildpos.buildpos.exception.BadRequestException("To'langan qarzning muddatini o'zgartirib bo'lmaydi");
+        }
+        debt.setDueDate(dueDate);
+        if (notes != null && !notes.isBlank()) {
+            String existing = debt.getNotes() != null ? debt.getNotes() + " | " : "";
+            debt.setNotes(existing + "Muddat belgilandi: " + dueDate + " (" + notes + ")");
+        }
+        return toDebtResponse(supplierDebtRepository.save(debt));
+    }
+
+    // ─────────────────────────────────────────
     // PRIVATE HELPERS
     // ─────────────────────────────────────────
     private Supplier findById(Long id) {

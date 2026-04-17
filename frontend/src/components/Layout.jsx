@@ -29,7 +29,7 @@ import {
     LayoutDashboard, ShoppingCart, Package, Users, Truck, BarChart2,
     Factory, Warehouse, FolderTree, UserCog, Handshake, Ruler,
     ChevronLeft, ChevronRight, Globe, DollarSign, Pencil, CreditCard,
-    LogOut, User, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck, BookOpen, Cog, Receipt
+    LogOut, User, Lock, Building2, X, Menu, Sun, Moon, ShieldOff, ArrowLeftRight, ShoppingBag, ClipboardList, TrendingUp, Settings, ShieldCheck, BookOpen, Cog, Receipt
 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import '../styles/layout.css'
@@ -409,36 +409,57 @@ export default function Layout() {
                         {/* User Box */}
                         <div className="user-wrapper" ref={userRef}>
                             <button
-                                className="user-avatar-btn"
+                                className="user-avatar-btn user-avatar-btn--initials"
                                 onClick={() => setUserOpen(!userOpen)}
                                 aria-label="User menu"
                             >
-                                <User size={20} strokeWidth={2} />
+                                {user?.fullName
+                                    ? user.fullName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                                    : <User size={18} strokeWidth={2} />}
                             </button>
-                            {userOpen && (
+                            {userOpen && (() => {
+                                const initials = user?.fullName
+                                    ? user.fullName.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                                    : '?'
+                                const roleClass = user?.role === 'OWNER' ? 'role--owner'
+                                    : user?.role === 'ADMIN' ? 'role--admin'
+                                    : 'role--cashier'
+                                return (
                                 <div className="user-dropdown">
                                     <div className="dropdown-user-info">
-                                        <div className="dropdown-avatar">
-                                            <User size={18} />
+                                        <div className={`dropdown-avatar ${roleClass}`}>
+                                            <span className="dropdown-avatar-initials">{initials}</span>
                                         </div>
-                                        <div>
-                                            <div className="dropdown-name">
-                                                {user?.fullName || user?.username}
-                                            </div>
-                                            <div className="dropdown-role">{user?.role}</div>
+                                        <div className="dropdown-user-text">
+                                            <div className="dropdown-name">{user?.fullName || user?.username}</div>
+                                            <span className={`dropdown-role-badge ${roleClass}`}>{user?.role}</span>
                                         </div>
                                     </div>
+
+                                    <div className="dropdown-items-group">
+                                        <button className="dropdown-item" disabled>
+                                            <User size={15} />
+                                            <span>Profil</span>
+                                        </button>
+                                        <button className="dropdown-item" disabled>
+                                            <Lock size={15} />
+                                            <span>Parol o'zgartirish</span>
+                                        </button>
+                                    </div>
+
                                     <div className="dropdown-divider" />
+
                                     <button
                                         className="dropdown-item logout"
                                         onClick={handleLogout}
                                         disabled={loggingOut}
                                     >
-                                        <LogOut size={16} />
+                                        <LogOut size={15} />
                                         <span>{loggingOut ? 'Chiqilmoqda...' : 'Chiqish'}</span>
                                     </button>
                                 </div>
-                            )}
+                                )
+                            })()}
                         </div>
                     </div>
                 </div>

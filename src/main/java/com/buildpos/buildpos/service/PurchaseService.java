@@ -6,7 +6,9 @@ import com.buildpos.buildpos.dto.request.ReceivePurchaseRequest;
 import com.buildpos.buildpos.dto.response.PurchaseResponse;
 import com.buildpos.buildpos.dto.response.PurchaseSummaryResponse;
 import com.buildpos.buildpos.entity.*;
+import com.buildpos.buildpos.entity.enums.PaymentMethod;
 import com.buildpos.buildpos.entity.enums.PurchaseStatus;
+import com.buildpos.buildpos.entity.enums.ShiftStatus;
 import com.buildpos.buildpos.entity.enums.StockMovementType;
 import com.buildpos.buildpos.exception.BadRequestException;
 import com.buildpos.buildpos.exception.NotFoundException;
@@ -15,10 +17,12 @@ import com.buildpos.buildpos.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -37,6 +41,10 @@ public class PurchaseService {
     private final WarehouseStockRepository warehouseStockRepository;
     private final StockMovementRepository stockMovementRepository;
     private final SupplierDebtRepository supplierDebtRepository;
+    private final ExpenseRepository expenseRepository;
+    private final ExpenseCategoryRepository expenseCategoryRepository;
+    private final ShiftRepository shiftRepository;
+    private final UserRepository userRepository;
 
     // ─────────────────────────────────────────
     // CREATE
@@ -234,6 +242,42 @@ public class PurchaseService {
 
         purchaseRepository.save(purchase);
         updateSupplierDebt(purchase);
+
+        // ── Smena harajati (agar belgilangan bo'lsa) ─────────────
+        BigDecimal expenseAmt = request.getShiftExpenseAmount();
+        if (expenseAmt != null && expenseAmt.compareTo(BigDecimal.ZERO) > 0) {
+            try {
+                String username = SecurityContextHolder.getContext().getAuthentication().getName();
+                User user = userRepository.findByUsername(username).orElse(null);
+                Shift shift = null;
+                if (user != null) {
+                    shift = shiftRepository.findByCashierIdAndStatus(user.getId(), ShiftStatus.OPEN)
+                            .or(() -> shiftRepository.findFirstByStatus(ShiftStatus.OPEN))
+                            .orElse(null);
+                }
+                if (shift != null) {
+                    ExpenseCategory category = expenseCategoryRepository.findByName("Yetkazuvchiga to'lov")
+                            .orElseGet(() -> expenseCategoryRepository.save(
+                                    ExpenseCategory.builder().name("Yetkazuvchiga to'lov").build()));
+                    PaymentMethod method = request.getPaymentMethod() != null
+                            ? request.getPaymentMethod()
+                            : PaymentMethod.CASH;
+                    expenseRepository.save(Expense.builder()
+                            .date(LocalDate.now())
+                            .category(category)
+                            .amount(expenseAmt)
+                            .paymentMethod(method)
+                            .supplierId(purchase.getSupplier() != null ? purchase.getSupplier().getId() : null)
+                            .note("Yetkazuvchi: " + (purchase.getSupplier() != null ? purchase.getSupplier().getName() : "")
+                                    + " | Xarid: " + purchase.getReferenceNo())
+                            .shift(shift)
+                            .createdBy(user)
+                            .build());
+                }
+            } catch (Exception ignored) {
+                // smena topilmasa harajat yozilmaydi, asosiy to'lov davom etadi
+            }
+        }
 
         return toResponse(purchase);
     }

@@ -142,6 +142,19 @@ public interface CustomerDebtRepository extends JpaRepository<CustomerDebt, Long
     List<CustomerDebt> findAllOpenForTree(@Param("search") String search);
 
     // ─────────────────────────────────────────
+    // Dashboard — yaqin muddat va muddati o'tgan
+    // ─────────────────────────────────────────
+    @Query("""
+        SELECT cd FROM CustomerDebt cd
+        JOIN FETCH cd.customer
+        WHERE cd.isPaid = false
+          AND cd.dueDate IS NOT NULL
+          AND cd.dueDate <= :endDate
+        ORDER BY cd.dueDate ASC
+    """)
+    List<CustomerDebt> findUpcomingDebts(@Param("endDate") LocalDate endDate);
+
+    // ─────────────────────────────────────────
     // Aging Report uchun
     // ─────────────────────────────────────────
     @Query(value = """

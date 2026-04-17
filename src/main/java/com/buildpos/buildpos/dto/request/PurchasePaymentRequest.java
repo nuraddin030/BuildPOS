@@ -25,4 +25,7 @@ public class PurchasePaymentRequest {
 
     private String note;
     private LocalDateTime paidAt;
+
+    // Smena harajati (ixtiyoriy) — kassadan chiqadigan summa
+    private BigDecimal shiftExpenseAmount;
 }
