@@ -10,6 +10,7 @@ const FIELD_LABELS = {
     unitName:     { label: "O'lchov birligi",     required: true },
     barcode:      { label: 'Shtrix kodi',         required: false },
     costPriceUsd: { label: 'Tannarx (USD)',       required: false },
+    costPrice:    { label: 'Tannarx (UZS)',       required: false },
     salePrice:    { label: 'Sotuv narxi (UZS)',   required: false },
     minPrice:     { label: 'Min narx (UZS)',      required: false },
     minStock:     { label: 'Min qoldiq',          required: false },

@@ -38,7 +38,8 @@ public class ProductImportService {
         FIELD_KEYWORDS.put("categoryName", List.of("kategoriya", "category", "категория", "группа", "cat", "group"));
         FIELD_KEYWORDS.put("unitName",     List.of("birlik", "o'lchov", "unit", "ед.", "единица", "мера", "o'lchov birligi", "мер"));
         FIELD_KEYWORDS.put("barcode",      List.of("shtrix", "barcode", "штрих", "код", "barkod", "bar code", "bar"));
-        FIELD_KEYWORDS.put("costPriceUsd", List.of("tannarx", "себестоимость", "cost", "usd", "тан", "закуп"));
+        FIELD_KEYWORDS.put("costPriceUsd", List.of("tannarx usd", "tannarx (usd)", "cost usd", "usd narx", "usd"));
+        FIELD_KEYWORDS.put("costPrice",    List.of("tannarx", "себестоимость", "закуп", "тан", "tannarx uzs", "tannarx (uzs)", "cost uzs"));
         FIELD_KEYWORDS.put("salePrice",    List.of("sotuv", "sotish narx", "цена", "price", "продажн", "narx uzs", "sotuv narxi", "selling"));
         FIELD_KEYWORDS.put("minPrice",     List.of("minimal", "min narx", "минимальн", "min price", "минимал"));
         FIELD_KEYWORDS.put("minStock",       List.of("min qoldiq", "остаток", "qoldiq", "minimum qol", "минимальный остат", "остат"));
@@ -78,6 +79,7 @@ public class ProductImportService {
                 "Kategoriya",
                 "O'lchov birligi *",
                 "Shtrix kodi",
+                "Tannarx (UZS)",
                 "Tannarx (USD)",
                 "Sotuv narxi (UZS)",
                 "Min narx (UZS)",
@@ -85,7 +87,7 @@ public class ProductImportService {
                 "Boshlang'ich zaxira"
             };
 
-            boolean[] required = {true, false, true, false, false, false, false, false, false};
+            boolean[] required = {true, false, true, false, false, false, false, false, false, false};
 
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
@@ -97,9 +99,9 @@ public class ProductImportService {
 
             // 3 ta namuna qator
             String[][] samples = {
-                {"Sement M400", "Qurilish materiallari", "qop", "4600001234567", "3.50", "75000", "65000", "10", "100"},
-                {"Temir 12mm", "Armatura", "kg", "", "0.85", "18000", "16000", "50", "500"},
-                {"G'isht qizil", "G'isht", "dona", "", "", "1200", "1000", "500", "2000"}
+                {"Sement M400", "Qurilish materiallari", "qop", "4600001234567", "75000", "",     "90000", "80000", "10",  "100"},
+                {"Temir 12mm",  "Armatura",              "kg",  "",               "",      "0.85", "18000", "16000", "50",  "500"},
+                {"G'isht qizil","G'isht",                "dona","",               "1000",  "",     "1200",  "",      "500", "2000"}
             };
 
             XSSFCellStyle dataStyle = wb.createCellStyle();
@@ -123,7 +125,8 @@ public class ProductImportService {
                 {"Kategoriya", "Ixtiyoriy. Mavjud kategoriya nomi. Bo'sh qoldirilsa kategoriyasiz qo'shiladi."},
                 {"O'lchov birligi *", "Majburiy. Mavjud birlik belgisi yoki nomi (kg, dona, m, pochka...)."},
                 {"Shtrix kodi", "Ixtiyoriy. Noyob shtrix kod."},
-                {"Tannarx (USD)", "Ixtiyoriy. USD da tannarx."},
+                {"Tannarx (UZS)", "Ixtiyoriy. UZS (so'm) da tannarx. Tannarx USD da bo'lsa bu ustunni bo'sh qoldiring."},
+                {"Tannarx (USD)", "Ixtiyoriy. USD da tannarx. Faqat dollar narx bo'lsa to'ldiring."},
                 {"Sotuv narxi (UZS)", "Ixtiyoriy. UZS da sotuv narxi."},
                 {"Min narx (UZS)", "Ixtiyoriy. UZS da minimal sotuv narxi."},
                 {"Min qoldiq", "Ixtiyoriy. Minimal qoldiq miqdori."},
@@ -218,6 +221,7 @@ public class ProductImportService {
             Integer unitCol        = mapping.get("unitName");
             Integer barcodeCol     = mapping.get("barcode");
             Integer costUsdCol     = mapping.get("costPriceUsd");
+            Integer costUzsCol     = mapping.get("costPrice");
             Integer salePriceCol   = mapping.get("salePrice");
             Integer minPriceCol    = mapping.get("minPrice");
             Integer minStockCol    = mapping.get("minStock");
@@ -234,6 +238,7 @@ public class ProductImportService {
                 String unitVal        = safeCell(row, unitCol);
                 String barcodeVal     = safeCell(row, barcodeCol);
                 String costUsdVal     = safeCell(row, costUsdCol);
+                String costUzsVal     = safeCell(row, costUzsCol);
                 String salePriceVal   = safeCell(row, salePriceCol);
                 String minPriceVal    = safeCell(row, minPriceCol);
                 String minStockVal    = safeCell(row, minStockCol);
@@ -278,6 +283,7 @@ public class ProductImportService {
                 }
 
                 BigDecimal costUsd     = parseBigDecimal(costUsdVal);
+                BigDecimal costUzs     = parseBigDecimal(costUzsVal);
                 BigDecimal salePrice   = parseBigDecimal(salePriceVal);
                 BigDecimal minPrice    = parseBigDecimal(minPriceVal);
                 BigDecimal minStock    = parseBigDecimal(minStockVal);
@@ -302,7 +308,7 @@ public class ProductImportService {
                             .conversionFactor(BigDecimal.ONE)
                             .barcode(barcodeVal.isEmpty() ? null : barcodeVal)
                             .costPriceUsd(costUsd.compareTo(BigDecimal.ZERO) > 0 ? costUsd : null)
-                            .costPrice(BigDecimal.ZERO)
+                            .costPrice(costUzs)
                             .salePrice(salePrice)
                             .minPrice(minPrice)
                             .isActive(true)
