@@ -5,7 +5,8 @@ import Layout from './components/Layout'
 import CashierPage from '../src/pages/CashierPage.jsx'
 
 function PrivateRoute({ children }) {
-    const { user } = useAuth()
+    const { user, loading } = useAuth()
+    if (loading) return null          // Silent refresh tugaguncha kutamiz
     if (!user) return <Navigate to="/login" replace />
     return children
 }

@@ -1156,7 +1156,11 @@ export default function CashierPage() {
                 const buf = scannerBuffer.current.trim()
                 scannerBuffer.current = ''
                 clearTimeout(scannerTimer.current)
-                if (buf.length >= 4) searchByBarcode(buf)
+                if (buf.length >= 4) {
+                    e.stopPropagation() // search input Enter handlerini bloklash
+                    setSearch('')       // search inputdagi matnni tozalash
+                    searchByBarcode(buf)
+                }
                 return
             }
             if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
@@ -1167,7 +1171,10 @@ export default function CashierPage() {
                     scannerTimer.current = setTimeout(() => {
                         const finalBuf = scannerBuffer.current.trim()
                         scannerBuffer.current = ''
-                        if (finalBuf.length >= 4) searchByBarcode(finalBuf)
+                        if (finalBuf.length >= 4) {
+                            setSearch('')
+                            searchByBarcode(finalBuf)
+                        }
                     }, 80)
                 } else {
                     scannerTimer.current = setTimeout(() => { scannerBuffer.current = '' }, 400)

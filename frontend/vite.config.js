@@ -10,6 +10,7 @@ export default defineConfig(({ command }) => ({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/uploads': {
         target: 'http://localhost:8080',
