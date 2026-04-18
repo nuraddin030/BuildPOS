@@ -1277,6 +1277,8 @@ textarea:focus-visible {
 
     .receipt-print-area * {
         color: #000000 !important;
+        opacity: 1 !important;
+        border-color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
