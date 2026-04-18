@@ -37,6 +37,10 @@ public class SupplierDebt {
     @Column(name = "paid_amount")
     private BigDecimal paidAmount = BigDecimal.ZERO;
 
+    @Column(nullable = false, length = 3)
+    @Builder.Default
+    private String currency = "UZS";
+
     @Column(name = "due_date")
     private LocalDate dueDate;
 

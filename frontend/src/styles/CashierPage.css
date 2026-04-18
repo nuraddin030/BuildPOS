@@ -1259,26 +1259,24 @@ textarea:focus-visible {
 }
 
 @media print {
-    /* Faqat .receipt ko'rinsin, hamma narsa yashirinsin */
-    body * { visibility: hidden !important; }
-    .receipt, .receipt * { visibility: visible !important; }
-    .receipt {
+    * { visibility: hidden !important; }
+
+    .receipt-print-area,
+    .receipt-print-area * { visibility: visible !important; }
+
+    .receipt-print-area {
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100% !important;
-        border: none !important;
-        max-height: none !important;
-        overflow: visible !important;
-        padding: 4mm !important;
-        background: #fff !important;
-        border-radius: 0 !important;
+        width: 80mm !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
-}
 
-@page {
-    size: 80mm;
-    margin: 4mm;
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
 }
 
 /* ===========================

@@ -515,7 +515,7 @@ function ReceiptModal({ sale, onClose }) {
                     <button onClick={onClose} className="pos-modal-close"><X size={18} /></button>
                 </div>
                 <div className="pos-mb">
-                    <div className="receipt">
+                    <div className="receipt receipt-print-area">
                         {/* ── Header ── */}
                         <div className="receipt-store">PrimeStroy</div>
                         <div className="receipt-subtitle">SOTUV CHEKI</div>

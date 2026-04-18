@@ -79,28 +79,31 @@ public class SupplierPaymentService {
         }
         supplierDebtRepository.save(debt);
 
-        // ── Smena harajati (agar belgilangan bo'lsa) ─────────────
-        Shift shift = null;
-        if (user != null) {
-            shift = shiftRepository.findByCashierIdAndStatus(user.getId(), ShiftStatus.OPEN)
-                    .or(() -> shiftRepository.findFirstByStatus(ShiftStatus.OPEN))
-                    .orElse(null);
-        }
+        // ── Smena harajati — faqat UZS qarzlar uchun ────────────
+        String debtCurrency = debt.getCurrency() != null ? debt.getCurrency() : "UZS";
+        if ("UZS".equals(debtCurrency)) {
+            Shift shift = null;
+            if (user != null) {
+                shift = shiftRepository.findByCashierIdAndStatus(user.getId(), ShiftStatus.OPEN)
+                        .or(() -> shiftRepository.findFirstByStatus(ShiftStatus.OPEN))
+                        .orElse(null);
+            }
 
-        if (shift != null) {
-            ExpenseCategory category = getOrCreateSupplierCategory();
-            String noteText = "Yetkazuvchi: " + supplier.getName()
-                    + (req.getNotes() != null && !req.getNotes().isBlank() ? " | " + req.getNotes() : "");
+            if (shift != null) {
+                ExpenseCategory category = getOrCreateSupplierCategory();
+                String noteText = "Yetkazuvchi: " + supplier.getName()
+                        + (req.getNotes() != null && !req.getNotes().isBlank() ? " | " + req.getNotes() : "");
 
-            saveExpenseIfPositive(coalesce(req.getExpenseCash()),
-                    com.buildpos.buildpos.entity.enums.PaymentMethod.CASH,
-                    shift, category, supplier.getId(), noteText, user);
-            saveExpenseIfPositive(coalesce(req.getExpenseCard()),
-                    com.buildpos.buildpos.entity.enums.PaymentMethod.CARD,
-                    shift, category, supplier.getId(), noteText, user);
-            saveExpenseIfPositive(coalesce(req.getExpenseTransfer()),
-                    com.buildpos.buildpos.entity.enums.PaymentMethod.TRANSFER,
-                    shift, category, supplier.getId(), noteText, user);
+                saveExpenseIfPositive(coalesce(req.getExpenseCash()),
+                        com.buildpos.buildpos.entity.enums.PaymentMethod.CASH,
+                        shift, category, supplier.getId(), noteText, user);
+                saveExpenseIfPositive(coalesce(req.getExpenseCard()),
+                        com.buildpos.buildpos.entity.enums.PaymentMethod.CARD,
+                        shift, category, supplier.getId(), noteText, user);
+                saveExpenseIfPositive(coalesce(req.getExpenseTransfer()),
+                        com.buildpos.buildpos.entity.enums.PaymentMethod.TRANSFER,
+                        shift, category, supplier.getId(), noteText, user);
+            }
         }
 
         // ── Response qaytarish ────────────────────────────────────
@@ -199,6 +202,7 @@ public class SupplierPaymentService {
                 .amount(debt.getAmount())
                 .paidAmount(debt.getPaidAmount())
                 .remainingAmount(remaining)
+                .currency(debt.getCurrency() != null ? debt.getCurrency() : "UZS")
                 .dueDate(debt.getDueDate())
                 .isPaid(debt.getIsPaid())
                 .isOverdue(isOverdue)

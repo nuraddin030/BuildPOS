@@ -25,6 +25,7 @@ public class SupplierDebtResponse {
     private BigDecimal amount;          // Dastlabki qarz
     private BigDecimal paidAmount;      // To'langan
     private BigDecimal remainingAmount; // Qolgan
+    private String currency;            // "UZS" yoki "USD"
 
     private LocalDate dueDate;
     private Boolean isPaid;

@@ -252,6 +252,7 @@ public class SupplierService {
                 .amount(debt.getAmount())
                 .paidAmount(debt.getPaidAmount())
                 .remainingAmount(remaining)
+                .currency(debt.getCurrency() != null ? debt.getCurrency() : "UZS")
                 .dueDate(debt.getDueDate())
                 .isPaid(debt.getIsPaid())
                 .isOverdue(isOverdue)

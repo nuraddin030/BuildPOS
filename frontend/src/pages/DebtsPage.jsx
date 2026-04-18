@@ -524,6 +524,8 @@ function ExtendDebtModal({ debt, type = 'customer', onClose, onDone }) {
 // ── PaySupplierDebtModal ─────────────────────────────────────────
 function PaySupplierDebtModal({ debt, onClose, onDone }) {
     const remaining = Number(debt.remainingAmount || 0)
+    const currency  = debt.currency || 'UZS'
+    const isUsd     = currency === 'USD'
 
     const [cash,     setCash]     = useState('')
     const [card,     setCard]     = useState('')
@@ -583,7 +585,7 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
 
     const handleSubmit = async () => {
         if (totalPayment <= 0) { setError("To'lov summasi kiritilmagan"); return }
-        if (totalPayment > remaining) { setError(`Qolgan qarz: ${fmt(remaining)} UZS. Ortiq kiritib bo'lmaydi`); return }
+        if (totalPayment > remaining) { setError(`Qolgan qarz: ${fmt(remaining)} ${currency}. Ortiq kiritib bo'lmaydi`); return }
         if (recordExpense && shift) {
             if (p(expCash)     > p(cash))     { setError("Naqd harajat to'lov summasidan oshib ketdi"); return }
             if (p(expCard)     > p(card))     { setError("Karta harajat to'lov summasidan oshib ketdi"); return }
@@ -646,11 +648,11 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                         </div>
                         <div className="debt-info-row">
                             <span>To'langan</span>
-                            <span className="debt-info-value" style={{ color: '#16a34a' }}>{fmt(debt.paidAmount)} UZS</span>
+                            <span className="debt-info-value" style={{ color: '#16a34a' }}>{fmt(debt.paidAmount)} {currency}</span>
                         </div>
                         <div className="debt-info-row debt-info-main">
                             <span>Qolgan qarz</span>
-                            <span className="debt-info-value" style={{ color: '#dc2626', fontSize: 17 }}>{fmt(remaining)} UZS</span>
+                            <span className="debt-info-value" style={{ color: '#dc2626', fontSize: 17 }}>{fmt(remaining)} {currency}</span>
                         </div>
                     </div>
 
@@ -671,20 +673,20 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                                            value={fmtI(m.val)}
                                            onChange={e => m.set(e.target.value)}
                                            inputMode="numeric" />
-                                    <span className="spay-currency">UZS</span>
+                                    <span className="spay-currency">{currency}</span>
                                 </div>
                             ))}
                         </div>
                         {totalPayment > 0 && (
                             <div className="spay-total">
-                                Jami: <strong>{fmt(totalPayment)} UZS</strong>
+                                Jami: <strong>{fmt(totalPayment)} {currency}</strong>
                                 {totalPayment > remaining && <span className="spay-over"> (limitdan oshdi!)</span>}
                             </div>
                         )}
                     </div>
 
-                    {/* Smena harajati bo'limi */}
-                    {shift && (
+                    {/* Smena harajati bo'limi — faqat UZS qarzlar uchun */}
+                    {shift && !isUsd && (
                         <div className="spay-section spay-expense-section">
                             <div className="spay-section-header">
                                 <label className="spay-checkbox-label">
@@ -715,7 +717,7 @@ function PaySupplierDebtModal({ debt, onClose, onDone }) {
                                                    onChange={e => m.setExp(e.target.value)}
                                                    inputMode="numeric"
                                                    max={p(m.val)} />
-                                            <span className="spay-currency">UZS</span>
+                                            <span className="spay-currency">{currency}</span>
                                         </div>
                                     ))}
                                     <div className="spay-expense-hint">
@@ -760,6 +762,7 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
     const status = getDebtStatus(debt)
     const canPay = !debt.isPaid && type === 'customer'
     const canPaySupplier = !debt.isPaid && type === 'supplier'
+    const debtCurrency = type === 'supplier' ? (debt.currency || 'UZS') : 'UZS'
 
     const [activeTab, setActiveTab] = useState('info') // 'info' | 'items' | 'installments'
 
@@ -928,12 +931,12 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                             <div className="debt-info-box">
                                 <div className="debt-info-row">
                                     <span>Dastlabki qarz</span>
-                                    <span className="debt-info-value">{fmt(debt.amount)} UZS</span>
+                                    <span className="debt-info-value">{fmt(debt.amount)} {debtCurrency}</span>
                                 </div>
                                 <div className="debt-info-row">
                                     <span>To'langan</span>
                                     <span className="debt-info-value" style={{ color: '#16a34a' }}>
-                                        {fmt(debt.paidAmount)} UZS
+                                        {fmt(debt.paidAmount)} {debtCurrency}
                                     </span>
                                 </div>
                                 <div className="debt-info-row debt-info-main">
@@ -941,7 +944,7 @@ function DebtDetailModal({ debt, type, onClose, onPay, onPaySupplier, onExtend }
                                     <span className="debt-info-value" style={{
                                         color: debt.isPaid ? '#16a34a' : '#dc2626', fontSize: 17
                                     }}>
-                                        {fmt(debt.remainingAmount)} UZS
+                                        {fmt(debt.remainingAmount)} {debtCurrency}
                                     </span>
                                 </div>
                                 {debt.dueDate && (
@@ -1751,6 +1754,8 @@ export default function DebtsPage() {
         setSelectedDebt(null)
         loadCustomerDebts()
         loadCustomerGrouped()
+        loadSupplierDebts()
+        loadSupplierGrouped()
         showToast('Muddat muvaffaqiyatli yangilandi')
     }
 
@@ -2494,17 +2499,17 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
                                 </td>
                                 <td className="th-right">
                                     <span className="cell-price">{fmt(d.amount)}</span>
-                                    <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                    <span className="cell-muted" style={{ fontSize: 11 }}> {isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                 </td>
                                 <td className="th-right" style={{ color: '#16a34a' }}>
                                     {fmt(d.paidAmount)}
-                                    <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                    <span className="cell-muted" style={{ fontSize: 11 }}> {isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                 </td>
                                 <td className="th-right">
                                     <span style={{ fontWeight: 700, color: d.isPaid ? '#16a34a' : '#dc2626' }}>
                                         {fmt(d.remainingAmount)}
                                     </span>
-                                    <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                    <span className="cell-muted" style={{ fontSize: 11 }}> {isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                 </td>
                                 <td className="th-center">
                                     {d.dueDate
@@ -2721,16 +2726,16 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                                     </td>
                                     <td className="th-right">
                                         <span className="cell-price">{fmt(d.amount)}</span>
-                                        <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                        <span className="cell-muted" style={{ fontSize: 11 }}> {isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                     </td>
                                     <td className="th-right" style={{ color: '#16a34a' }}>
-                                        {fmt(d.paidAmount)} <span className="cell-muted" style={{ fontSize: 11 }}>UZS</span>
+                                        {fmt(d.paidAmount)} <span className="cell-muted" style={{ fontSize: 11 }}>{isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                     </td>
                                     <td className="th-right">
                                         <span style={{ fontWeight: 700, color: d.isPaid ? '#16a34a' : '#dc2626' }}>
                                             {fmt(d.remainingAmount)}
                                         </span>
-                                        <span className="cell-muted" style={{ fontSize: 11 }}> UZS</span>
+                                        <span className="cell-muted" style={{ fontSize: 11 }}> {isCustomer ? 'UZS' : (d.currency || 'UZS')}</span>
                                     </td>
                                     <td className="th-center">
                                         {d.dueDate

@@ -461,30 +461,44 @@ public class PurchaseService {
     }
 
     private void updateSupplierDebt(Purchase purchase) {
-        boolean hasDebt = purchase.getDebtUsd().compareTo(BigDecimal.ZERO) > 0
-                || purchase.getDebtUzs().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasUsdDebt = purchase.getDebtUsd().compareTo(BigDecimal.ZERO) > 0;
+        boolean hasUzsDebt = purchase.getDebtUzs().compareTo(BigDecimal.ZERO) > 0;
 
-        supplierDebtRepository.findByPurchaseId(purchase.getId()).ifPresentOrElse(
-                debt -> {
-                    debt.setAmount(purchase.getTotalAmount());
-                    debt.setPaidAmount(purchase.getPaidAmount());
-                    debt.setIsPaid(!hasDebt);
-                    supplierDebtRepository.save(debt);
-                },
-                () -> {
-                    if (hasDebt) {
-                        SupplierDebt debt = SupplierDebt.builder()
-                                .supplier(purchase.getSupplier())
-                                .purchase(purchase)
-                                .amount(purchase.getTotalAmount())
-                                .paidAmount(purchase.getPaidAmount())
-                                .isPaid(false)
-                                .notes("Purchase: " + purchase.getReferenceNo())
-                                .build();
-                        supplierDebtRepository.save(debt);
-                    }
-                }
-        );
+        // USD qarz yozuvi
+        updateOrCreateDebtByCurrency(purchase, "USD",
+                purchase.getTotalUsd(), purchase.getPaidUsd(), purchase.getDebtUsd(), hasUsdDebt);
+
+        // UZS qarz yozuvi
+        updateOrCreateDebtByCurrency(purchase, "UZS",
+                purchase.getTotalUzs(), purchase.getPaidUzs(), purchase.getDebtUzs(), hasUzsDebt);
+    }
+
+    private void updateOrCreateDebtByCurrency(Purchase purchase, String currency,
+                                               BigDecimal total, BigDecimal paid,
+                                               BigDecimal debt, boolean hasDebt) {
+        supplierDebtRepository.findByPurchaseIdAndCurrency(purchase.getId(), currency)
+                .ifPresentOrElse(
+                        existing -> {
+                            existing.setAmount(total);
+                            existing.setPaidAmount(paid);
+                            existing.setIsPaid(!hasDebt);
+                            supplierDebtRepository.save(existing);
+                        },
+                        () -> {
+                            if (hasDebt) {
+                                SupplierDebt newDebt = SupplierDebt.builder()
+                                        .supplier(purchase.getSupplier())
+                                        .purchase(purchase)
+                                        .amount(total)
+                                        .paidAmount(paid)
+                                        .currency(currency)
+                                        .isPaid(false)
+                                        .notes("Purchase: " + purchase.getReferenceNo())
+                                        .build();
+                                supplierDebtRepository.save(newDebt);
+                            }
+                        }
+                );
     }
 
     private String generateReferenceNo() {
