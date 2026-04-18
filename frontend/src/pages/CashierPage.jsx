@@ -570,7 +570,7 @@ function ReceiptModal({ sale, onClose }) {
                             const pm = PAYMENT_METHODS.find(m => m.value === p.paymentMethod)
                             return (
                                 <div key={i} className="receipt-payment">
-                                    <span style={{ color: pm?.color }}>{pm?.label}</span>
+                                    <span>{pm?.label}</span>
                                     <b>{fmt(p.amount)} so'm</b>
                                 </div>
                             )

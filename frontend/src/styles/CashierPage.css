@@ -1283,6 +1283,19 @@ textarea:focus-visible {
         print-color-adjust: exact !important;
     }
 
+    .receipt-subtitle,
+    .receipt-meta,
+    .receipt-section-label,
+    .receipt-item-qty,
+    .receipt-change {
+        color: #000000 !important;
+        opacity: 1 !important;
+    }
+
+    .receipt-div {
+        border-top: 1px dashed #000000 !important;
+    }
+
     @page {
         size: 80mm auto;
         margin: 0;
