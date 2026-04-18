@@ -182,6 +182,29 @@
     white-space: nowrap;
 }
 
+/* ── Force close tugmasi ────────────────────────────────────── */
+.al-force-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1.5px solid #fca5a5;
+    border-radius: 6px;
+    background: #fff;
+    color: #dc2626;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.al-force-close-btn:hover:not(:disabled) {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+.al-force-close-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .al-filter {

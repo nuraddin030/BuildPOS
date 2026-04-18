@@ -13,9 +13,12 @@ import com.buildpos.buildpos.service.TelegramService;
 import com.buildpos.buildpos.service.UserSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Map;
 
 // 5 ta noto'g'ri paroldan keyin 15 daqiqa bloklash
@@ -34,8 +38,13 @@ import java.util.Map;
 @Tag(name = "Auth", description = "Autentifikatsiya")
 public class AuthController {
 
-    private static final int    MAX_ATTEMPTS   = 5;
-    private static final int    LOCK_MINUTES   = 15;
+    private static final int    MAX_ATTEMPTS      = 5;
+    private static final int    LOCK_MINUTES      = 15;
+    private static final String REFRESH_COOKIE    = "rt";
+    private static final int    REFRESH_COOKIE_TTL = 7 * 24 * 60 * 60; // 7 kun (soniya)
+
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -48,7 +57,8 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Tizimga kirish")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
-                                   HttpServletRequest httpRequest) {
+                                   HttpServletRequest httpRequest,
+                                   HttpServletResponse httpResponse) {
 
         String ip = getClientIp(httpRequest);
 
@@ -113,15 +123,17 @@ public class AuthController {
 
         saveAuthLog("LOGIN", request.getUsername(), ip, httpRequest);
 
-        String device = parseDevice(httpRequest.getHeader("User-Agent"));
-        userSessionService.createSession(user.getId(), user.getUsername(), ip, device);
-
         String accessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
         RefreshToken refresh = refreshTokenService.create(user);
 
+        // Refresh token — HttpOnly cookie (JS dan ko'rinmaydi)
+        setRefreshCookie(httpResponse, refresh.getToken());
+
+        String device = parseDevice(httpRequest.getHeader("User-Agent"));
+        userSessionService.createSession(user.getId(), user.getUsername(), ip, device, accessToken);
+
         return ResponseEntity.ok(new LoginResponse(
                 accessToken,
-                refresh.getToken(),
                 user.getUsername(),
                 user.getRole().getName(),
                 user.getFullName()
@@ -200,33 +212,40 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "Access tokenni yangilash (rotation)")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
-        String refreshTokenStr = body.get("refreshToken");
+    public ResponseEntity<?> refresh(HttpServletRequest httpRequest,
+                                     HttpServletResponse httpResponse) {
+        String refreshTokenStr = extractRefreshCookie(httpRequest);
         if (refreshTokenStr == null || refreshTokenStr.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "refreshToken majburiy"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Refresh token topilmadi"));
         }
 
         return refreshTokenService.validate(refreshTokenStr)
                 .map(rt -> {
                     User user = rt.getUser();
-                    // Rotation: eski tokenni bekor qilish
+                    // Rotation: eski tokenni bekor qilish, yangi berish
                     refreshTokenService.revoke(refreshTokenStr);
-                    // Yangi tokenlar berish
                     String newAccessToken   = jwtUtil.generateToken(user.getUsername(), user.getRole().getName());
                     RefreshToken newRefresh = refreshTokenService.create(user);
-                    return ResponseEntity.ok(Map.of(
-                            "token",        newAccessToken,
-                            "refreshToken", newRefresh.getToken()
-                    ));
+
+                    // Yangi refresh token — cookie ga
+                    setRefreshCookie(httpResponse, newRefresh.getToken());
+                    // Sessiya access tokenini yangilash
+                    userSessionService.updateAccessToken(user.getUsername(), newAccessToken);
+
+                    return ResponseEntity.ok(Map.of("token", newAccessToken));
                 })
-                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "Refresh token yaroqsiz yoki muddati o'tgan")));
+                .orElseGet(() -> {
+                    clearRefreshCookie(httpResponse);
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(Map.of("message", "Refresh token yaroqsiz yoki muddati o'tgan"));
+                });
     }
 
     @PostMapping("/logout")
     @Operation(summary = "Tizimdan chiqish")
     public ResponseEntity<Void> logout(HttpServletRequest request,
-                                       @RequestBody(required = false) Map<String, String> body) {
+                                       HttpServletResponse response) {
         // Access tokenni blacklist ga qo'shish
         String header = request.getHeader("Authorization");
         String username = null;
@@ -235,14 +254,45 @@ public class AuthController {
             try { username = jwtUtil.getUsername(token); } catch (Exception ignored) {}
             jwtUtil.invalidate(token);
         }
-        // Refresh tokenni bekor qilish
-        if (body != null && body.containsKey("refreshToken")) {
-            refreshTokenService.revoke(body.get("refreshToken"));
+        // Refresh tokenni cookie dan o'qib bekor qilish
+        String refreshTokenStr = extractRefreshCookie(request);
+        if (refreshTokenStr != null) {
+            refreshTokenService.revoke(refreshTokenStr);
         }
+        // Cookie ni tozalash
+        clearRefreshCookie(response);
         // Sessiyani yopish
         if (username != null) {
             userSessionService.closeSession(username, "MANUAL");
         }
         return ResponseEntity.noContent().build();
+    }
+
+    // ── Cookie yordamchi metodlar ────────────────────────────────────────
+    private void setRefreshCookie(HttpServletResponse response, String value) {
+        Cookie cookie = new Cookie(REFRESH_COOKIE, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/api/auth");
+        cookie.setMaxAge(REFRESH_COOKIE_TTL);
+        response.addCookie(cookie);
+    }
+
+    private void clearRefreshCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(REFRESH_COOKIE, "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/api/auth");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
+
+    private String extractRefreshCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> REFRESH_COOKIE.equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }

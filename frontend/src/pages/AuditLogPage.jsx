@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ShieldCheck, Search, Loader2, AlertTriangle, Monitor, Smartphone, Clock, LogIn, LogOut } from 'lucide-react'
+import { ShieldCheck, Loader2, AlertTriangle, Monitor, Smartphone, Clock, LogIn, LogOut, X } from 'lucide-react'
 import api from '../api/api'
 import '../styles/AuditLogPage.css'
 
@@ -174,17 +174,26 @@ function AuditTab() {
     )
 }
 
+const LOGOUT_TYPE_LABEL = {
+    MANUAL:         { label: 'Chiqdi',         bg: 'var(--border-color)', color: 'var(--text-muted)' },
+    TIMEOUT:        { label: 'Tugadi',          bg: 'var(--border-color)', color: 'var(--text-muted)' },
+    SERVER_RESTART: { label: 'Server restart',  bg: '#fff7ed',             color: '#c2410c' },
+    SERVER_SHUTDOWN:{ label: "Server o'chdi",   bg: '#fef9c3',             color: '#854d0e' },
+    FORCE_CLOSED:   { label: 'Majburiy yopildi',bg: '#fee2e2',             color: '#991b1b' },
+}
+
 // ── Sessiyalar tab ────────────────────────────────────────────
 function SessionsTab() {
-    const [sessions, setSessions] = useState([])
-    const [total,    setTotal]    = useState(0)
-    const [page,     setPage]     = useState(0)
-    const [loading,  setLoading]  = useState(true)
-    const [error,    setError]    = useState('')
-    const [username, setUsername] = useState('')
-    const [from,     setFrom]     = useState('')
-    const [to,       setTo]       = useState('')
-    const [failed,   setFailed]   = useState([])
+    const [sessions,      setSessions]      = useState([])
+    const [total,         setTotal]         = useState(0)
+    const [page,          setPage]          = useState(0)
+    const [loading,       setLoading]       = useState(true)
+    const [error,         setError]         = useState('')
+    const [username,      setUsername]      = useState('')
+    const [from,          setFrom]          = useState('')
+    const [to,            setTo]            = useState('')
+    const [failed,        setFailed]        = useState([])
+    const [closingIds,    setClosingIds]    = useState(new Set())
 
     useEffect(() => {
         let alive = true
@@ -209,6 +218,21 @@ function SessionsTab() {
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
         return () => { alive = false }
     }, [page, username, from, to])
+
+    const forceClose = async (id) => {
+        if (closingIds.has(id)) return
+        setClosingIds(prev => new Set([...prev, id]))
+        try {
+            await api.delete(`/api/v1/sessions/${id}/force-close`)
+            setSessions(prev => prev.map(s =>
+                s.id === id ? { ...s, logoutAt: new Date().toISOString(), logoutType: 'FORCE_CLOSED' } : s
+            ))
+        } catch {
+            // silent
+        } finally {
+            setClosingIds(prev => { const n = new Set(prev); n.delete(id); return n })
+        }
+    }
 
     return (
         <>
@@ -240,14 +264,16 @@ function SessionsTab() {
                                     <th className="th-center">Davomiylik</th>
                                     <th>IP / Qurilma</th>
                                     <th className="th-center">Holat</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {sessions.length === 0 ? (
-                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
+                                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
                                 ) : sessions.map(s => {
                                     const duration = fmtDuration(s.durationSec)
                                     const isActive = s.logoutAt == null
+                                    const ltInfo   = LOGOUT_TYPE_LABEL[s.logoutType] || LOGOUT_TYPE_LABEL.TIMEOUT
                                     return (
                                         <tr key={s.id}>
                                             <td><div className="cell-name">{s.username}</div></td>
@@ -280,10 +306,25 @@ function SessionsTab() {
                                                         Tizimda
                                                     </span>
                                                 ) : (
-                                                    <span className="al-badge" style={{ background: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                                                    <span className="al-badge" style={{ background: ltInfo.bg, color: ltInfo.color }}>
                                                         <LogOut size={10} style={{ display: 'inline', marginRight: 3 }} />
-                                                        {s.logoutType === 'MANUAL' ? 'Chiqdi' : 'Tugadi'}
+                                                        {ltInfo.label}
                                                     </span>
+                                                )}
+                                            </td>
+                                            <td className="th-center">
+                                                {isActive && (
+                                                    <button
+                                                        className="al-force-close-btn"
+                                                        disabled={closingIds.has(s.id)}
+                                                        onClick={() => forceClose(s.id)}
+                                                        title="Sessiyani majburiy yopish"
+                                                    >
+                                                        {closingIds.has(s.id)
+                                                            ? <Loader2 size={13} className="spin" />
+                                                            : <X size={13} />
+                                                        }
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>

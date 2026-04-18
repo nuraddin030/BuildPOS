@@ -36,7 +36,10 @@ public class UserSession {
     private Long durationSec;
 
     @Column(name = "logout_type", length = 20)
-    private String logoutType; // MANUAL | TIMEOUT
+    private String logoutType; // MANUAL | TIMEOUT | SERVER_RESTART | SERVER_SHUTDOWN | FORCE_CLOSED
+
+    @Column(name = "access_token", columnDefinition = "TEXT")
+    private String accessToken;
 
     @PrePersist
     protected void onCreate() {

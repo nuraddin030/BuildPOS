@@ -28,9 +28,10 @@ public class UserSessionService {
 
     private final UserSessionRepository repo;
     private final RefreshTokenRepository refreshTokenRepo;
+    private final com.buildpos.buildpos.security.JwtUtil jwtUtil;
 
     @Transactional
-    public UserSession createSession(Long userId, String username, String ip, String device) {
+    public UserSession createSession(Long userId, String username, String ip, String device, String accessToken) {
         try {
             return repo.save(UserSession.builder()
                     .userId(userId)
@@ -38,10 +39,25 @@ public class UserSessionService {
                     .ipAddress(ip)
                     .device(device)
                     .loginAt(LocalDateTime.now())
+                    .accessToken(accessToken)
                     .build());
         } catch (Exception e) {
             log.warn("Sessiya yaratishda xato: {}", e.getMessage());
             return null;
+        }
+    }
+
+    // Token yangilanganda (15 daqiqada) sessiyani yangilash
+    @Transactional
+    public void updateAccessToken(String username, String newAccessToken) {
+        try {
+            repo.findTopByUsernameAndLogoutAtIsNullOrderByLoginAtDesc(username)
+                    .ifPresent(s -> {
+                        s.setAccessToken(newAccessToken);
+                        repo.save(s);
+                    });
+        } catch (Exception e) {
+            log.warn("Access token yangilashda xato: {}", e.getMessage());
         }
     }
 
@@ -101,15 +117,21 @@ public class UserSessionService {
                 .orElseThrow(() -> new NotFoundException("Sessiya topilmadi: " + sessionId));
         if (session.getLogoutAt() != null) return session; // allaqachon yopilgan
 
+        // Access tokenni blacklist ga qo'shish — darhol sessiya o'ladi
+        if (session.getAccessToken() != null) {
+            jwtUtil.invalidate(session.getAccessToken());
+        }
+
+        // Refresh tokenni bekor qilish
+        if (session.getUserId() != null) {
+            refreshTokenRepo.revokeAllByUserId(session.getUserId());
+        }
+
         LocalDateTime now = LocalDateTime.now();
         session.setLogoutAt(now);
         session.setDurationSec(ChronoUnit.SECONDS.between(session.getLoginAt(), now));
         session.setLogoutType("FORCE_CLOSED");
-
-        // Foydalanuvchining barcha refresh tokenlarini ham bekor qil
-        if (session.getUserId() != null) {
-            refreshTokenRepo.revokeAllByUserId(session.getUserId());
-        }
+        session.setAccessToken(null);
 
         return repo.save(session);
     }

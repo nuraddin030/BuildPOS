@@ -2,23 +2,27 @@ import axios from 'axios'
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || '',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
+    withCredentials: true, // HttpOnly cookie avtomatik yuboriladi
 })
+
+// ── Access token — faqat JS xotirasida (sessionStorage/localStorage emas) ──
+let _accessToken = null
+export const setAccessToken  = (token) => { _accessToken = token }
+export const getAccessToken  = ()      => _accessToken
+export const clearAccessToken = ()     => { _accessToken = null }
 
 // Har bir so'rovga access token qo'shish
 api.interceptors.request.use((config) => {
-    const token = sessionStorage.getItem('buildpos_token')
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+    if (_accessToken) {
+        config.headers.Authorization = `Bearer ${_accessToken}`
     }
     return config
 })
 
-// 401 da refresh token bilan qayta urinish
+// 401 da refresh cookie bilan qayta urinish
 let isRefreshing = false
-let failedQueue = []
+let failedQueue  = []
 
 const processQueue = (error, token = null) => {
     failedQueue.forEach(({ resolve, reject }) => {
@@ -34,16 +38,7 @@ api.interceptors.response.use(
         const originalRequest = error.config
 
         if (error.response?.status === 401 && !originalRequest._retry) {
-            const refreshToken = sessionStorage.getItem('buildpos_refresh_token')
-
-            // Refresh token yo'q — to'g'ridan login ga
-            if (!refreshToken) {
-                clearSession()
-                return Promise.reject(error)
-            }
-
             if (isRefreshing) {
-                // Bir vaqtda bir nechta so'rov — navbatga qo'shish
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject })
                 }).then(token => {
@@ -56,13 +51,10 @@ api.interceptors.response.use(
             isRefreshing = true
 
             try {
-                const res = await axios.post('/api/auth/refresh', { refreshToken })
-                const newToken        = res.data.token
-                const newRefreshToken = res.data.refreshToken
-                sessionStorage.setItem('buildpos_token', newToken)
-                if (newRefreshToken) {
-                    sessionStorage.setItem('buildpos_refresh_token', newRefreshToken)
-                }
+                // Cookie avtomatik yuboriladi (withCredentials: true)
+                const res = await axios.post('/api/auth/refresh', null, { withCredentials: true })
+                const newToken = res.data.token
+                setAccessToken(newToken)
                 api.defaults.headers.common.Authorization = `Bearer ${newToken}`
                 processQueue(null, newToken)
                 originalRequest.headers.Authorization = `Bearer ${newToken}`
@@ -81,8 +73,7 @@ api.interceptors.response.use(
 )
 
 function clearSession() {
-    sessionStorage.removeItem('buildpos_token')
-    sessionStorage.removeItem('buildpos_refresh_token')
+    clearAccessToken()
     sessionStorage.removeItem('buildpos_user')
     sessionStorage.removeItem('buildpos_permissions')
     window.location.href = '/login'

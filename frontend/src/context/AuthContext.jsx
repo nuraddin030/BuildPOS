@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
+import axios from 'axios'
 import { login as loginApi, logout as logoutApi, getMe } from '../api/Auth'
+import { setAccessToken, clearAccessToken } from '../api/api'
 
 const INACTIVITY_MS = 30 * 60 * 1000 // 30 daqiqa
 
@@ -24,7 +26,9 @@ export function AuthProvider({ children }) {
         return saved ? JSON.parse(saved) : []
     })
 
-    const [loading, setLoading] = useState(false)
+    // Ilovani yuklashda silent refresh — HttpOnly cookie bor bo'lsa tokenni tiklaymiz
+    const [initializing, setInitializing] = useState(true)
+
     const inactivityTimer = useRef(null)
 
     // F-09: Harakatsizlik timeout — 30 daqiqa
@@ -46,14 +50,35 @@ export function AuthProvider({ children }) {
         }
     }, [user, resetTimer])
 
+    // App yuklanganda: cookie bor bo'lsa tokenni xotiraga tiklaymiz
+    useEffect(() => {
+        const savedUser = sessionStorage.getItem('buildpos_user')
+        if (!savedUser) {
+            setInitializing(false)
+            return
+        }
+        axios.post('/api/auth/refresh', null, { withCredentials: true })
+            .then(res => {
+                setAccessToken(res.data.token)
+            })
+            .catch(() => {
+                // Refresh token muddati o'tgan — sessiyani tozalaymiz
+                sessionStorage.removeItem('buildpos_user')
+                sessionStorage.removeItem('buildpos_permissions')
+                setUser(null)
+                setPermissions([])
+            })
+            .finally(() => setInitializing(false))
+    }, [])
+
     const login = async (username, password) => {
-        setLoading(true)
         try {
             const res = await loginApi({ username, password })
-            const { token, refreshToken, username: uname, role, fullName } = res.data
+            const { token, username: uname, role, fullName } = res.data
 
-            sessionStorage.setItem('buildpos_token', token)
-            sessionStorage.setItem('buildpos_refresh_token', refreshToken)
+            // Access token — faqat xotirada
+            setAccessToken(token)
+
             const userData = { username: uname, role, fullName }
             sessionStorage.setItem('buildpos_user', JSON.stringify(userData))
             setUser(userData)
@@ -73,21 +98,17 @@ export function AuthProvider({ children }) {
                 minutesLeft: data.minutesLeft || null,
                 remainingAttempts: data.remainingAttempts || null,
             }
-        } finally {
-            setLoading(false)
         }
     }
 
     const logout = async () => {
-        const refreshToken = sessionStorage.getItem('buildpos_refresh_token')
         try {
             await Promise.race([
-                logoutApi(refreshToken),
+                logoutApi(),
                 new Promise((_, reject) => setTimeout(() => reject(), 2000))
             ])
         } catch {}
-        sessionStorage.removeItem('buildpos_token')
-        sessionStorage.removeItem('buildpos_refresh_token')
+        clearAccessToken()
         sessionStorage.removeItem('buildpos_user')
         sessionStorage.removeItem('buildpos_permissions')
         setUser(null)
@@ -109,7 +130,7 @@ export function AuthProvider({ children }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, permissions, loading, login, logout, hasPermission, refreshPermissions }}>
+        <AuthContext.Provider value={{ user, permissions, loading: initializing, login, logout, hasPermission, refreshPermissions }}>
             {children}
         </AuthContext.Provider>
     )

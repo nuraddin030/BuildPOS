@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LoginResponse {
-    private String token;          // Access token (15 daqiqa)
-    private String refreshToken;   // Refresh token (7 kun)
+    private String token;      // Access token (15 daqiqa) — JS memory da saqlanadi
     private String username;
     private String role;
     private String fullName;
+    // refreshToken endi HttpOnly cookie orqali yuboriladi — JS dan ko'rinmaydi
 }
