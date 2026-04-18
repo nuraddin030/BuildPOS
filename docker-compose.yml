@@ -45,7 +45,7 @@ services:
       JAVA_TOOL_OPTIONS: "-Xmx400m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
     mem_limit: 512m
     volumes:
-      - uploads_data:/app/uploads   # Rasmlar saqlanadi
+      - /opt/buildpos/uploads:/app/uploads   # Rasmlar — host da to'g'ridan saqlash
       - maven_cache:/root/.m2       # Maven dependency cache
     networks:
       - internal
@@ -110,7 +110,6 @@ services:
 # ================================
 volumes:
   postgres_data:                    # DB ma'lumotlari
-  uploads_data:                     # Yuklangan rasmlar
   maven_cache:                      # Maven dependency cache (build tezlashtirish)
   node_cache:                       # npm node_modules cache (build tezlashtirish)
 

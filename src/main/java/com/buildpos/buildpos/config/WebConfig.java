@@ -13,8 +13,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Relative path — jar qayerda bo'lsa uploads/ shu yerda
-        String location = "file:" + System.getProperty("user.dir") + "/" + uploadDir + "/";
+        // uploadDir absolute yoki relative bo'lishi mumkin
+        // Docker da APP_UPLOAD_DIR=/app/uploads → "file:/app/uploads/"
+        String location = uploadDir.startsWith("/")
+                ? "file:" + uploadDir + "/"
+                : "file:" + System.getProperty("user.dir") + "/" + uploadDir + "/";
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(location);
     }
