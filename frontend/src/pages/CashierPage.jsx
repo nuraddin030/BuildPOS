@@ -456,6 +456,77 @@ function PaymentModal({ sale, onClose, onCompleted, onCustomerSet }) {
 
 // ─── Chek modali ──────────────────────────────
 function ReceiptModal({ sale, onClose }) {
+    const printReceipt = () => {
+        const win = window.open('', '_blank', 'width=400,height=700')
+        const dp = (sale.payments || []).find(p => p.paymentMethod === 'DEBT')
+        win.document.write(`<!DOCTYPE html><html><head><title>Chek - ${sale.referenceNo}</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; background: #fff; padding: 4mm; width: 72mm; }
+            .center { text-align: center; }
+            .bold { font-weight: 700; }
+            .store { text-align: center; font-size: 16px; font-weight: 900; letter-spacing: 2px; margin-bottom: 2px; }
+            .subtitle { text-align: center; font-size: 10px; letter-spacing: 1px; margin-bottom: 6px; }
+            .divider { border-top: 1px dashed #000; margin: 6px 0; }
+            .divider-double { border-top: 2px solid #000; margin: 7px 0; }
+            .meta { font-size: 11px; margin-bottom: 4px; }
+            .meta-row { display: flex; justify-content: space-between; padding: 1px 0; }
+            .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 4px 0 5px; }
+            .item { margin-bottom: 6px; }
+            .item-name { font-weight: 600; font-size: 12px; }
+            .item-row { display: flex; justify-content: space-between; font-size: 11px; }
+            .total-row { display: flex; justify-content: space-between; font-size: 17px; font-weight: 900; margin: 2px 0; }
+            .payment-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+            .discount-row { display: flex; justify-content: space-between; font-size: 12px; }
+            .debt-block { margin: 7px 0; padding: 8px 10px; border: 1.5px solid #000; }
+            .debt-title { text-align: center; font-weight: 800; font-size: 13px; letter-spacing: 1px; margin-bottom: 5px; }
+            .debt-row { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
+            .thanks { text-align: center; font-size: 11px; margin-top: 4px; }
+            @page { size: 80mm auto; margin: 0; }
+        </style></head><body>
+        <div class="store">PrimeStroy</div>
+        <div class="subtitle">SOTUV CHEKI</div>
+        <div class="divider-double"></div>
+        <div class="meta">
+            <div class="meta-row"><span>Chek</span><b>${sale.referenceNo}</b></div>
+            <div class="meta-row"><span>Sana</span><span>${new Date(sale.completedAt || sale.createdAt).toLocaleString('ru-RU')}</span></div>
+            <div class="meta-row"><span>Kassir</span><span>${sale.cashierName || sale.sellerName || '—'}</span></div>
+            ${sale.customerName ? `<div class="meta-row"><span>Mijoz</span><b>${sale.customerName}</b></div>` : ''}
+        </div>
+        <div class="divider"></div>
+        <div class="section-label">TOVARLAR</div>
+        ${(sale.items || []).map(item => `
+            <div class="item">
+                <div class="item-name">${item.productName} (${item.unitSymbol})</div>
+                <div class="item-row"><span>${item.quantity} × ${fmt(item.salePrice)} so'm</span><b>${fmt(item.totalPrice)} so'm</b></div>
+            </div>
+        `).join('')}
+        ${sale.discountAmount > 0 ? `<div class="divider"></div><div class="discount-row"><span>Chegirma</span><span>−${fmt(sale.discountAmount)} so'm</span></div>` : ''}
+        <div class="divider-double"></div>
+        <div class="total-row"><span>JAMI</span><span>${fmt(sale.totalAmount)} so'm</span></div>
+        <div class="divider-double"></div>
+        <div class="section-label">TO'LOV</div>
+        ${(sale.payments || []).map(p => `
+            <div class="payment-row"><span>${PAYMENT_METHODS.find(m => m.value === p.paymentMethod)?.label || p.paymentMethod}</span><b>${fmt(p.amount)} so'm</b></div>
+        `).join('')}
+        ${sale.changeAmount > 0 ? `<div class="payment-row"><span>Qaytim</span><span>${fmt(sale.changeAmount)} so'm</span></div>` : ''}
+        ${sale.debtAmount > 0 ? `
+            <div class="divider"></div>
+            <div class="debt-block">
+                <div class="debt-title">⚠ NASIYA YOZUVI</div>
+                ${sale.customerName ? `<div class="debt-row"><span>Mijoz</span><b>${sale.customerName}</b></div>` : ''}
+                <div class="debt-row"><span>Summa</span><b>${fmt(sale.debtAmount)} so'm</b></div>
+                ${dp?.dueDate ? `<div class="debt-row"><span>Muddat</span><b>${new Date(dp.dueDate + 'T00:00:00').toLocaleDateString('ru-RU')}</b></div>` : ''}
+            </div>
+        ` : ''}
+        <div class="divider-double"></div>
+        <div class="thanks">Xaridingiz uchun rahmat!</div>
+        </body></html>`)
+        win.document.close()
+        win.focus()
+        setTimeout(() => { win.print(); win.close() }, 300)
+    }
+
     const dl = async () => {
         const doc = new jsPDF({ unit: 'mm', format: [80, 200], orientation: 'portrait' })
         const W = 80; let y = 8
@@ -613,7 +684,7 @@ function ReceiptModal({ sale, onClose }) {
                 </div>
                 <div className="pos-mf">
                     <button className="pos-btn-s" onClick={dl}><span className="pos-btn-icon"><Download size={14} />PDF</span></button>
-                    <button className="pos-btn-s" onClick={() => window.print()}><span className="pos-btn-icon"><Printer size={14} />Chop etish</span></button>
+                    <button className="pos-btn-s" onClick={printReceipt}><span className="pos-btn-icon"><Printer size={14} />Chop etish</span></button>
                     <button className="pos-btn-p" onClick={onClose}>Yangi sotuv</button>
                 </div>
             </div>
