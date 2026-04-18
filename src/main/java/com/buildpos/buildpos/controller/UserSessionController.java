@@ -33,4 +33,11 @@ public class UserSessionController {
     ) {
         return service.getSessions(username, from, to, PageRequest.of(page, size));
     }
+
+    @DeleteMapping("/{id}/force-close")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @Operation(summary = "Sessiyani majburiy yopish (refresh token ham bekor bo'ladi)")
+    public UserSession forceClose(@PathVariable Long id) {
+        return service.forceClose(id);
+    }
 }

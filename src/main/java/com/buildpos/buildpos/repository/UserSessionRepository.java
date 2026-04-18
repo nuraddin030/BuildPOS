@@ -17,6 +17,10 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Long> 
     // Foydalanuvchining oxirgi ochiq sessiyasi (logout_at IS NULL)
     Optional<UserSession> findTopByUsernameAndLogoutAtIsNullOrderByLoginAtDesc(String username);
 
+    // Barcha ochiq sessiyalar (logoutAt IS NULL)
+    @Query("SELECT s FROM UserSession s WHERE s.logoutAt IS NULL")
+    java.util.List<UserSession> findAllOpen();
+
     // Filter: username, sana oralig'i
     @Query(value = """
         SELECT * FROM user_sessions
