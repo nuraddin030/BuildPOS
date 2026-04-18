@@ -1,5 +1,53 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-18 — Xavfsizlik, OOM fix, Barcode, Chek chop etish
+
+### Bajarilgan ishlar
+
+#### 1. Docker OOM kill — backend tez-tez o'chib yonishi
+- **Sabab:** Backend JVM heap limitsiz ishlardi, 546 MB RAM iste'mol qilardi
+- **Yechim:** `docker-compose.yml` ga `JAVA_TOOL_OPTIONS=-Xmx400m -Xms128m -XX:+UseG1GC` va `mem_limit: 512m` qo'shildi
+- PostgreSQL ga `mem_limit: 256m` qo'shildi
+- Deploy: `docker compose up -d --no-build` (faqat config o'zgardi)
+
+#### 2. Xavfsizlik — JWT token brauzerda ko'rinmaslik
+- **Oldin:** Access token va refresh token `sessionStorage` da saqlanardi — consoleda ko'rinardi
+- **Keyin:**
+  - **Access token** → faqat JS xotirasida (`_accessToken` module variable) — consoleda ko'rinmaydi
+  - **Refresh token** → `HttpOnly` cookie — JS dan mutlaqo ko'rinmaydi
+- JWT TTL: `86400000` ms (24h) → `900000` ms (15 daqiqa)
+- `AuthController`: login/refresh/logout cookie bilan ishlaydi
+- `AuthContext`: page refresh da `silent refresh` (cookie orqali token tiklanadi)
+- `App.jsx`: `PrivateRoute` silent refresh tugaguncha `null` qaytaradi (race condition fix)
+- `api.js`: 401 → cookie bilan refresh → clearSession zanjiri
+
+#### 3. UserSession — sessiya boshqaruvi
+- **Startup cleanup:** Backend qayta ishga tushganda ochiq qolgan sessiyalar `SERVER_RESTART` deb yopiladi
+- **Graceful shutdown:** `@PreDestroy` — `SERVER_SHUTDOWN` deb yopiladi
+- **Force-close:** Admin UI dan sessiyani yopish → access token blacklist + refresh token revoke → foydalanuvchi darhol chiqariladi
+- `UserSession.accessToken`: login va har refresh da yangilanadi (force-close da blacklist uchun)
+- `DELETE /api/v1/sessions/{id}/force-close` endpoint qo'shildi
+- **AuditLogPage:** Faol sessiyalar qatorida "X" tugmasi — force-close UI
+- `logoutType` rangli badge: `SERVER_RESTART` (to'q sariq), `FORCE_CLOSED` (qizil), `SERVER_SHUTDOWN` (sariq)
+- **Heartbeat:** `AuthContext` da 30 soniyada bir `/me` tekshiruvi — force-close bo'lsa 30s ichida logout
+
+#### 4. Barcode scan — 2 marta qo'shilish muammosi
+- **Sabab:** Scanner barcode yuborib, keyin Enter yuboradi. Keyboard shortcut handler search inputga focus berar edi → barcode ham bufferga, ham input ga tushardi → `selectProduct` ikki marta chaqirilardi
+- **Yechim:** Scanner Enter handlerida `e.stopPropagation()` + `setSearch('')` qo'shildi
+
+#### 5. Sotuv cheki chop etish — 80mm termal printer
+- **Sabab:** `@media print` da `width: 100%` — butun sahifa eni bilan chiqardi
+- **Yechim:** `width: 80mm`, `@page { size: 80mm auto; margin: 0 }` `@media print` ichiga ko'chirildi
+- `receipt-print-area` class qo'shildi, `* { visibility: hidden }` ishlatildi
+
+#### 6. Yetkazuvchi USD qarzlari ko'rinmaslik (oldingi sessiyadan)
+- `V43__supplier_debt_currency.sql`: `supplier_debts` jadvaliga `currency VARCHAR(3) DEFAULT 'UZS'` qo'shildi
+- `PurchaseService.updateSupplierDebt()`: USD va UZS qarzlar alohida yozuvlar sifatida saqlanadi
+- `SupplierDebt.currency` maydoni qo'shildi
+- `DebtsPage`: USD qarzlar ko'rsatiladi, to'lov modalida USD uchun shift expense yashiriladi
+
+---
+
 ## Session: 2026-04-17 — Yetkazuvchi to'lovi → Smena harajati, DebtsPage tuzatish, Dashboard scroll
 
 ### Bajarilgan ishlar
