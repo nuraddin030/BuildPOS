@@ -26,6 +26,9 @@ public class FileUploadService {
     @Value("${server.port:8080}")
     private String serverPort;
 
+    @Value("${app.base-url:}")
+    private String baseUrl;
+
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
     );
@@ -79,6 +82,11 @@ public class FileUploadService {
         return "http://localhost:" + serverPort;
     }
 
+    private String resolveBaseUrl() {
+        if (baseUrl != null && !baseUrl.isBlank()) return baseUrl;
+        return getBaseUrl();
+    }
+
     public String uploadImage(MultipartFile file) {
         if (file.isEmpty()) {
             throw new BadRequestException("Fayl bo'sh");
@@ -106,7 +114,7 @@ public class FileUploadService {
                     .outputQuality(0.85)
                     .toFile(outputFile);
 
-            return getBaseUrl() + "/uploads/products/" + filename;
+            return resolveBaseUrl() + "/uploads/products/" + filename;
 
         } catch (IOException e) {
             throw new BadRequestException("Rasmni saqlashda xatolik: " + e.getMessage());

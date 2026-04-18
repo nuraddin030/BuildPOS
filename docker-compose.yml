@@ -42,6 +42,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       APP_UPLOAD_DIR: /app/uploads
+      APP_BASE_URL: https://primestroy.uz
       JAVA_TOOL_OPTIONS: "-Xmx400m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
     mem_limit: 512m
     volumes:
