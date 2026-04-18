@@ -1,5 +1,36 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-18 (2) — Keyboard shortcuts, Chek print fix, Docker OOM fix
+
+### Bajarilgan ishlar
+
+#### 1. CashierPage — Keyboard shortcuts
+- `F2` → to'lov modali ochish (`handlePay`)
+- `F4` → savatchani kechiktirish (`handleHold`)
+- `F1` → savatchani tozalash / yangi sotuv (`clearCart`)
+- `Delete` → tanlangan cart itemni o'chirish (`removeItem`)
+- `Esc` → to'lov modalini yopish (PaymentModal ichida `keydown` handler)
+- To'lash tugmasida `F2` badge, Kechiktirish tugmasida `F4` badge
+- `pos-left` panel pastida shortcut legend: `F1 · F2 · F4 · Del · Esc · ↑↓ · →←`
+
+#### 2. Chek chop etish — termal printer fix
+- **Muammo:** `window.print()` joriy sahifani chop etardi — modal CSS, dark mode, parent styles aralashib matnlar xira chiqardi
+- **Yechim:** `window.open()` bilan toza yangi oyna ochib, ichiga to'liq chek HTML yoziladi (SalesPage uslubida)
+- Barcha stillar hardcoded `#000` — CSS o'zgaruvchilari, opacity muammolari yo'q
+- `@media print` ichiga qo'shimcha: `opacity: 1`, `border-color: #000`, receipt klasslar uchun alohida override
+- Inline `style={{ color: pm?.color }}` payment method dan olib tashlandi
+
+#### 3. Docker OOM fix — mem_limit oshirildi
+- **Muammo:** `docker stats` da backend 492MB / 512MB (96%) — OOM restart xavfi
+- **Sabab:** `-Xmx400m` faqat heap limiti; metaspace + thread stacks qo'shilganda jami 500-550MB ga yetib limitdan oshardi
+- **Yechim:** `docker-compose.yml` da:
+  - `JAVA_TOOL_OPTIONS`: `-Xmx400m` → `-Xmx320m`, `MaxMetaspaceSize=128m` qo'shildi
+  - `mem_limit`: `512m` → `768m`
+- GitHub Actions orqali avtomatik deploy bo'ldi
+- **Natija:** backend 419MB / 768MB (54%) — 300MB bo'sh joy
+
+---
+
 ## Session: 2026-04-18 — Xavfsizlik, OOM fix, Barcode, Chek chop etish
 
 ### Bajarilgan ishlar
