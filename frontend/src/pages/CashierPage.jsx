@@ -602,7 +602,7 @@ function ReceiptModal({ sale, onClose }) {
 
                         {/* ── Footer ── */}
                         <div className="receipt-div receipt-div--double" />
-                        <div className="receipt-thanks">Rahmat! Yana keling 😊</div>
+                        <div className="receipt-thanks">Xaridingiz uchun rahmat!</div>
                     </div>
                 </div>
                 <div className="pos-mf">

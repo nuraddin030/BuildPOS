@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 import { login as loginApi, logout as logoutApi, getMe } from '../api/Auth'
-import { setAccessToken, clearAccessToken, getAccessToken } from '../api/api'
+import api, { setAccessToken, clearAccessToken, getAccessToken } from '../api/api'
 
 const INACTIVITY_MS  = 30 * 60 * 1000 // 30 daqiqa
 const HEARTBEAT_MS   = 30 * 1000       // 30 soniyada bir session tekshirish
@@ -52,33 +52,15 @@ export function AuthProvider({ children }) {
         }
     }, [user, resetTimer])
 
-    // Heartbeat: 30 soniyada bir access token tekshirish
-    // Force-close bo'lsa → 401 → refresh ham ishlamasa → logout
+    // Heartbeat: 30 soniyada bir token tekshirish
+    // api instance ishlatiladi — 401 → refresh → clearSession → /login zanjiri tayyor
     useEffect(() => {
         if (!user) return
-        const check = async () => {
+        const check = () => {
             if (!getAccessToken()) return
-            try {
-                await axios.get('/api/v1/employees/me', {
-                    headers: { Authorization: `Bearer ${getAccessToken()}` }
-                })
-            } catch (err) {
-                if (err.response?.status === 401) {
-                    // Token yaroqsiz — refreshni sinab ko'ramiz
-                    try {
-                        const res = await axios.post('/api/auth/refresh', null, { withCredentials: true })
-                        setAccessToken(res.data.token)
-                    } catch {
-                        // Refresh ham ishlamadi — majburiy logout
-                        clearAccessToken()
-                        sessionStorage.removeItem('buildpos_user')
-                        sessionStorage.removeItem('buildpos_permissions')
-                        setUser(null)
-                        setPermissions([])
-                        window.location.href = '/login'
-                    }
-                }
-            }
+            api.get('/api/v1/employees/me').catch(() => {
+                // api interceptor 401 → refresh → clearSession ni o'zi boshqaradi
+            })
         }
         heartbeatTimer.current = setInterval(check, HEARTBEAT_MS)
         return () => clearInterval(heartbeatTimer.current)
