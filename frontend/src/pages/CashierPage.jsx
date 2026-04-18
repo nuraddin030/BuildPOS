@@ -217,6 +217,12 @@ function PaymentModal({ sale, onClose, onCompleted, onCustomerSet }) {
     const [limitChecking, setLimitChecking] = useState(false)
     const [debtInfo, setDebtInfo] = useState(null) // { currentDebt, debtLimit, remaining, ... }
 
+    useEffect(() => {
+        const h = (e) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', h)
+        return () => window.removeEventListener('keydown', h)
+    }, [onClose])
+
     const totalPaid = payments.reduce((s, p) => s + parseNum(p.amount), 0)
     const change = totalPaid - total
     const upd = (i, k, v) => setPayments(p => p.map((item, idx) => idx === i ? { ...item, [k]: v } : item))
@@ -1236,7 +1242,36 @@ export default function CashierPage() {
                 return
             }
 
+            // F2 — to'lov modali (modal ochiq bo'lmasa)
+            if (e.key === 'F2' && !hasModal) {
+                e.preventDefault()
+                if (cart.length) handlePay()
+                return
+            }
+
+            // F4 — kechiktirish (modal ochiq bo'lmasa)
+            if (e.key === 'F4' && !hasModal) {
+                e.preventDefault()
+                if (cart.length) handleHold()
+                return
+            }
+
+            // F1 — savatchani tozalash
+            if (e.key === 'F1' && !hasModal) {
+                e.preventDefault()
+                if (cart.length) clearCart()
+                return
+            }
+
             if (hasModal || inInput) return
+
+            // Delete — aktiv itemni o'chirish
+            if (e.key === 'Delete' && !showDrop && cart.length > 0) {
+                e.preventDefault()
+                const item = cart[activeIdx]
+                if (item) removeItem(item.productUnitId)
+                return
+            }
 
             // ArrowUp/Down — savat navigatsiya
             if (!showDrop) {
@@ -2247,6 +2282,17 @@ export default function CashierPage() {
                                 </div>
                             ))}
                         </div>
+
+                        {/* ── Keyboard shortcut legend ── */}
+                        <div className="pos-kbd-legend">
+                            <span><kbd>F1</kbd> Yangi sotuv</span>
+                            <span><kbd>F2</kbd> To'lash</span>
+                            <span><kbd>F4</kbd> Kechiktirish</span>
+                            <span><kbd>Del</kbd> Itemni o'chirish</span>
+                            <span><kbd>↑↓</kbd> Navigatsiya</span>
+                            <span><kbd>→←</kbd> Miqdor</span>
+                            <span><kbd>Esc</kbd> Modalni yopish</span>
+                        </div>
                     </div>
 
                     {/* ── O'NG: Panel ── */}
@@ -2507,6 +2553,7 @@ export default function CashierPage() {
                             <button className="pos-pay-btn" onClick={handlePay} disabled={!cart.length || saving}>
                                 <div className="pos-pay-btn-inner">
                                     <span className="pos-pay-btn-label">TO'LASH</span>
+                                    <span className="pos-kbd-badge">F2</span>
                                 </div>
                                 <span className="pos-pay-btn-sum">{fmt(totalAmount)} UZS</span>
                             </button>
@@ -2514,6 +2561,7 @@ export default function CashierPage() {
                                 <button className="pos-sec-btn" onClick={handleHold} disabled={!cart.length || saving}>
                                     <PauseCircle size={15} />
                                     Kechiktirish
+                                    <span className="pos-kbd-badge pos-kbd-badge--sec">F4</span>
                                 </button>
                                 {!isAdmin && (
                                     <button className="pos-sec-btn pos-sec-btn-amber" onClick={() => setShowSubmitModal(true)} disabled={!cart.length || saving}>

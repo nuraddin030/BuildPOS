@@ -2011,6 +2011,60 @@ textarea:focus-visible {
 .pos-pay-btn-inner { display: flex; align-items: center; gap: 8px; }
 .pos-pay-btn-label { font-weight: 700; }
 .pos-pay-btn-kbd   { background: rgba(255,255,255,.2); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
+
+/* ── Keyboard shortcut badges ─────────────────────────────── */
+.pos-kbd-badge {
+    background: rgba(255,255,255,.22);
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,.9);
+}
+.pos-kbd-badge--sec {
+    background: rgba(14,165,233,.1);
+    border-color: rgba(14,165,233,.3);
+    color: #0ea5e9;
+    margin-left: auto;
+}
+
+/* ── Shortcut legend footer ───────────────────────────────── */
+.pos-kbd-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 20px;
+    padding: 6px 16px;
+    border-top: 1px solid var(--pos-border);
+    background: var(--pos-surface);
+    flex-shrink: 0;
+}
+.pos-kbd-legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--pos-text-secondary);
+    white-space: nowrap;
+}
+.pos-kbd-legend kbd {
+    display: inline-block;
+    background: var(--pos-bg);
+    border: 1px solid var(--pos-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--pos-text-secondary);
+    font-family: inherit;
+    line-height: 1.6;
+    box-shadow: 0 1px 0 var(--pos-border);
+}
+@media (max-width: 768px) {
+    .pos-kbd-legend { display: none; }
+}
 .pos-pay-btn-sum   { font-weight: 800; font-size: 18px; }
 .pos-hold-row      { display: flex; gap: 6px; }
 .pos-hold-btn-flex { flex: 1; }
