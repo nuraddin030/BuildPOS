@@ -57,8 +57,9 @@ public class ProductService {
             slug = slug + "-" + System.currentTimeMillis();
         }
 
-        // SKU tekshirish
-        if (request.getSku() != null && productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
+        // SKU tekshirish (bo'sh string null sifatida qabul qilinadi)
+        if (request.getSku() != null && !request.getSku().isBlank()
+                && productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
             throw new AlreadyExistsException("Bu SKU allaqachon mavjud: " + request.getSku());
         }
 
@@ -284,10 +285,10 @@ public class ProductService {
             changes.add("Nomi: \"" + product.getName() + "\" → \"" + request.getName() + "\"");
         }
 
-        // SKU tekshirish
-        if (request.getSku() != null &&
-                !request.getSku().equals(product.getSku()) &&
-                productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
+        // SKU tekshirish (bo'sh string null sifatida qabul qilinadi)
+        if (request.getSku() != null && !request.getSku().isBlank()
+                && !request.getSku().equals(product.getSku())
+                && productRepository.existsBySkuAndIsDeletedFalse(request.getSku())) {
             throw new AlreadyExistsException("Bu SKU allaqachon mavjud: " + request.getSku());
         }
 

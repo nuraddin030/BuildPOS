@@ -177,6 +177,7 @@ export default function ProductFormPage() {
         try {
             const payload = {
                 ...form,
+                sku: form.sku?.trim() || null,
                 categoryId: form.categoryId || null,
                 units: form.units.map((u, i) => ({
                     id: u.id || null,
