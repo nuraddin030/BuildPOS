@@ -369,6 +369,10 @@ public class ProductService {
                 pu.setCostPrice(unitReq.getCostPrice());
                 pu.setSalePrice(unitReq.getSalePrice());
                 pu.setMinPrice(unitReq.getMinPrice());
+                pu.setCostPriceUsd(unitReq.getCostPriceUsd());
+                pu.setSalePriceUsd(unitReq.getSalePriceUsd());
+                pu.setMinPriceUsd(unitReq.getMinPriceUsd());
+                pu.setExchangeRateAtSave(unitReq.getExchangeRateAtSave());
                 pu.setBarcode(unitReq.getBarcode());
                 boolean isBase = Boolean.TRUE.equals(unitReq.getIsBaseUnit());
                 pu.setIsBaseUnit(isBase);
