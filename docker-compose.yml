@@ -43,8 +43,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       APP_UPLOAD_DIR: /app/uploads
       APP_BASE_URL: https://primestroy.uz
-      JAVA_TOOL_OPTIONS: "-Xmx400m -Xms128m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
-    mem_limit: 512m
+      JAVA_TOOL_OPTIONS: "-Xmx320m -Xms128m -XX:+UseG1GC -XX:MaxMetaspaceSize=128m -XX:MaxGCPauseMillis=200"
+    mem_limit: 768m
     volumes:
       - /opt/buildpos/uploads:/app/uploads   # Rasmlar — host da to'g'ridan saqlash
       - maven_cache:/root/.m2       # Maven dependency cache
