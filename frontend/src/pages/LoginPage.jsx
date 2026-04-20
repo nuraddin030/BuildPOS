@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -13,6 +13,11 @@ export default function LoginPage() {
     const [error, setError] = useState('')
     const [locked, setLocked] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const usernameRef = useRef(null)
+
+    useEffect(() => {
+        usernameRef.current?.focus({ preventScroll: true })
+    }, [])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -118,7 +123,7 @@ export default function LoginPage() {
                                     }
                                     placeholder={t('login.username_placeholder') || ''}
                                     required
-                                    autoFocus
+                                    ref={usernameRef}
                                 />
                             </div>
                         </div>
