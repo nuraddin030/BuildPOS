@@ -462,7 +462,7 @@ function ReceiptModal({ sale, onClose }) {
         win.document.write(`<!DOCTYPE html><html><head><title>Chek - ${sale.referenceNo}</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; background: #fff; padding: 4mm; width: 72mm; }
+            body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; background: #fff; padding: 4mm; padding-bottom: 30mm; width: 72mm; }
             .center { text-align: center; }
             .bold { font-weight: 700; }
             .store { text-align: center; font-size: 16px; font-weight: 900; letter-spacing: 2px; margin-bottom: 2px; }
