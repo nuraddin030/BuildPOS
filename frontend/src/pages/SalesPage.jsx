@@ -191,6 +191,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
         ` : ''}
         <div class="divider-double"></div>
         <div class="thanks">Xaridingiz uchun rahmat!</div>
+        <div style="height:40mm;line-height:40mm;">&nbsp;</div>
         </body></html>`)
         win.document.close()
         win.focus()
