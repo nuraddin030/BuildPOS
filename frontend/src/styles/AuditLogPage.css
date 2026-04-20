@@ -205,20 +205,121 @@
     cursor: not-allowed;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* ── Mobile card view ───────────────────────────────────────── */
 @media (max-width: 768px) {
     .al-filter {
         flex-direction: column;
         align-items: stretch;
     }
-
     .al-input {
         min-width: unset;
         width: 100%;
     }
-
     .al-search-btn {
         width: 100%;
         justify-content: center;
     }
+    .al-table-wrap { display: none; }
+    .al-mobile-cards { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+}
+@media (min-width: 769px) {
+    .al-mobile-cards { display: none; }
+}
+
+/* ── Mobile card elements ───────────────────────────────────── */
+.al-mcard {
+    background: var(--bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.al-mcard-danger {
+    border-color: #fca5a5;
+    background: #fff8f8;
+}
+
+.al-mcard-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.al-mcard-top-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.al-mcard-user {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.al-mcard-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.al-mcard-entity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.al-mcard-entity-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.al-mcard-entity-type {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.al-mcard-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+.al-mcard-detail-line {
+    font-size: 12px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.al-mcard-device {
+    font-size: 12px;
+}
+
+.al-mcard-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.al-mcard-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.al-mcard-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    flex-shrink: 0;
 }

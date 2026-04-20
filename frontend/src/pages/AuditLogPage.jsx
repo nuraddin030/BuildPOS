@@ -161,6 +161,40 @@ function AuditTab() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="al-mobile-cards">
+                        {logs.length === 0 ? (
+                            <div className="table-empty" style={{ padding: 32 }}>Ma'lumot yo'q</div>
+                        ) : logs.map(log => {
+                            const ac  = ACTION_COLORS[log.action] || { bg: 'var(--border-color)', color: 'var(--text-muted)', label: log.action }
+                            const dev = parseDevice(log.userAgent)
+                            return (
+                                <div key={log.id} className="al-mcard">
+                                    <div className="al-mcard-top">
+                                        <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>{ac.label}</span>
+                                        <span className="al-mcard-time">{fmtDate(log.createdAt)}</span>
+                                    </div>
+                                    <div className="al-mcard-user">{log.username || '—'}</div>
+                                    <div className="al-mcard-entity">
+                                        <span className="al-mcard-entity-name">{log.entityName || log.entityType}</span>
+                                        <span className="al-mcard-entity-type">{log.entityType}{log.entityId ? ` #${log.entityId}` : ''}</span>
+                                    </div>
+                                    {log.details && (
+                                        <div className="al-mcard-details">
+                                            {log.details.split(' | ').map((d, i) => (
+                                                <span key={i} className="al-mcard-detail-line">{d}</span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="al-device al-mcard-device">
+                                        {dev.icon === 'mobile'
+                                            ? <Smartphone size={12} />
+                                            : <Monitor size={12} />}
+                                        <span>{dev.name}</span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
                     {total > 50 && (
                         <div className="al-pagination">
                             <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
@@ -333,6 +367,73 @@ function SessionsTab() {
                             </tbody>
                         </table>
                     </div>
+                    <div className="al-mobile-cards">
+                        {sessions.length === 0 ? (
+                            <div className="table-empty" style={{ padding: 32 }}>Ma'lumot yo'q</div>
+                        ) : sessions.map(s => {
+                            const duration = fmtDuration(s.durationSec)
+                            const isActive = s.logoutAt == null
+                            const ltInfo   = LOGOUT_TYPE_LABEL[s.logoutType] || LOGOUT_TYPE_LABEL.TIMEOUT
+                            return (
+                                <div key={s.id} className="al-mcard">
+                                    <div className="al-mcard-top">
+                                        <span className="al-mcard-user">{s.username}</span>
+                                        <div className="al-mcard-top-right">
+                                            {isActive ? (
+                                                <span className="al-badge" style={{ background: '#d1fae5', color: '#065f46' }}>
+                                                    <LogIn size={10} style={{ display: 'inline', marginRight: 3 }} />
+                                                    Tizimda
+                                                </span>
+                                            ) : (
+                                                <span className="al-badge" style={{ background: ltInfo.bg, color: ltInfo.color }}>
+                                                    <LogOut size={10} style={{ display: 'inline', marginRight: 3 }} />
+                                                    {ltInfo.label}
+                                                </span>
+                                            )}
+                                            {isActive && (
+                                                <button
+                                                    className="al-force-close-btn"
+                                                    disabled={closingIds.has(s.id)}
+                                                    onClick={() => forceClose(s.id)}
+                                                    title="Sessiyani majburiy yopish"
+                                                >
+                                                    {closingIds.has(s.id)
+                                                        ? <Loader2 size={13} className="spin" />
+                                                        : <X size={13} />}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="al-mcard-rows">
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">Kirish</span>
+                                            <span>{fmtDate(s.loginAt)}</span>
+                                        </div>
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">Chiqish</span>
+                                            <span className="cell-muted">{isActive ? '—' : fmtDate(s.logoutAt)}</span>
+                                        </div>
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">Davomiylik</span>
+                                            {isActive
+                                                ? <span className="al-duration-active">Faol</span>
+                                                : <span className="al-duration">{duration}</span>}
+                                        </div>
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">IP</span>
+                                            <code className="al-ip">{s.ipAddress}</code>
+                                        </div>
+                                        {s.device && (
+                                            <div className="al-mcard-row">
+                                                <span className="al-mcard-label">Qurilma</span>
+                                                <span className="cell-muted" style={{ fontSize: 12 }}>{s.device}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
                     {total > 50 && (
                         <div className="al-pagination">
                             <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
@@ -393,6 +494,44 @@ function SessionsTab() {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                    <div className="al-mobile-cards">
+                        {failed.map(f => {
+                            const dev = parseDevice(f.userAgent)
+                            return (
+                                <div key={f.id} className="al-mcard al-mcard-danger">
+                                    <div className="al-mcard-top">
+                                        <span className="al-mcard-user">{f.username || '—'}</span>
+                                        <span className="al-badge" style={
+                                            f.action === 'LOCKED'
+                                                ? { background: '#fff7ed', color: '#c2410c' }
+                                                : { background: '#fee2e2', color: '#991b1b' }
+                                        }>
+                                            {f.action === 'LOCKED' ? 'Bloklandi' : 'Xato parol'}
+                                        </span>
+                                    </div>
+                                    <div className="al-mcard-rows">
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">IP</span>
+                                            <code className="al-ip">{f.ipAddress}</code>
+                                        </div>
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">Qurilma</span>
+                                            <div className="al-device">
+                                                {dev.icon === 'mobile'
+                                                    ? <Smartphone size={12} />
+                                                    : <Monitor size={12} />}
+                                                <span>{dev.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="al-mcard-row">
+                                            <span className="al-mcard-label">Vaqt</span>
+                                            <span className="cell-muted" style={{ fontSize: 12 }}>{fmtDate(f.createdAt)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             )}
