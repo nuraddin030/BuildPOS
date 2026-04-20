@@ -1,4 +1,4 @@
-import { NavLink, Routes, Route, useNavigate } from 'react-router-dom'
+import { NavLink, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import DashboardPage from '../pages/DashboardPage'
@@ -123,6 +123,11 @@ export default function Layout() {
     const { t, i18n } = useTranslation()
     const { user, logout, hasPermission } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
+
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [location.pathname])
 
     const [loggingOut, setLoggingOut] = useState(false)
 

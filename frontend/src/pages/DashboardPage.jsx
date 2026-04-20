@@ -117,7 +117,7 @@ function UpcomingDebtsPanel({ items, navigate }) {
     }, [])
 
     useEffect(() => {
-        if (showForm) setTimeout(() => inputRef.current?.focus(), 50)
+        if (showForm) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50)
     }, [showForm])
 
     function handleAdd() {
