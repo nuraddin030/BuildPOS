@@ -12,6 +12,7 @@ import com.buildpos.buildpos.entity.*;
 import com.buildpos.buildpos.entity.enums.DiscountType;
 import com.buildpos.buildpos.repository.SaleItemRepository;
 import com.buildpos.buildpos.repository.SaleNoteRepository;
+import com.buildpos.buildpos.security.AuditDetailsHolder;
 import com.buildpos.buildpos.entity.enums.SaleStatus;
 import com.buildpos.buildpos.entity.enums.ShiftStatus;
 import com.buildpos.buildpos.entity.enums.StockMovementType;
@@ -155,6 +156,7 @@ public class SaleService {
         // DRAFT yaratilganda faqat stock tekshiramiz — kamaytirishni COMPLETE/APPROVE da qilamiz
         checkStockForSale(sale);
 
+        AuditDetailsHolder.setEntityName("Sale #" + sale.getId());
         return toResponse(sale);
     }
 
@@ -241,6 +243,7 @@ public class SaleService {
         sale.setStatus(SaleStatus.COMPLETED);
         sale.setCompletedAt(LocalDateTime.now());
 
+        AuditDetailsHolder.setEntityName("Sale #" + sale.getId());
         return toResponse(saleRepository.save(sale));
     }
 

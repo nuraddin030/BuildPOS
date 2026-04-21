@@ -33,8 +33,17 @@ public class AuditLogFilter extends OncePerRequestFilter {
 
     private static final Set<String> LOGGED_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
 
+    // Read-only POST endpointlar — loglanmaydi (filter, check, search va h.k.)
+    private static final Set<String> SKIP_URI_SUFFIXES = Set.of(
+            "/check-warehouses",
+            "/check-debt-limit"
+    );
+
     // URL dan entity turini aniqlash: /api/v1/products/123 → Product
     private static final Pattern ID_PATTERN = Pattern.compile("/(\\d+)");
+
+    // POST /resource/{id}/action — mavjud resursga amal (UPDATE), yangi yaratish emas
+    private static final Pattern ACTION_ON_EXISTING = Pattern.compile(".*/\\d+/[a-zA-Z-]+/?$");
 
     private final AuditLogRepository auditLogRepository;
 
@@ -55,12 +64,20 @@ public class AuditLogFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Read-only POST endpointlarni o'tkazib yuborish
+        String uri = request.getRequestURI();
+        for (String suffix : SKIP_URI_SUFFIXES) {
+            if (uri.endsWith(suffix)) {
+                AuditDetailsHolder.clear();
+                return;
+            }
+        }
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) return;
 
         try {
-            String uri        = request.getRequestURI();
-            String action     = resolveAction(method);
+            String action     = resolveAction(method, uri);
             String entityType = resolveEntityType(uri);
             Long   entityId   = resolveEntityId(uri);
             String ip         = getClientIp(request);
@@ -88,9 +105,9 @@ public class AuditLogFilter extends OncePerRequestFilter {
         }
     }
 
-    private String resolveAction(String method) {
+    private String resolveAction(String method, String uri) {
         return switch (method) {
-            case "POST"   -> "CREATE";
+            case "POST"   -> ACTION_ON_EXISTING.matcher(uri).matches() ? "UPDATE" : "CREATE";
             case "PUT",
                  "PATCH"  -> "UPDATE";
             case "DELETE" -> "DELETE";
