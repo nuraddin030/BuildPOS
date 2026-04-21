@@ -152,7 +152,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
             .debt-title { text-align: center; font-weight: 800; font-size: 13px; letter-spacing: 1px; margin-bottom: 5px; }
             .debt-row { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
             .thanks { text-align: center; font-size: 11px; margin-top: 4px; }
-            .feed-zone { margin-top: 30mm; text-align: center; font-size: 9px; letter-spacing: 3px; color: #000; }
+            .feed-zone { margin-top: 25mm; text-align: center; font-size: 6px; letter-spacing: 2px; color: #000; }
             @page { size: 80mm auto; margin: 0; }
         </style></head><body>
         <div class="store">PrimeStroy</div>
@@ -192,7 +192,7 @@ function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, ha
         ` : ''}
         <div class="divider-double"></div>
         <div class="thanks">Xaridingiz uchun rahmat!</div>
-        <div class="feed-zone">. . . . . . . . . . . . . . . . .</div>
+        <div class="feed-zone">. . . . . . . . . . . . . .</div>
         </body></html>`)
         win.document.close()
         win.focus()
