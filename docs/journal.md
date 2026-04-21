@@ -1,5 +1,51 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-20/21 — Chek, Scroll, AuditLog mobile, Model yangilash
+
+### Bajarilgan ishlar
+
+#### 1. Chek chop etish — SalesPage CashierPage formatiga tenglashtirildi
+- **Muammo:** SalesPage orqali chop etilgan chek CashierPage chekidan qisqaroq edi
+- **Yechim:** `SalesPage.printReceipt()` to'liq qayta yozildi — CashierPage bilan bir xil format:
+  - Do'kon nomi, SOTUV CHEKI sarlavhasi
+  - Kassir, sana, mijoz, tovarlar, chegirma, to'lov, nasiya bloki
+- Ikkalasiga ham `padding-bottom: 30mm` qo'shildi (keyinroq `<br>` taglar bilan almashtirildi)
+
+#### 2. Chek oxiri kesilish muammosi — Xprinter X-80
+- **Muammo:** "Xaridingiz uchun rahmat!" matni printer kesish mexanizmi tufayli chekda ko'rinmasdi
+- **Birinchi urinish:** `padding-bottom: 30mm` CSS — brauzer print vaqtida collaps qildi
+- **Ikkinchi urinish:** `<div style="height:40mm">` — bo'sh div ham collaps bo'ldi
+- **Yakuniy yechim:** 15 ta `<br/>` tagi — brauzer tomonidan hech qachon collaps qilinmaydi
+- CashierPage va SalesPage ikkalasiga ham qo'llandi
+
+#### 3. Sahifa o'zgarganda scroll tepaga — Layout.jsx
+- **Muammo:** DashboardPage va boshqa sahifalar oldingi sahifaning scroll pozitsiyasida ochilardi
+- **Yechim:** `Layout.jsx` ga `useLocation` import qilinib, `useEffect([location.pathname])` ichida `window.scrollTo(0, 0)` qo'shildi
+- Login → Dashboard o'tishda ham ishlaydi (Layout mount bo'lganda `useEffect` ishlaydi)
+
+#### 4. LoginPage `autoFocus` scroll muammosi
+- **Muammo:** Login sahifasida username inputiga `autoFocus` tufayli mobil qurilmalarda klaviatura ochiladi va sahifa pastga scrolllanardi
+- **Yechim:** `autoFocus` olib tashlandi, `useRef` + `useEffect` bilan `focus({ preventScroll: true })` qo'yildi
+
+#### 5. AuditLogPage — mobile card view
+- **Muammo:** Audit jurnal sahifasi (3 ta jadval) mobil versiyada card view yo'q edi
+- **Yechim:** 3 ta jadval uchun mobile card view qo'shildi:
+  - **Amallar jurnali:** amal badge + vaqt, foydalanuvchi, ob'ekt, o'zgarish detallari, qurilma
+  - **Sessiyalar:** foydalanuvchi + holat badge + force-close tugmasi, kirish/chiqish, davomiylik, IP
+  - **Muvaffaqiyatsiz urinishlar:** foydalanuvchi + badge, IP, qurilma, vaqt (qizil border)
+- 768px dan kichikda jadval yashiriladi, card view ko'rinadi
+
+#### 6. Claude Code model — Opus 4.7 ga o'tish
+- `~/.claude/settings.json` ga `"model": "claude-opus-4-7"` qo'shildi
+- Yangi sessiyadan boshlab Opus 4.7 ishlatiladi
+
+### Arxitektura qarorlari
+- Chek chop etishda `<br>` taglari `height` CSS dan ishonchliroq — brauzer CSS ni collaps qilishi mumkin, HTML elementlarni emas
+- `preventScroll: true` — focus bilan scroll muammosini ajratishning to'g'ri usuli
+- Mobile card view — har bir sahifaga alohida qo'shish kerak (universal yechim yo'q)
+
+---
+
 ## Session: 2026-04-18 (2) — Keyboard shortcuts, Chek print fix, Docker OOM fix
 
 ### Bajarilgan ishlar
