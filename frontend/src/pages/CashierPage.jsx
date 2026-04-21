@@ -521,7 +521,7 @@ function ReceiptModal({ sale, onClose }) {
         ` : ''}
         <div class="divider-double"></div>
         <div class="thanks">Xaridingiz uchun rahmat!</div>
-        <div style="height:40mm;line-height:40mm;">&nbsp;</div>
+        <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
         </body></html>`)
         win.document.close()
         win.focus()
