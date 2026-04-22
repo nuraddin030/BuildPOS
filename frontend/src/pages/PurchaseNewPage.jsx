@@ -23,8 +23,9 @@ const fmtPrice = (val) => {
 const EMPTY_FORM = {
     productUnitId: null, productName: '', unitSymbol: '', availableUnits: [],
     quantity: '', unitPrice: '', currency: 'UZS',
-    exchangeRate: '', salePrice: '', minPrice: '', updatePrices: false,
+    exchangeRate: '', salePrice: '', minPrice: '',
     lastPurchase: null,
+    originalCostPrice: '', originalSalePrice: '', originalMinPrice: '',
 }
 const EMPTY_SUPPLIER = { name: '', phone: '', inn: '' }
 const EMPTY_PRODUCT = { name: '', categoryId: '', unitId: '', barcode: '', purchasePrice: '', salePrice: '', minPrice: '' }
@@ -152,6 +153,9 @@ export default function PurchaseNewPage() {
                 exchangeRate: last?.currency === 'USD' && last?.exchangeRate
                     ? String(last.exchangeRate) : '',
                 lastPurchase: last,
+                originalCostPrice: unit?.costPrice ? String(unit.costPrice) : '',
+                originalSalePrice: unit?.salePrice ? String(unit.salePrice) : '',
+                originalMinPrice: unit?.minPrice ? String(unit.minPrice) : '',
             }))
         } catch {}
         setProductSearch('')
@@ -172,6 +176,9 @@ export default function PurchaseNewPage() {
             exchangeRate: last?.currency === 'USD' && last?.exchangeRate
                 ? String(last.exchangeRate) : '',
             lastPurchase: last,
+            originalCostPrice: unit.costPrice ? String(unit.costPrice) : '',
+            originalSalePrice: unit.salePrice ? String(unit.salePrice) : '',
+            originalMinPrice: unit.minPrice ? String(unit.minPrice) : '',
         }))
     }
 
@@ -230,32 +237,89 @@ export default function PurchaseNewPage() {
         setItems(prev => prev.filter((_, i) => i !== idx))
     }
 
-    const handleSave = async () => {
-        if (!supplierId) { setError("Yetkazuvchi tanlanishi shart"); return }
-        if (!warehouseId) { setError("Ombor tanlanishi shart"); return }
-        if (items.length === 0) { setError("Kamida bitta mahsulot kerak"); return }
-        setSaving(true); setError('')
-        try {
-            const data = {
-                supplierId: Number(supplierId),
-                warehouseId: Number(warehouseId),
-                notes,
-                items: items.map(item => ({
+    // Har bir itemning tannarxi UZS da (USD bo'lsa kursga ko'paytiriladi)
+    const itemCostInUzs = (item) => {
+        const p = Number(item.unitPrice) || 0
+        return item.currency === 'USD'
+            ? Math.round(p * (Number(item.exchangeRate) || Number(exchangeRate)))
+            : Math.round(p)
+    }
+
+    // Har bir item uchun narx farqlarini hisoblash
+    const computePriceDiffs = () => {
+        return items.map((item, idx) => {
+            const newCost = itemCostInUzs(item)
+            const oldCost = Math.round(Number(item.originalCostPrice) || 0)
+            const newSale = Math.round(Number(item.salePrice) || 0)
+            const oldSale = Math.round(Number(item.originalSalePrice) || 0)
+            const newMin = Math.round(Number(item.minPrice) || 0)
+            const oldMin = Math.round(Number(item.originalMinPrice) || 0)
+
+            const costChanged = newCost > 0 && newCost !== oldCost
+            const saleChanged = newSale > 0 && newSale !== oldSale
+            const minChanged = newMin > 0 && newMin !== oldMin
+
+            if (!costChanged && !saleChanged && !minChanged) return null
+            return {
+                idx, productName: item.productName, unitSymbol: item.unitSymbol,
+                oldCost, newCost, costChanged,
+                oldSale, newSale, saleChanged,
+                oldMin, newMin, minChanged,
+            }
+        }).filter(Boolean)
+    }
+
+    const [priceModal, setPriceModal] = useState(null) // { diffs: [...], selected: Set }
+
+    const buildPurchasePayload = (updatePricesItemIdxs) => {
+        const set = new Set(updatePricesItemIdxs)
+        return {
+            supplierId: Number(supplierId),
+            warehouseId: Number(warehouseId),
+            notes,
+            items: items.map((item, idx) => {
+                const update = set.has(idx)
+                return {
                     productUnitId: item.productUnitId,
                     quantity: Number(item.quantity),
                     unitPrice: Number(item.unitPrice),
                     currency: item.currency,
                     exchangeRate: item.currency === 'USD' ? (Number(item.exchangeRate) || Number(exchangeRate)) : undefined,
-                    updatePrices: item.updatePrices,
-                    salePrice: item.updatePrices && item.salePrice ? Number(item.salePrice) : undefined,
-                    minPrice: item.updatePrices && item.minPrice ? Number(item.minPrice) : undefined,
-                }))
-            }
+                    updatePrices: update,
+                    salePrice: update && item.salePrice ? Number(item.salePrice) : undefined,
+                    minPrice: update && item.minPrice ? Number(item.minPrice) : undefined,
+                }
+            })
+        }
+    }
+
+    const submitPurchase = async (updatePricesItemIdxs) => {
+        setSaving(true); setError('')
+        try {
+            const data = buildPurchasePayload(updatePricesItemIdxs)
             const res = await createPurchase(data)
             navigate(`/purchases/${res.data.id}`)
         } catch (e) {
             setError(e.response?.data?.message || 'Xatolik yuz berdi')
         } finally { setSaving(false) }
+    }
+
+    const handleSave = async () => {
+        if (!supplierId) { setError("Yetkazuvchi tanlanishi shart"); return }
+        if (!warehouseId) { setError("Ombor tanlanishi shart"); return }
+        if (items.length === 0) { setError("Kamida bitta mahsulot kerak"); return }
+
+        const diffs = computePriceDiffs()
+        if (diffs.length === 0) {
+            // Farq yo'q — darhol saqlash
+            submitPurchase([])
+            return
+        }
+        // Modal ochamiz, default: hammasi belgilangan
+        setPriceModal({
+            diffs,
+            selected: new Set(diffs.map(d => d.idx))
+        })
     }
 
     const handleCreateSupplier = async () => {
@@ -595,12 +659,6 @@ export default function PurchaseNewPage() {
                             </div>
                         </div>
 
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, marginBottom: 14 }}>
-                            <input type="checkbox" checked={form.updatePrices}
-                                   onChange={e => setForm(f => ({ ...f, updatePrices: e.target.checked }))} />
-                            <span style={{ color: 'var(--text-secondary)' }}>Mahsulot kartasidagi narxlarni yangilash</span>
-                        </label>
-
                         {/* Joriy preview */}
                         {form.quantity && form.unitPrice && (
                             <div style={{
@@ -664,7 +722,6 @@ export default function PurchaseNewPage() {
                                         <th className="th-right">Narx</th>
                                         <th className="th-center">Val.</th>
                                         <th className="th-right">Jami</th>
-                                        <th className="th-center">Narx ✓</th>
                                         <th></th>
                                     </tr>
                                     </thead>
@@ -699,12 +756,6 @@ export default function PurchaseNewPage() {
                                                 {item.currency === 'USD'
                                                     ? <>{fmt(getItemTotalUsd(item))} <span style={{fontSize:11}}>USD</span></>
                                                     : <>{fmt(getItemTotalUzs(item))} <span style={{fontSize:11}}>UZS</span></>
-                                                }
-                                            </td>
-                                            <td className="th-center">
-                                                {item.updatePrices
-                                                    ? <span style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>✓</span>
-                                                    : <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
                                                 }
                                             </td>
                                             <td>
@@ -763,7 +814,6 @@ export default function PurchaseNewPage() {
                                         </div>
                                         <div className="pnew-item-meta">
                                             {fmt(item.quantity)} × {fmt(item.unitPrice)} {item.currency}
-                                            {item.updatePrices && <span style={{ marginLeft: 8, color: '#10b981', fontWeight: 600 }}>· narx ✓</span>}
                                         </div>
                                         <div className="pnew-item-actions">
                                             <button className="act-btn" onClick={() => handleEditItem(idx)}><Edit2 size={13} /></button>
@@ -901,6 +951,83 @@ export default function PurchaseNewPage() {
                             <button className="btn-cancel" onClick={() => setShowProductModal(false)}>Bekor</button>
                             <button className="btn-save" onClick={handleCreateProduct} disabled={productSaving}>
                                 {productSaving ? <><Loader2 size={14} className="spin" />Saqlanmoqda...</> : 'Yaratish va qo\'shish'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Narx farqi modali ── */}
+            {priceModal && (
+                <div className="pnew-price-modal-overlay" onClick={() => setPriceModal(null)}>
+                    <div className="pnew-price-modal" onClick={e => e.stopPropagation()}>
+                        <div className="pnew-price-modal-header">
+                            <AlertCircle size={18} />
+                            <span>Narxlar o'zgargan</span>
+                            <button className="pnew-price-modal-close" onClick={() => setPriceModal(null)}>
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="pnew-price-modal-body">
+                            <div className="pnew-price-modal-intro">
+                                Quyidagi mahsulotlarning karta narxi farqli.
+                                Belgilanganlar uchun karta yangilanadi.
+                            </div>
+                            {priceModal.diffs.map(d => {
+                                const checked = priceModal.selected.has(d.idx)
+                                const toggle = () => setPriceModal(m => {
+                                    const next = new Set(m.selected)
+                                    if (next.has(d.idx)) next.delete(d.idx)
+                                    else next.add(d.idx)
+                                    return { ...m, selected: next }
+                                })
+                                return (
+                                    <label key={d.idx} className={`pnew-price-diff-row${checked ? ' pnew-price-diff-row-checked' : ''}`}>
+                                        <input type="checkbox" checked={checked} onChange={toggle} />
+                                        <div className="pnew-price-diff-content">
+                                            <div className="pnew-price-diff-name">
+                                                {d.productName}
+                                                {d.unitSymbol && <span className="pnew-price-diff-unit"> · {d.unitSymbol}</span>}
+                                            </div>
+                                            {d.costChanged && (
+                                                <div className="pnew-price-diff-line">
+                                                    <span className="pnew-price-diff-label">Tannarx:</span>
+                                                    <span className="pnew-price-diff-old">{fmt(d.oldCost)}</span>
+                                                    <span className="pnew-price-diff-arrow">→</span>
+                                                    <span className="pnew-price-diff-new">{fmt(d.newCost)} UZS</span>
+                                                </div>
+                                            )}
+                                            {d.saleChanged && (
+                                                <div className="pnew-price-diff-line">
+                                                    <span className="pnew-price-diff-label">Sotuv:</span>
+                                                    <span className="pnew-price-diff-old">{fmt(d.oldSale)}</span>
+                                                    <span className="pnew-price-diff-arrow">→</span>
+                                                    <span className="pnew-price-diff-new">{fmt(d.newSale)} UZS</span>
+                                                </div>
+                                            )}
+                                            {d.minChanged && (
+                                                <div className="pnew-price-diff-line">
+                                                    <span className="pnew-price-diff-label">Minimal:</span>
+                                                    <span className="pnew-price-diff-old">{fmt(d.oldMin)}</span>
+                                                    <span className="pnew-price-diff-arrow">→</span>
+                                                    <span className="pnew-price-diff-new">{fmt(d.newMin)} UZS</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </label>
+                                )
+                            })}
+                        </div>
+                        <div className="pnew-price-modal-footer">
+                            <button className="btn-cancel"
+                                    onClick={() => { setPriceModal(null); submitPurchase([]) }}
+                                    disabled={saving}>
+                                Yo'q, faqat xarid qayd etilsin
+                            </button>
+                            <button className="btn-save"
+                                    onClick={() => { const sel = [...priceModal.selected]; setPriceModal(null); submitPurchase(sel) }}
+                                    disabled={saving}>
+                                Ha, belgilanganlarni yangilash
                             </button>
                         </div>
                     </div>

@@ -261,3 +261,138 @@
   border-left: 3px solid var(--primary);
   padding-left: 11px !important;
 }
+
+/* Narx farqi modali */
+.pnew-price-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.pnew-price-modal {
+  background: var(--surface);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+}
+.pnew-price-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 15px;
+  color: #f59e0b;
+}
+.pnew-price-modal-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  padding: 4px;
+  border-radius: 6px;
+}
+.pnew-price-modal-close:hover {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+.pnew-price-modal-body {
+  overflow-y: auto;
+  padding: 16px 20px;
+  flex: 1;
+}
+.pnew-price-modal-intro {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.pnew-price-diff-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pnew-price-diff-row:hover {
+  border-color: var(--primary);
+}
+.pnew-price-diff-row-checked {
+  background: rgba(37, 99, 235, 0.05);
+  border-color: var(--primary);
+}
+.pnew-price-diff-row input[type="checkbox"] {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pnew-price-diff-content {
+  flex: 1;
+  min-width: 0;
+}
+.pnew-price-diff-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.pnew-price-diff-unit {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.pnew-price-diff-line {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.pnew-price-diff-label {
+  color: var(--text-muted);
+  min-width: 60px;
+}
+.pnew-price-diff-old {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.pnew-price-diff-arrow {
+  color: var(--text-muted);
+}
+.pnew-price-diff-new {
+  font-weight: 700;
+  color: #10b981;
+}
+.pnew-price-modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+  .pnew-price-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .pnew-price-modal-footer button {
+    width: 100%;
+  }
+}

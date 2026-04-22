@@ -442,8 +442,9 @@ public class PurchaseService {
         item.setReceivedQty(item.getReceivedQty().add(qty));
         purchaseItemRepository.save(item);
 
-        // Narxlarni yangilash
-        updateProductUnitPrices(item.getProductUnit(), unitPriceUzs,
+        // Narxlarni yangilash — updatePrices flag 3 ta narxni ham nazorat qiladi
+        updateProductUnitPrices(item.getProductUnit(),
+                updatePrices ? unitPriceUzs : null,
                 updatePrices ? newSalePrice : null,
                 updatePrices ? newMinPrice : null);
     }
