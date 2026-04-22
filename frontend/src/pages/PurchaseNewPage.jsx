@@ -56,7 +56,9 @@ export default function PurchaseNewPage() {
     const [productSearch, setProductSearch] = useState('')
     const [productResults, setProductResults] = useState([])
     const [productSearching, setProductSearching] = useState(false)
+    const [dropIdx, setDropIdx] = useState(-1)
     const searchTimeout = useRef(null)
+    const dropRefs = useRef({})
 
     const [showSupplierDrawer, setShowSupplierDrawer] = useState(false)
     const [supplierForm, setSupplierForm] = useState(EMPTY_SUPPLIER)
@@ -83,6 +85,7 @@ export default function PurchaseNewPage() {
 
     const searchProduct = (val) => {
         setProductSearch(val)
+        setDropIdx(-1)
         clearTimeout(searchTimeout.current)
         if (!val.trim()) { setProductResults([]); return }
         searchTimeout.current = setTimeout(async () => {
@@ -94,6 +97,30 @@ export default function PurchaseNewPage() {
             finally { setProductSearching(false) }
         }, 350)
     }
+
+    const handleSearchKeyDown = (e) => {
+        if (!productResults.length) return
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setDropIdx(i => Math.min(i + 1, productResults.length - 1))
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setDropIdx(i => Math.max(i - 1, -1))
+        } else if (e.key === 'Enter' && dropIdx >= 0) {
+            e.preventDefault()
+            selectProduct(productResults[dropIdx])
+        } else if (e.key === 'Escape') {
+            setProductSearch('')
+            setProductResults([])
+            setDropIdx(-1)
+        }
+    }
+
+    useEffect(() => {
+        if (dropIdx >= 0 && dropRefs.current[dropIdx]) {
+            dropRefs.current[dropIdx].scrollIntoView({ block: 'nearest' })
+        }
+    }, [dropIdx])
 
     const fetchLastPurchase = async (productUnitId) => {
         if (!productUnitId) return null
@@ -129,6 +156,7 @@ export default function PurchaseNewPage() {
         } catch {}
         setProductSearch('')
         setProductResults([])
+        setDropIdx(-1)
     }
 
     const selectUnit = async (unit) => {
@@ -410,7 +438,10 @@ export default function PurchaseNewPage() {
                                             <CheckCircle size={15} />
                                             {form.productName}
                                         </span>
-                                        <button className="act-btn" onClick={() => setForm(f => ({ ...f, productUnitId: null, productName: '', unitSymbol: '', availableUnits: [] }))}>
+                                        <button className="act-btn" onClick={() => setForm(f => ({
+                                            ...EMPTY_FORM,
+                                            quantity: f.quantity,
+                                        }))}>
                                             <X size={13} />
                                         </button>
                                     </div>
@@ -446,6 +477,7 @@ export default function PurchaseNewPage() {
                                         placeholder="Nom yoki shtrix-kod bilan qidiring..."
                                         value={productSearch}
                                         onChange={e => searchProduct(e.target.value)}
+                                        onKeyDown={handleSearchKeyDown}
                                         autoFocus={!isEditing}
                                     />
                                     {productSearching && <Loader2 size={13} className="spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} />}
@@ -455,11 +487,13 @@ export default function PurchaseNewPage() {
                                             background: 'var(--surface)', border: '1px solid var(--border-color)',
                                             borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.13)', maxHeight: 220, overflowY: 'auto'
                                         }}>
-                                            {productResults.map(p => (
+                                            {productResults.map((p, idx) => (
                                                 <div key={p.id}
+                                                     ref={el => { if (el) dropRefs.current[idx] = el }}
                                                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13 }}
                                                      onMouseDown={e => { e.preventDefault(); selectProduct(p) }}
-                                                     className="dropdown-hover"
+                                                     onMouseEnter={() => setDropIdx(idx)}
+                                                     className={`dropdown-hover${dropIdx === idx ? ' pnew-drop-active' : ''}`}
                                                 >
                                                     <div style={{ fontWeight: 600 }}>{p.name}</div>
                                                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
@@ -521,11 +555,17 @@ export default function PurchaseNewPage() {
                                        placeholder="0" />
                                 {form.lastPurchase && (
                                     <div className="pnew-last-hint">
-                                        💡 Oldingi xariddan: {fmt(form.lastPurchase.unitPrice)} {form.lastPurchase.currency}
-                                        {' · '}{new Date(form.lastPurchase.purchaseDate).toLocaleDateString('ru-RU')}
-                                        {' · '}{form.lastPurchase.supplierName}
-                                        {!form.lastPurchase.sameSupplier && supplierId && (
-                                            <span className="pnew-last-hint-warn"> (boshqa yetkazuvchidan)</span>
+                                        {form.lastPurchase.supplierName ? (
+                                            <>
+                                                💡 Oldingi xariddan: {fmt(form.lastPurchase.unitPrice)} {form.lastPurchase.currency}
+                                                {' · '}{new Date(form.lastPurchase.purchaseDate).toLocaleDateString('ru-RU')}
+                                                {' · '}{form.lastPurchase.supplierName}
+                                                {!form.lastPurchase.sameSupplier && supplierId && (
+                                                    <span className="pnew-last-hint-warn"> (boshqa yetkazuvchidan)</span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>💡 Karta tannarxi: {fmt(form.lastPurchase.unitPrice)} UZS</>
                                         )}
                                     </div>
                                 )}

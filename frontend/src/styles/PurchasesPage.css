@@ -25,6 +25,9 @@
   margin-bottom: 12px;
   align-items: flex-end;
 }
+.pnew-qty-row:has(.pnew-last-hint) {
+  margin-bottom: 30px;
+}
 .purchase-qty-currency-row {
   display: flex;
   gap: 10px;
@@ -32,7 +35,7 @@
 }
 .purchase-qty-currency-row .form-group:first-child { flex: 1; }
 .purchase-qty-currency-row .form-group:last-child  { width: 90px; flex-shrink: 0; }
-.purchase-price-row { flex: 1; }
+.purchase-price-row { flex: 1; position: relative; }
 
 @media (max-width: 768px) {
   .pnew-qty-row {
@@ -237,9 +240,12 @@
   font-weight: 700;
 }
 
-/* Oxirgi xarid hint'i (autofill uchun) */
+/* Oxirgi xarid hint'i (autofill uchun) — absolute, input joyini o'zgartirmaydi */
 .pnew-last-hint {
-  margin-top: 6px;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
   font-size: 11px;
   color: var(--text-muted);
   line-height: 1.4;
@@ -247,4 +253,11 @@
 .pnew-last-hint-warn {
   color: #f59e0b;
   font-weight: 600;
+}
+
+/* Qidiruv dropdown — klaviatura navigatsiyasi */
+.pnew-drop-active {
+  background: rgba(37, 99, 235, 0.18) !important;
+  border-left: 3px solid var(--primary);
+  padding-left: 11px !important;
 }

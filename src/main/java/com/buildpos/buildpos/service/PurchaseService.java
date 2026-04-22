@@ -607,19 +607,35 @@ public class PurchaseService {
             result = purchaseItemRepository.findLastByProductUnit(productUnitId, top1);
         }
 
-        if (result.isEmpty()) return null;
+        if (!result.isEmpty()) {
+            PurchaseItem item = result.get(0);
+            Supplier itemSupplier = item.getPurchase().getSupplier();
+            return LastPurchaseInfoResponse.builder()
+                    .unitPrice(item.getUnitPrice())
+                    .currency(item.getCurrency())
+                    .exchangeRate(item.getExchangeRate())
+                    .supplierId(itemSupplier.getId())
+                    .supplierName(itemSupplier.getName())
+                    .purchaseDate(item.getCreatedAt())
+                    .sameSupplier(sameSupplier)
+                    .build();
+        }
 
-        PurchaseItem item = result.get(0);
-        Supplier itemSupplier = item.getPurchase().getSupplier();
+        // Xarid tarixi yo'q — karta tannarxidan foydalanamiz (qo'lda kiritilgan mahsulotlar uchun)
+        ProductUnit unit = productUnitRepository.findById(productUnitId).orElse(null);
+        if (unit == null || unit.getCostPrice() == null
+                || unit.getCostPrice().compareTo(BigDecimal.ZERO) == 0) {
+            return null;
+        }
 
         return LastPurchaseInfoResponse.builder()
-                .unitPrice(item.getUnitPrice())
-                .currency(item.getCurrency())
-                .exchangeRate(item.getExchangeRate())
-                .supplierId(itemSupplier.getId())
-                .supplierName(itemSupplier.getName())
-                .purchaseDate(item.getCreatedAt())
-                .sameSupplier(sameSupplier)
+                .unitPrice(unit.getCostPrice())
+                .currency("UZS")
+                .exchangeRate(BigDecimal.ONE)
+                .supplierId(null)
+                .supplierName(null)
+                .purchaseDate(null)
+                .sameSupplier(false)
                 .build();
     }
 }
