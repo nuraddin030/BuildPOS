@@ -3,6 +3,7 @@ package com.buildpos.buildpos.controller;
 import com.buildpos.buildpos.dto.request.PurchasePaymentRequest;
 import com.buildpos.buildpos.dto.request.PurchaseRequest;
 import com.buildpos.buildpos.dto.request.ReceivePurchaseRequest;
+import com.buildpos.buildpos.dto.response.LastPurchaseInfoResponse;
 import com.buildpos.buildpos.dto.response.PurchaseResponse;
 import com.buildpos.buildpos.dto.response.PurchaseSummaryResponse;
 import com.buildpos.buildpos.service.PurchaseService;
@@ -68,6 +69,17 @@ public class PurchaseController {
     @Operation(summary = "Xaridni ID bo'yicha olish")
     public ResponseEntity<PurchaseResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(purchaseService.getById(id));
+    }
+
+    @GetMapping("/last-by-product-unit/{productUnitId}")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_CREATE')")
+    @Operation(summary = "Mahsulot birligi uchun oxirgi xarid ma'lumoti (autofill)")
+    public ResponseEntity<LastPurchaseInfoResponse> getLastPurchaseInfo(
+            @PathVariable Long productUnitId,
+            @RequestParam(required = false) Long supplierId) {
+        LastPurchaseInfoResponse info = purchaseService.getLastPurchaseInfo(productUnitId, supplierId);
+        if (info == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(info);
     }
 
     @PostMapping("/{id}/receive")

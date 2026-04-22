@@ -5,10 +5,11 @@ import {
     Loader2, AlertCircle, Package, Truck, DollarSign,
     Save, Building2, CheckCircle, Edit2
 } from 'lucide-react'
-import { createPurchase } from '../api/purchases'
+import { createPurchase, getLastPurchaseInfo } from '../api/purchases'
 import { getProducts, getProductById, getWarehouses, getExchangeRate, getUnits, getCategories, createProduct } from '../api/products'
 import { getSuppliers, createSupplier } from '../api/Suppliers'
 import '../styles/ProductsPage.css'
+import '../styles/PurchasesPage.css'
 
 const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 
@@ -23,6 +24,7 @@ const EMPTY_FORM = {
     productUnitId: null, productName: '', unitSymbol: '', availableUnits: [],
     quantity: '', unitPrice: '', currency: 'UZS',
     exchangeRate: '', salePrice: '', minPrice: '', updatePrices: false,
+    lastPurchase: null,
 }
 const EMPTY_SUPPLIER = { name: '', phone: '', inn: '' }
 const EMPTY_PRODUCT = { name: '', categoryId: '', unitId: '', barcode: '', purchasePrice: '', salePrice: '', minPrice: '' }
@@ -93,12 +95,23 @@ export default function PurchaseNewPage() {
         }, 350)
     }
 
+    const fetchLastPurchase = async (productUnitId) => {
+        if (!productUnitId) return null
+        try {
+            const res = await getLastPurchaseInfo(productUnitId, supplierId || null)
+            return res.data || null
+        } catch {
+            return null
+        }
+    }
+
     const selectProduct = async (product) => {
         try {
             const res = await getProductById(product.id)
             const full = res.data
             const units = full.units || []
             const unit = units.find(u => u.isBaseUnit) || units[0]
+            const last = await fetchLastPurchase(unit?.id)
             setForm(prev => ({
                 ...prev,
                 productUnitId: unit?.id || null,
@@ -107,19 +120,30 @@ export default function PurchaseNewPage() {
                 availableUnits: units,
                 salePrice: unit?.salePrice ? String(unit.salePrice) : '',
                 minPrice: unit?.minPrice ? String(unit.minPrice) : '',
+                unitPrice: last?.unitPrice ? String(last.unitPrice) : '',
+                currency: last?.currency || 'UZS',
+                exchangeRate: last?.currency === 'USD' && last?.exchangeRate
+                    ? String(last.exchangeRate) : '',
+                lastPurchase: last,
             }))
         } catch {}
         setProductSearch('')
         setProductResults([])
     }
 
-    const selectUnit = (unit) => {
+    const selectUnit = async (unit) => {
+        const last = await fetchLastPurchase(unit.id)
         setForm(prev => ({
             ...prev,
             productUnitId: unit.id,
             unitSymbol: unit.unitSymbol || unit.symbol || '',
             salePrice: unit.salePrice ? String(unit.salePrice) : '',
             minPrice: unit.minPrice ? String(unit.minPrice) : '',
+            unitPrice: last?.unitPrice ? String(last.unitPrice) : '',
+            currency: last?.currency || 'UZS',
+            exchangeRate: last?.currency === 'USD' && last?.exchangeRate
+                ? String(last.exchangeRate) : '',
+            lastPurchase: last,
         }))
     }
 
@@ -495,6 +519,16 @@ export default function PurchaseNewPage() {
                                        value={fmtPrice(form.unitPrice)}
                                        onChange={e => setForm(f => ({ ...f, unitPrice: e.target.value.replace(/\s/g, '') }))}
                                        placeholder="0" />
+                                {form.lastPurchase && (
+                                    <div className="pnew-last-hint">
+                                        💡 Oldingi xariddan: {fmt(form.lastPurchase.unitPrice)} {form.lastPurchase.currency}
+                                        {' · '}{new Date(form.lastPurchase.purchaseDate).toLocaleDateString('ru-RU')}
+                                        {' · '}{form.lastPurchase.supplierName}
+                                        {!form.lastPurchase.sameSupplier && supplierId && (
+                                            <span className="pnew-last-hint-warn"> (boshqa yetkazuvchidan)</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

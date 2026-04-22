@@ -3,6 +3,7 @@ package com.buildpos.buildpos.service;
 import com.buildpos.buildpos.dto.request.PurchasePaymentRequest;
 import com.buildpos.buildpos.dto.request.PurchaseRequest;
 import com.buildpos.buildpos.dto.request.ReceivePurchaseRequest;
+import com.buildpos.buildpos.dto.response.LastPurchaseInfoResponse;
 import com.buildpos.buildpos.dto.response.PurchaseResponse;
 import com.buildpos.buildpos.dto.response.PurchaseSummaryResponse;
 import com.buildpos.buildpos.entity.*;
@@ -16,6 +17,7 @@ import com.buildpos.buildpos.security.AuditDetailsHolder;
 import com.buildpos.buildpos.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -584,6 +586,40 @@ public class PurchaseService {
                 .receivedAt(purchase.getReceivedAt())
                 .createdAt(purchase.getCreatedAt())
                 .createdBy(purchase.getCreatedBy() != null ? purchase.getCreatedBy().getUsername() : null)
+                .build();
+    }
+
+    // ─────────────────────────────────────────
+    // OXIRGI XARID MA'LUMOTI (autofill uchun)
+    // ─────────────────────────────────────────
+    public LastPurchaseInfoResponse getLastPurchaseInfo(Long productUnitId, Long supplierId) {
+        Pageable top1 = PageRequest.of(0, 1);
+
+        List<PurchaseItem> result = List.of();
+        boolean sameSupplier = false;
+
+        if (supplierId != null) {
+            result = purchaseItemRepository.findLastBySupplierAndProductUnit(productUnitId, supplierId, top1);
+            sameSupplier = !result.isEmpty();
+        }
+
+        if (result.isEmpty()) {
+            result = purchaseItemRepository.findLastByProductUnit(productUnitId, top1);
+        }
+
+        if (result.isEmpty()) return null;
+
+        PurchaseItem item = result.get(0);
+        Supplier itemSupplier = item.getPurchase().getSupplier();
+
+        return LastPurchaseInfoResponse.builder()
+                .unitPrice(item.getUnitPrice())
+                .currency(item.getCurrency())
+                .exchangeRate(item.getExchangeRate())
+                .supplierId(itemSupplier.getId())
+                .supplierName(itemSupplier.getName())
+                .purchaseDate(item.getCreatedAt())
+                .sameSupplier(sameSupplier)
                 .build();
     }
 }

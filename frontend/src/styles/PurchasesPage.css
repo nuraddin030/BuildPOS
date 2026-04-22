@@ -236,3 +236,15 @@
   font-size: 14px;
   font-weight: 700;
 }
+
+/* Oxirgi xarid hint'i (autofill uchun) */
+.pnew-last-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.pnew-last-hint-warn {
+  color: #f59e0b;
+  font-weight: 600;
+}
