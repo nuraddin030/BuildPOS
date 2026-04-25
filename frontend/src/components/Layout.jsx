@@ -513,6 +513,9 @@ export default function Layout() {
                         <Route path="/purchases/new" element={
                             <ProtectedRoute permission="PURCHASES_CREATE"><PurchaseNewPage /></ProtectedRoute>
                         } />
+                        <Route path="/purchases/:id/edit" element={
+                            <ProtectedRoute permission="PURCHASES_CREATE"><PurchaseNewPage /></ProtectedRoute>
+                        } />
                         <Route path="/purchases/:id" element={
                             <ProtectedRoute permission="PURCHASES_VIEW"><PurchaseDetailPage /></ProtectedRoute>
                         } />

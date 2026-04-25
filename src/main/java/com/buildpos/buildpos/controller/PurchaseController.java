@@ -37,6 +37,15 @@ public class PurchaseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(purchaseService.create(request));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_CREATE')")
+    @Operation(summary = "PENDING xaridni tahrirlash (itemlar va izoh)")
+    public ResponseEntity<PurchaseResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody PurchaseRequest request) {
+        return ResponseEntity.ok(purchaseService.update(id, request));
+    }
+
     // ✅ PENDING xaridga yangi item qo'shish
     @PostMapping("/{id}/items")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAuthority('PURCHASES_CREATE')")

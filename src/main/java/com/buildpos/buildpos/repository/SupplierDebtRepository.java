@@ -29,6 +29,8 @@ public interface SupplierDebtRepository extends JpaRepository<SupplierDebt, Long
 
     Optional<SupplierDebt> findByPurchaseIdAndCurrency(Long purchaseId, String currency);
 
+    List<SupplierDebt> findAllByPurchaseId(Long purchaseId);
+
     // ─────────────────────────────────────────
     // NasiyalarPage uchun — barcha qarzlar (filter + pagination)
     // ─────────────────────────────────────────

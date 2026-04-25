@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class PurchaseResponse {
 
     private List<PurchaseItemResponse> items;
     private List<PurchasePaymentResponse> payments;
+    private List<SupplierDebtInfo> debts;
 
     @Data
     @Builder
@@ -70,5 +72,17 @@ public class PurchaseResponse {
         private String note;
         private LocalDateTime paidAt;
         private String paidBy;
+    }
+
+    @Data
+    @Builder
+    public static class SupplierDebtInfo {
+        private Long id;
+        private BigDecimal amount;
+        private BigDecimal paidAmount;
+        private BigDecimal remainingAmount;
+        private String currency;
+        private LocalDate dueDate;
+        private Boolean isPaid;
     }
 }

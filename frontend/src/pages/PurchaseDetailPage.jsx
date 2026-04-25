@@ -1,17 +1,19 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
     ShoppingCart, ArrowLeft, CheckCircle, XCircle, CreditCard,
     Loader2, AlertCircle, Package, Truck, Building2, Calendar,
-    DollarSign, Clock, X, Plus, Search, FileText
+    DollarSign, Clock, X, FileText, Edit2
 } from 'lucide-react'
-import { getPurchaseById, receivePurchase, addPayment, cancelPurchase, addItemToPurchase } from '../api/purchases'
-import { getProducts, getProductById, getExchangeRate } from '../api/products'
+import { getPurchaseById, receivePurchase, addPayment, cancelPurchase } from '../api/purchases'
+import { getExchangeRate } from '../api/products'
 import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
 import { exportToPDF, exportToCSV, fmtNum } from '../utils/exportUtils'
+import { supplierDebtsApi } from '../api/debts'
+import ConfirmModal from '../components/ConfirmModal'
 import '../styles/ProductsPage.css'
 import '../styles/PurchasesPage.css'
 
@@ -36,19 +38,6 @@ const fmtPrice = (val) => {
     const num = String(val).replace(/[^\d]/g, '')
     if (!num) return ''
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-}
-
-const EMPTY_NEW_ITEM = {
-    productUnitId: null,
-    productName: '',
-    unitSymbol: '',
-    quantity: '',
-    unitPrice: '',
-    currency: 'UZS',
-    exchangeRate: '',
-    salePrice: '',
-    minPrice: '',
-    updatePrices: false,
 }
 
 export default function PurchaseDetailPage() {
@@ -80,16 +69,42 @@ export default function PurchaseDetailPage() {
     const [showReceive, setShowReceive] = useState(false)
     const [receiveItems, setReceiveItems] = useState([])
 
-    // ✅ PENDING xaridga yangi item qo'shish
-    const [showAddItem, setShowAddItem] = useState(false)
-    const [newItem, setNewItem] = useState({ ...EMPTY_NEW_ITEM })
-    const [addingItem, setAddingItem] = useState(false)
-    const [addItemError, setAddItemError] = useState('')
-    const [itemSearch, setItemSearch] = useState('')
-    const [itemResults, setItemResults] = useState([])
-    const [itemSearching, setItemSearching] = useState(false)
     const [exchangeRate, setExchangeRate] = useState(12700)
-    const searchTimeout = useRef(null)
+
+    const [confirmModal, setConfirmModal] = useState(null) // { title, message, onConfirm, variant }
+    const [toast, setToast] = useState(null)
+    const [dueDateModal, setDueDateModal] = useState(null) // { debtId, currency, currentDate }
+    const [dueDateValue, setDueDateValue] = useState('')
+    const [dueDateNotes, setDueDateNotes] = useState('')
+    const [dueDateSaving, setDueDateSaving] = useState(false)
+
+    const showToast = (msg, type = 'error') => {
+        setToast({ msg, type })
+        setTimeout(() => setToast(null), 3500)
+    }
+
+    const openDueDateModal = (debt) => {
+        setDueDateModal({ debtId: debt.id, currency: debt.currency, currentDate: debt.dueDate })
+        setDueDateValue(debt.dueDate || '')
+        setDueDateNotes('')
+    }
+
+    const handleSaveDueDate = async () => {
+        if (!dueDateValue) { showToast('Sanani tanlang'); return }
+        setDueDateSaving(true)
+        try {
+            await supplierDebtsApi.setDueDate(dueDateModal.debtId, dueDateValue, dueDateNotes || undefined)
+            setDueDateModal(null)
+            setDueDateValue('')
+            setDueDateNotes('')
+            showToast('Muddat belgilandi', 'success')
+            load()
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Xatolik')
+        } finally { setDueDateSaving(false) }
+    }
+
+    const findDebt = (currency) => (purchase?.debts || []).find(d => d.currency === currency && !d.isPaid)
 
     const load = () => {
         setLoading(true)
@@ -122,15 +137,25 @@ export default function PurchaseDetailPage() {
         setShowReceive(true)
     }
 
-    const handleCancel = async () => {
-        if (!confirm('Bu xaridni bekor qilishni tasdiqlaysizmi?')) return
-        setCancelling(true)
-        try {
-            await cancelPurchase(id)
-            load()
-        } catch (e) {
-            alert(e.response?.data?.message || 'Xatolik')
-        } finally { setCancelling(false) }
+    const handleCancel = () => {
+        setConfirmModal({
+            title: 'Xaridni bekor qilish',
+            message: "Bu xarid bekor qilinadi va qaytarib tiklab bo'lmaydi. Davom etasizmi?",
+            confirmLabel: 'Ha, bekor qilish',
+            cancelLabel: "Yo'q",
+            confirmClass: 'btn-danger',
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(null)
+                setCancelling(true)
+                try {
+                    await cancelPurchase(id)
+                    load()
+                } catch (e) {
+                    showToast(e.response?.data?.message || 'Xatolik')
+                } finally { setCancelling(false) }
+            }
+        })
     }
 
     // To'lov modali ochilganda joriy smenani yuklash
@@ -190,72 +215,8 @@ export default function PurchaseDetailPage() {
             setShowReceive(false)
             load()
         } catch (e) {
-            alert(e.response?.data?.message || 'Xatolik')
+            showToast(e.response?.data?.message || 'Xatolik')
         } finally { setReceiving(false) }
-    }
-
-    // ✅ Mahsulot qidirish (add item modal)
-    const searchProduct = (val) => {
-        setItemSearch(val)
-        clearTimeout(searchTimeout.current)
-        if (!val.trim()) { setItemResults([]); return }
-        searchTimeout.current = setTimeout(async () => {
-            setItemSearching(true)
-            try {
-                const res = await getProducts({ search: val, size: 10, sort: 'name,asc' })
-                setItemResults(res.data.content || [])
-            } catch {}
-            finally { setItemSearching(false) }
-        }, 350)
-    }
-
-    const selectItemProduct = async (product) => {
-        try {
-            const res = await getProductById(product.id)
-            const full = res.data
-            const unit = full.units?.[0] || full.productUnits?.[0]
-            setNewItem(prev => ({
-                ...prev,
-                productUnitId: unit?.id,
-                productName: full.name,
-                unitSymbol: unit?.unitSymbol || unit?.symbol || '',
-                salePrice: unit?.salePrice || '',
-                minPrice: unit?.minPrice || '',
-            }))
-        } catch {}
-        setItemSearch('')
-        setItemResults([])
-    }
-
-    // ✅ PENDING xaridga item qo'shish
-    const handleAddItem = async () => {
-        if (!newItem.productUnitId) { setAddItemError('Mahsulot tanlanishi shart'); return }
-        if (!newItem.quantity || Number(newItem.quantity) <= 0) { setAddItemError('Miqdor kiritilishi shart'); return }
-        if (!newItem.unitPrice || Number(newItem.unitPrice) <= 0) { setAddItemError('Tannarx kiritilishi shart'); return }
-        // BUG FIX: exchangeRate bo'sh bo'lsa global kursni ishlatamiz
-        const effectiveRate = newItem.currency === 'USD'
-            ? (Number(newItem.exchangeRate) || Number(exchangeRate))
-            : undefined
-
-        setAddingItem(true); setAddItemError('')
-        try {
-            await addItemToPurchase(id, {
-                productUnitId: newItem.productUnitId,
-                quantity: Number(newItem.quantity),
-                unitPrice: Number(newItem.unitPrice),
-                currency: newItem.currency,
-                exchangeRate: effectiveRate,
-                updatePrices: newItem.updatePrices,
-                salePrice: newItem.updatePrices && newItem.salePrice ? Number(newItem.salePrice) : undefined,
-                minPrice: newItem.updatePrices && newItem.minPrice ? Number(newItem.minPrice) : undefined,
-            })
-            setShowAddItem(false)
-            setNewItem({ ...EMPTY_NEW_ITEM })
-            setItemSearch('')
-            load()
-        } catch (e) {
-            setAddItemError(e.response?.data?.message || 'Xatolik yuz berdi')
-        } finally { setAddingItem(false) }
     }
 
     if (loading) return (
@@ -304,7 +265,7 @@ export default function PurchaseDetailPage() {
 
             if (isPending) {
                 // ── Buyurtma varaqasi — narxsiz ───────────────────
-                doc.autoTable({
+                autoTable(doc, {
                     head: [['#', 'Mahsulot', 'Miqdor', 'Birlik']],
                     body: (purchase.items || []).map((item, i) => [
                         i + 1,
@@ -319,7 +280,7 @@ export default function PurchaseDetailPage() {
                     margin: { left: 14, right: 14 },
                     foot: [[
                         { content: `Jami: ${(purchase.items || []).length} ta mahsulot`, colSpan: 4,
-                            styles: { fontStyle: 'bold', fillColor: [241, 245, 249] }
+                            styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: 20 }
                         }
                     ]],
                     showFoot: 'lastPage',
@@ -354,7 +315,7 @@ export default function PurchaseDetailPage() {
                 if (Number(purchase.debtUzs) > 0) footRow.push(`Qarz UZS: ${fmtNum(purchase.debtUzs)} UZS`)
                 if (Number(purchase.debtUsd) > 0) footRow.push(`Qarz USD: ${fmtNum(purchase.debtUsd)} USD`)
 
-                doc.autoTable({
+                autoTable(doc, {
                     head: [['#', 'Mahsulot', 'Miqdor', 'Birlik', 'Tan narx', 'Jami']],
                     body: allRows,
                     startY: y,
@@ -376,7 +337,7 @@ export default function PurchaseDetailPage() {
                     doc.setFontSize(11); doc.setTextColor(30, 30, 30)
                     doc.text(`To'lovlar tarixi (${purchase.payments.length} ta)`, 14, payY)
 
-                    doc.autoTable({
+                    autoTable(doc, {
                         head: [['#', 'Sana', "To'lov usuli", 'Summa', 'Valyuta', 'Izoh']],
                         body: purchase.payments.map((p, i) => [
                             i + 1,
@@ -435,6 +396,13 @@ export default function PurchaseDetailPage() {
                         {isPending ? 'Buyurtma PDF' : 'Hujjat PDF'}
                     </button>
 
+                    {purchase.status === 'PENDING' && hasPermission('PURCHASES_CREATE') && (
+                        <button className="btn-add" onClick={() => navigate(`/purchases/${id}/edit`)}>
+                            <Edit2 size={14} />
+                            Tahrirlash
+                        </button>
+                    )}
+
                     {(purchase.status === 'PENDING' || purchase.status === 'PARTIALLY_RECEIVED') &&
                         hasPermission('PURCHASES_RECEIVE') && (
                             <button className="btn-add" style={{ background: '#10b981' }} onClick={handleReceive} disabled={receiving}>
@@ -481,6 +449,9 @@ export default function PurchaseDetailPage() {
                                     <MultiCurrencyRow label="Qarz" amount={purchase.debtUsd} currency="USD"
                                                       color={Number(purchase.debtUsd) > 0 ? '#ef4444' : '#10b981'} bold />
                                 </div>
+                                {Number(purchase.debtUsd) > 0 && findDebt('USD') && (
+                                    <DueDateRow debt={findDebt('USD')} onEdit={() => openDueDateModal(findDebt('USD'))} />
+                                )}
                                 {purchase.status !== 'CANCELLED' && Number(purchase.debtUsd) > 0 && hasPermission('PURCHASES_PAY') && (
                                     <button className="btn-add" style={{ marginTop: 8, width: '100%', justifyContent: 'center', fontSize: 13, background: '#3b82f6' }}
                                             onClick={() => { setPaymentCurrency('USD'); setShowPayment(true) }}>
@@ -500,6 +471,9 @@ export default function PurchaseDetailPage() {
                                     <MultiCurrencyRow label="Qarz" amount={purchase.debtUzs} currency="UZS"
                                                       color={Number(purchase.debtUzs) > 0 ? '#ef4444' : '#10b981'} bold />
                                 </div>
+                                {Number(purchase.debtUzs) > 0 && findDebt('UZS') && (
+                                    <DueDateRow debt={findDebt('UZS')} onEdit={() => openDueDateModal(findDebt('UZS'))} />
+                                )}
                                 {purchase.status !== 'CANCELLED' && Number(purchase.debtUzs) > 0 && hasPermission('PURCHASES_PAY') && (
                                     <button className="btn-add" style={{ marginTop: 8, width: '100%', justifyContent: 'center', fontSize: 13 }}
                                             onClick={() => { setPaymentCurrency('UZS'); setShowPayment(true) }}>
@@ -536,12 +510,6 @@ export default function PurchaseDetailPage() {
                         <Package size={15} style={{ display: 'inline', marginRight: 6 }} />
                         Mahsulotlar ({purchase.items?.length || 0} ta)
                     </div>
-                    {/* ✅ Faqat PENDING da "Mahsulot qo'shish" tugmasi */}
-                    {isPending && hasPermission('PURCHASES_CREATE') && (
-                        <button className="btn-add" style={{ padding: '6px 14px', fontSize: 13 }} onClick={() => { setShowAddItem(true); setAddItemError('') }}>
-                            <Plus size={14} /> Mahsulot qo'shish
-                        </button>
-                    )}
                 </div>
                 <div className="purchase-items-table-wrapper">
                     <div className="table-responsive">
@@ -878,174 +846,56 @@ export default function PurchaseDetailPage() {
                 </div>
             )}
 
-            {/* ✅ PENDING xaridga mahsulot qo'shish modali */}
-            {showAddItem && (
-                <div className="modal-overlay" onClick={() => setShowAddItem(false)}>
-                    <div className="modal-box products-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            {confirmModal && (
+                <ConfirmModal
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    confirmLabel={confirmModal.confirmLabel}
+                    cancelLabel={confirmModal.cancelLabel}
+                    confirmClass={confirmModal.confirmClass}
+                    variant={confirmModal.variant}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
+
+            {dueDateModal && (
+                <div className="modal-overlay" onClick={() => setDueDateModal(null)}>
+                    <div className="modal-box" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div className="modal-header-left">
-                                <Plus size={20} />
-                                <div><h6 className="modal-title">Mahsulot qo'shish</h6></div>
+                                <Calendar size={20} />
+                                <div><h6 className="modal-title">Qarz muddati ({dueDateModal.currency})</h6></div>
                             </div>
-                            <button className="modal-close-btn" onClick={() => setShowAddItem(false)}><X size={16} /></button>
+                            <button className="modal-close-btn" onClick={() => setDueDateModal(null)}><X size={16} /></button>
                         </div>
                         <div className="modal-body">
-                            {addItemError && <div className="form-error"><AlertCircle size={16} />{addItemError}</div>}
-
-                            {/* Mahsulot qidirish */}
                             <div className="form-group" style={{ marginBottom: 14 }}>
-                                <label className="form-label">Mahsulot <span className="required">*</span></label>
-                                {newItem.productUnitId ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{
-                                            flex: 1, padding: '8px 12px', borderRadius: 8, fontSize: 14,
-                                            background: 'var(--primary-light, rgba(37,99,235,0.08))',
-                                            color: 'var(--primary)', fontWeight: 600
-                                        }}>
-                                            {newItem.productName} ({newItem.unitSymbol})
-                                        </span>
-                                        <button className="act-btn" onClick={() => setNewItem(prev => ({ ...prev, productUnitId: null, productName: '', unitSymbol: '' }))}>
-                                            <X size={13} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div style={{ position: 'relative' }}>
-                                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                        <input
-                                            className="form-input"
-                                            style={{ paddingLeft: 32 }}
-                                            placeholder="Mahsulot qidiring..."
-                                            value={itemSearch}
-                                            onChange={e => searchProduct(e.target.value)}
-                                            autoFocus
-                                        />
-                                        {itemSearching && <Loader2 size={13} className="spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }} />}
-                                        {itemResults.length > 0 && (
-                                            <div style={{
-                                                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                                                background: 'var(--surface)', border: '1px solid var(--border-color)',
-                                                borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto'
-                                            }}>
-                                                {itemResults.map(p => (
-                                                    <div key={p.id}
-                                                         style={{ padding: '8px 14px', cursor: 'pointer', fontSize: 13 }}
-                                                         onMouseDown={(e) => { e.preventDefault(); selectItemProduct(p) }}
-                                                         className="dropdown-hover"
-                                                    >
-                                                        <div style={{ fontWeight: 600 }}>{p.name}</div>
-                                                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                            {p.units?.map(u => u.unitSymbol || u.symbol).join(', ')}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                <label className="form-label">Sana <span className="required">*</span></label>
+                                <input className="form-input" type="date"
+                                       value={dueDateValue}
+                                       onChange={e => setDueDateValue(e.target.value)} />
                             </div>
-
-                            {/* Miqdor, narx, valyuta */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 90px', gap: 10, marginBottom: 12 }}>
-                                <div>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                                        Miqdor {newItem.unitSymbol && `(${newItem.unitSymbol})`} <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        className="form-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={fmtPrice(newItem.quantity)}
-                                        onChange={e => setNewItem(prev => ({ ...prev, quantity: e.target.value.replace(/\s/g, '') }))}
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                                        Tannarx <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        className="form-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={fmtPrice(newItem.unitPrice)}
-                                        onChange={e => setNewItem(prev => ({ ...prev, unitPrice: e.target.value.replace(/\s/g, '') }))}
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Valyuta</label>
-                                    <select
-                                        className="form-select"
-                                        value={newItem.currency}
-                                        onChange={e => setNewItem(prev => ({ ...prev, currency: e.target.value }))}
-                                    >
-                                        <option value="UZS">UZS</option>
-                                        <option value="USD">USD</option>
-                                    </select>
-                                </div>
+                            <div className="form-group">
+                                <label className="form-label">Izoh (ixtiyoriy)</label>
+                                <input className="form-input" value={dueDateNotes}
+                                       onChange={e => setDueDateNotes(e.target.value)}
+                                       placeholder="Masalan: oy oxirigacha" />
                             </div>
-
-                            {newItem.currency === 'USD' && (
-                                <div className="form-group" style={{ marginBottom: 12 }}>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                                        Kurs (1 USD = ? UZS)
-                                    </label>
-                                    <input
-                                        className="form-input"
-                                        type="number"
-                                        value={newItem.exchangeRate || exchangeRate}
-                                        onChange={e => setNewItem(prev => ({ ...prev, exchangeRate: e.target.value }))}
-                                        placeholder={String(exchangeRate)}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Sotuv narxi, minimal narx */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                                <div>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                                        Sotuv narxi (UZS)
-                                    </label>
-                                    <input
-                                        className="form-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={fmtPrice(newItem.salePrice)}
-                                        onChange={e => setNewItem(prev => ({ ...prev, salePrice: e.target.value.replace(/\s/g, '') }))}
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-                                        Minimal narx (UZS)
-                                    </label>
-                                    <input
-                                        className="form-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={fmtPrice(newItem.minPrice)}
-                                        onChange={e => setNewItem(prev => ({ ...prev, minPrice: e.target.value.replace(/\s/g, '') }))}
-                                        placeholder="0"
-                                    />
-                                </div>
-                            </div>
-
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-                                <input
-                                    type="checkbox"
-                                    checked={newItem.updatePrices}
-                                    onChange={e => setNewItem(prev => ({ ...prev, updatePrices: e.target.checked }))}
-                                />
-                                <span style={{ color: 'var(--text-secondary)' }}>Mahsulot kartasidagi narxlarni yangilash</span>
-                            </label>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setShowAddItem(false)}>Bekor</button>
-                            <button className="btn-save" onClick={handleAddItem} disabled={addingItem}>
-                                {addingItem ? <><Loader2 size={14} className="spin" />Qo'shilmoqda...</> : 'Qo\'shish'}
+                            <button className="btn-cancel" onClick={() => setDueDateModal(null)}>Bekor</button>
+                            <button className="btn-save" onClick={handleSaveDueDate} disabled={dueDateSaving}>
+                                {dueDateSaving ? <><Loader2 size={14} className="spin" />Saqlanmoqda...</> : 'Saqlash'}
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {toast && (
+                <div className={`toast-msg toast-msg--${toast.type}`}>
+                    {toast.type === 'error' ? '⚠ ' : '✓ '}{toast.msg}
                 </div>
             )}
         </div>
@@ -1074,6 +924,38 @@ function MultiCurrencyRow({ label, amount, currency, color, bold }) {
             <span style={{ fontSize: bold ? 15 : 13, fontWeight: bold ? 800 : 600, color: color || 'var(--text-primary)' }}>
                 {displayAmt} {currency}
             </span>
+        </div>
+    )
+}
+
+function DueDateRow({ debt, onEdit }) {
+    const hasDate = !!debt.dueDate
+    const isOverdue = hasDate && new Date(debt.dueDate) < new Date(new Date().toDateString())
+    return (
+        <div style={{
+            marginTop: 6, paddingTop: 6, display: 'flex',
+            alignItems: 'center', justifyContent: 'space-between',
+            fontSize: 12, borderTop: '1px dashed var(--border-color)'
+        }}>
+            <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Calendar size={13} />
+                Muddat:{' '}
+                {hasDate
+                    ? <strong style={{ color: isOverdue ? '#ef4444' : 'var(--text-primary)' }}>
+                        {new Date(debt.dueDate).toLocaleDateString('ru-RU')}
+                        {isOverdue && ' (o\'tib ketgan)'}
+                    </strong>
+                    : <span style={{ color: 'var(--text-muted)' }}>belgilanmagan</span>
+                }
+            </span>
+            <button onClick={onEdit}
+                    style={{
+                        background: 'none', border: '1px solid var(--border-color)',
+                        padding: '3px 10px', borderRadius: 6, fontSize: 11,
+                        cursor: 'pointer', color: 'var(--primary)', fontWeight: 600
+                    }}>
+                {hasDate ? 'Tahrirlash' : 'Belgilash'}
+            </button>
         </div>
     )
 }

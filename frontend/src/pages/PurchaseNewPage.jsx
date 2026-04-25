@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
     ShoppingCart, ArrowLeft, Plus, Trash2, Search, X,
     Loader2, AlertCircle, Package, Truck, DollarSign,
     Save, Building2, CheckCircle, Edit2
 } from 'lucide-react'
-import { createPurchase, getLastPurchaseInfo } from '../api/purchases'
-import { getProducts, getProductById, getWarehouses, getExchangeRate, getUnits, getCategories, createProduct } from '../api/products'
+import { createPurchase, updatePurchase, getPurchaseById, getLastPurchaseInfo } from '../api/purchases'
+import { getProducts, getProductById, getWarehouses, getExchangeRate, deleteProduct } from '../api/products'
 import { getSuppliers, createSupplier } from '../api/Suppliers'
+import ProductFormModal from '../components/ProductFormModal'
 import '../styles/ProductsPage.css'
 import '../styles/PurchasesPage.css'
 
@@ -28,15 +29,17 @@ const EMPTY_FORM = {
     originalCostPrice: '', originalSalePrice: '', originalMinPrice: '',
 }
 const EMPTY_SUPPLIER = { name: '', phone: '', inn: '' }
-const EMPTY_PRODUCT = { name: '', categoryId: '', unitId: '', barcode: '', purchasePrice: '', salePrice: '', minPrice: '' }
 
 export default function PurchaseNewPage() {
     const navigate = useNavigate()
+    const { id: editId } = useParams()
+    const isEdit = Boolean(editId)
 
     const [supplierId, setSupplierId] = useState('')
     const [warehouseId, setWarehouseId] = useState('')
     const [notes, setNotes] = useState('')
     const [exchangeRate, setExchangeRate] = useState(12700)
+    const [loadingEdit, setLoadingEdit] = useState(isEdit)
 
     // ── Tasdiqlangan ro'yxat ──
     const [items, setItems] = useState([])
@@ -51,8 +54,6 @@ export default function PurchaseNewPage() {
 
     const [suppliers, setSuppliers] = useState([])
     const [warehouses, setWarehouses] = useState([])
-    const [units, setUnits] = useState([])
-    const [categories, setCategories] = useState([])
 
     const [productSearch, setProductSearch] = useState('')
     const [productResults, setProductResults] = useState([])
@@ -67,21 +68,72 @@ export default function PurchaseNewPage() {
     const [supplierError, setSupplierError] = useState('')
 
     const [showProductModal, setShowProductModal] = useState(false)
-    const [productForm, setProductForm] = useState(EMPTY_PRODUCT)
-    const [productSaving, setProductSaving] = useState(false)
-    const [productError, setProductError] = useState('')
+    const [productModalInitial, setProductModalInitial] = useState(null)
+
+    // Session ichida modal orqali yaratilgan mahsulotlar (xarid saqlanmasa o'chiriladi)
+    // [{productId, productUnitIds: [...]}] — productUnitIds har bir birlik uchun
+    const createdProductsRef = useRef([])
 
     useEffect(() => {
         getSuppliers({ size: 100 }).then(r => setSuppliers(r.data.content || r.data || []))
         getWarehouses().then(r => {
             const list = r.data.content || r.data || []
             setWarehouses(list)
-            const def = list.find(w => w.isDefault)
-            if (def) setWarehouseId(String(def.id))
+            if (!isEdit) {
+                const def = list.find(w => w.isDefault)
+                if (def) setWarehouseId(String(def.id))
+            }
         })
         getExchangeRate().then(r => setExchangeRate(Number(r.data?.rate) || 12700)).catch(() => {})
-        getUnits().then(r => setUnits(r.data.content || r.data || [])).catch(() => {})
-        getCategories().then(r => setCategories(r.data.content || r.data || [])).catch(() => {})
+    }, [])
+
+    // Edit rejimi: mavjud xaridni yuklash
+    useEffect(() => {
+        if (!isEdit) return
+        setLoadingEdit(true)
+        getPurchaseById(editId)
+            .then(res => {
+                const p = res.data
+                if (p.status !== 'PENDING') {
+                    setError("Faqat PENDING statusdagi xaridni tahrirlash mumkin")
+                    return
+                }
+                setSupplierId(String(p.supplierId ?? ''))
+                setWarehouseId(String(p.warehouseId ?? ''))
+                setNotes(p.notes || '')
+                const loadedItems = (p.items || []).map((it, idx) => ({
+                    _id: Date.now() + idx,
+                    productUnitId: it.productUnitId,
+                    productName: it.productName,
+                    unitSymbol: it.unitSymbol || '',
+                    availableUnits: [],
+                    quantity: String(it.quantity ?? ''),
+                    unitPrice: String(it.unitPrice ?? ''),
+                    currency: it.currency || 'UZS',
+                    exchangeRate: it.exchangeRate ? String(it.exchangeRate) : '',
+                    salePrice: '',
+                    minPrice: '',
+                    lastPurchase: null,
+                    originalCostPrice: it.unitPriceUzs ? String(it.unitPriceUzs) : '',
+                    originalSalePrice: '',
+                    originalMinPrice: '',
+                }))
+                setItems(loadedItems)
+            })
+            .catch(e => setError(e.response?.data?.message || 'Xaridni yuklashda xatolik'))
+            .finally(() => setLoadingEdit(false))
+    }, [isEdit, editId])
+
+    // Sahifadan chiqilganda — saqlanmagan modal-yaratilgan mahsulotlarni o'chirish
+    useEffect(() => {
+        return () => {
+            const leftovers = createdProductsRef.current
+            if (leftovers.length > 0) {
+                leftovers.forEach(p => {
+                    deleteProduct(p.productId).catch(() => {})
+                })
+            }
+        }
     }, [])
 
     const searchProduct = (val) => {
@@ -154,6 +206,8 @@ export default function PurchaseNewPage() {
                     ? String(last.exchangeRate) : '',
                 lastPurchase: last,
                 originalCostPrice: unit?.costPrice ? String(unit.costPrice) : '',
+                originalCostPriceUsd: unit?.costPriceUsd ? String(unit.costPriceUsd) : '',
+                originalExchangeRate: unit?.exchangeRateAtSave ? String(unit.exchangeRateAtSave) : '',
                 originalSalePrice: unit?.salePrice ? String(unit.salePrice) : '',
                 originalMinPrice: unit?.minPrice ? String(unit.minPrice) : '',
             }))
@@ -177,6 +231,8 @@ export default function PurchaseNewPage() {
                 ? String(last.exchangeRate) : '',
             lastPurchase: last,
             originalCostPrice: unit.costPrice ? String(unit.costPrice) : '',
+            originalCostPriceUsd: unit.costPriceUsd ? String(unit.costPriceUsd) : '',
+            originalExchangeRate: unit.exchangeRateAtSave ? String(unit.exchangeRateAtSave) : '',
             originalSalePrice: unit.salePrice ? String(unit.salePrice) : '',
             originalMinPrice: unit.minPrice ? String(unit.minPrice) : '',
         }))
@@ -233,8 +289,25 @@ export default function PurchaseNewPage() {
     }
 
     const handleRemoveItem = (idx) => {
+        const removed = items[idx]
         if (editingIdx === idx) { setForm({ ...EMPTY_FORM }); setEditingIdx(null) }
         setItems(prev => prev.filter((_, i) => i !== idx))
+        // Agar shu itemning mahsuloti shu session'da modal orqali yaratilgan bo'lsa
+        // va boshqa hech bir itemda ishlatilmasa — DB'dan o'chirib tashlaymiz
+        if (removed?.productUnitId) {
+            const tracked = createdProductsRef.current.find(p =>
+                p.productUnitIds.includes(removed.productUnitId)
+            )
+            if (tracked) {
+                const stillUsed = items.some((it, i) =>
+                    i !== idx && tracked.productUnitIds.includes(it.productUnitId)
+                )
+                if (!stillUsed) {
+                    deleteProduct(tracked.productId).catch(() => {})
+                    createdProductsRef.current = createdProductsRef.current.filter(p => p.productId !== tracked.productId)
+                }
+            }
+        }
     }
 
     // Har bir itemning tannarxi UZS da (USD bo'lsa kursga ko'paytiriladi)
@@ -248,21 +321,44 @@ export default function PurchaseNewPage() {
     // Har bir item uchun narx farqlarini hisoblash
     const computePriceDiffs = () => {
         return items.map((item, idx) => {
-            const newCost = itemCostInUzs(item)
-            const oldCost = Math.round(Number(item.originalCostPrice) || 0)
+            const newCostUzs = itemCostInUzs(item)
+            const oldCostUzs = Math.round(Number(item.originalCostPrice) || 0)
             const newSale = Math.round(Number(item.salePrice) || 0)
             const oldSale = Math.round(Number(item.originalSalePrice) || 0)
             const newMin = Math.round(Number(item.minPrice) || 0)
             const oldMin = Math.round(Number(item.originalMinPrice) || 0)
 
-            const costChanged = newCost > 0 && newCost !== oldCost
+            const displayCurrency = item.currency || 'UZS'
+            const rate = Number(item.exchangeRate) || Number(exchangeRate) || 1
+
+            // Taqqoslash: USD da bo'lsa USD qiymatini taqqoslaymiz (exchange rate o'zgarishi
+            // UZS'ni o'zgartiradi, lekin user USD ni o'zgartirmagan — bu narx o'zgarishi emas)
+            let costChanged
+            if (displayCurrency === 'USD') {
+                const newUsd = Number(item.unitPrice) || 0
+                const oldUsd = Number(item.originalCostPriceUsd) || 0
+                costChanged = newUsd > 0 && Math.abs(newUsd - oldUsd) > 0.001
+            } else {
+                costChanged = newCostUzs > 0 && newCostUzs !== oldCostUzs
+            }
+
             const saleChanged = newSale > 0 && newSale !== oldSale
             const minChanged = newMin > 0 && newMin !== oldMin
 
             if (!costChanged && !saleChanged && !minChanged) return null
+
+            // Ko'rsatish uchun — foydalanuvchi qaysi valyutada ishlayotgan bo'lsa o'shanda
+            const newCostDisplay = displayCurrency === 'USD'
+                ? Number(item.unitPrice) || 0
+                : newCostUzs
+            const oldCostDisplay = displayCurrency === 'USD'
+                ? (Number(item.originalCostPriceUsd) || Math.round(oldCostUzs / rate))
+                : oldCostUzs
+
             return {
                 idx, productName: item.productName, unitSymbol: item.unitSymbol,
-                oldCost, newCost, costChanged,
+                oldCost: oldCostDisplay, newCost: newCostDisplay, costChanged,
+                costCurrency: displayCurrency,
                 oldSale, newSale, saleChanged,
                 oldMin, newMin, minChanged,
             }
@@ -297,7 +393,11 @@ export default function PurchaseNewPage() {
         setSaving(true); setError('')
         try {
             const data = buildPurchasePayload(updatePricesItemIdxs)
-            const res = await createPurchase(data)
+            const res = isEdit
+                ? await updatePurchase(editId, data)
+                : await createPurchase(data)
+            // Muvaffaqiyatli — mahsulotlar endi xarid bilan bog'langan, tracking kerak emas
+            createdProductsRef.current = []
             navigate(`/purchases/${res.data.id}`)
         } catch (e) {
             setError(e.response?.data?.message || 'Xatolik yuz berdi')
@@ -336,46 +436,42 @@ export default function PurchaseNewPage() {
         } finally { setSupplierSaving(false) }
     }
 
-    const handleCreateProduct = async () => {
-        if (!productForm.name.trim()) { setProductError('Nomi kiritilishi shart'); return }
-        if (!productForm.unitId) { setProductError('Birlik tanlanishi shart'); return }
-        setProductSaving(true); setProductError('')
-        try {
-            const res = await createProduct({
-                name: productForm.name.trim(),
-                categoryId: productForm.categoryId ? Number(productForm.categoryId) : null,
-                barcode: productForm.barcode || null,
-                units: [{
-                    unitId: Number(productForm.unitId), isDefault: true,
-                    purchasePrice: productForm.purchasePrice ? Number(productForm.purchasePrice) : 0,
-                    salePrice: productForm.salePrice ? Number(productForm.salePrice) : 0,
-                    minPrice: productForm.minPrice ? Number(productForm.minPrice) : 0,
-                }]
+    const handleProductCreated = async (newProduct) => {
+        if (newProduct?.id) {
+            const unitIds = (newProduct.units || []).map(u => u.id).filter(Boolean)
+            createdProductsRef.current.push({
+                productId: newProduct.id,
+                productUnitIds: unitIds,
             })
-            await selectProduct(res.data)
-            if (productForm.salePrice) setForm(f => ({ ...f, salePrice: productForm.salePrice, minPrice: productForm.minPrice || '' }))
-            setShowProductModal(false)
-            setProductForm(EMPTY_PRODUCT)
-        } catch (e) {
-            setProductError(e.response?.data?.message || 'Xatolik yuz berdi')
-        } finally { setProductSaving(false) }
+            await selectProduct(newProduct)
+        }
     }
 
     const isEditing = editingIdx !== null
     // currentTotal preview da to'g'ridan hisoblanadi (getItemTotalUsd/Uzs)
+
+    if (loadingEdit) {
+        return (
+            <div className="products-wrapper">
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+                    <Loader2 size={28} className="spin" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="products-wrapper">
             {/* Header */}
             <div className="products-header">
                 <div className="products-header-left">
-                    <button className="act-btn" onClick={() => navigate('/purchases')} style={{ marginRight: 8 }}>
+                    <button className="act-btn" onClick={() => navigate(isEdit ? `/purchases/${editId}` : '/purchases')} style={{ marginRight: 8 }}>
                         <ArrowLeft size={18} />
                     </button>
                     <div className="page-icon-wrap"><ShoppingCart size={22} /></div>
                     <div>
-                        <h1 className="page-title">Yangi xarid</h1>
-                        <p className="page-subtitle">Partiya kiritish</p>
+                        <h1 className="page-title">{isEdit ? 'Xaridni tahrirlash' : 'Yangi xarid'}</h1>
+                        <p className="page-subtitle">{isEdit ? 'Partiya ma\'lumotlarini o\'zgartirish' : 'Partiya kiritish'}</p>
                     </div>
                 </div>
                 <button
@@ -405,20 +501,22 @@ export default function PurchaseNewPage() {
                             <button style={{ fontSize: 12, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                                     onClick={() => setShowSupplierDrawer(true)}>+ Yangi</button>
                         </div>
-                        <select className="form-select" value={supplierId} onChange={e => setSupplierId(e.target.value)}>
+                        <select className="form-select" value={supplierId} onChange={e => setSupplierId(e.target.value)} disabled={isEdit}>
                             <option value="">— Tanlang —</option>
                             {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
+                        {isEdit && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Tahrirlashda yetkazuvchi o'zgartirilmaydi</div>}
                     </div>
 
                     <div className="table-card" style={{ padding: '16px 20px' }}>
                         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <Building2 size={15} /> Ombor
                         </div>
-                        <select className="form-select" value={warehouseId} onChange={e => setWarehouseId(e.target.value)}>
+                        <select className="form-select" value={warehouseId} onChange={e => setWarehouseId(e.target.value)} disabled={isEdit}>
                             <option value="">— Tanlang —</option>
                             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
+                        {isEdit && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Tahrirlashda ombor o'zgartirilmaydi</div>}
                     </div>
 
                     <div className="table-card" style={{ padding: '16px 20px' }}>
@@ -574,8 +672,17 @@ export default function PurchaseNewPage() {
                                                             style={{ width: '100%', justifyContent: 'center', fontSize: 13 }}
                                                             onMouseDown={e => {
                                                                 e.preventDefault()
-                                                                setProductForm({ ...EMPTY_PRODUCT, name: productSearch })
-                                                                setProductError('')
+                                                                setProductModalInitial({
+                                                                    name: productSearch,
+                                                                    units: [{
+                                                                        isBaseUnit: true,
+                                                                        isDefault: true,
+                                                                        currency: form.currency || 'UZS',
+                                                                        costPrice: form.unitPrice || '',
+                                                                        salePrice: form.salePrice || '',
+                                                                        minPrice: form.minPrice || '',
+                                                                    }]
+                                                                })
                                                                 setShowProductModal(true)
                                                             }}>
                                                         <Plus size={13} /> Yangi mahsulot yaratish
@@ -891,70 +998,14 @@ export default function PurchaseNewPage() {
                 </div>
             )}
 
-            {/* ── Yangi mahsulot modal ── */}
+            {/* ── Yangi mahsulot modal (to'liq forma) ── */}
             {showProductModal && (
-                <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
-                    <div className="modal-box products-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div className="modal-header-left">
-                                <Package size={20} />
-                                <div><h6 className="modal-title">Yangi mahsulot</h6><p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Tez yaratish</p></div>
-                            </div>
-                            <button className="modal-close-btn" onClick={() => setShowProductModal(false)}><X size={16} /></button>
-                        </div>
-                        <div className="modal-body">
-                            {productError && <div className="form-error"><AlertCircle size={16} />{productError}</div>}
-                            <div className="form-group" style={{ marginBottom: 14 }}>
-                                <label className="form-label">Nomi <span className="required">*</span></label>
-                                <input className="form-input" value={productForm.name} autoFocus
-                                       onChange={e => setProductForm(f => ({ ...f, name: e.target.value }))} placeholder="Mahsulot nomi" />
-                            </div>
-                            <div className="form-row" style={{ gap: 12, marginBottom: 14 }}>
-                                <div className="form-group flex-1">
-                                    <label className="form-label">Birlik <span className="required">*</span></label>
-                                    <select className="form-select" value={productForm.unitId}
-                                            onChange={e => setProductForm(f => ({ ...f, unitId: e.target.value }))}>
-                                        <option value="">— Tanlang —</option>
-                                        {units.map(u => <option key={u.id} value={u.id}>{u.name} ({u.symbol})</option>)}
-                                    </select>
-                                </div>
-                                <div className="form-group flex-1">
-                                    <label className="form-label">Kategoriya</label>
-                                    <select className="form-select" value={productForm.categoryId}
-                                            onChange={e => setProductForm(f => ({ ...f, categoryId: e.target.value }))}>
-                                        <option value="">— Ixtiyoriy —</option>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="form-group" style={{ marginBottom: 14 }}>
-                                <label className="form-label">Shtrix-kod</label>
-                                <input className="form-input" value={productForm.barcode}
-                                       onChange={e => setProductForm(f => ({ ...f, barcode: e.target.value }))} placeholder="Ixtiyoriy" />
-                            </div>
-                            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 14 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>NARXLAR</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                                    {[['purchasePrice', 'Tannarx'], ['salePrice', 'Sotuv narxi'], ['minPrice', 'Minimal narx']].map(([key, label]) => (
-                                        <div key={key}>
-                                            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{label} (UZS)</label>
-                                            <input className="form-input" type="text" inputMode="numeric"
-                                                   value={fmtPrice(productForm[key])}
-                                                   onChange={e => setProductForm(f => ({ ...f, [key]: e.target.value.replace(/\s/g, '') }))}
-                                                   placeholder="0" />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setShowProductModal(false)}>Bekor</button>
-                            <button className="btn-save" onClick={handleCreateProduct} disabled={productSaving}>
-                                {productSaving ? <><Loader2 size={14} className="spin" />Saqlanmoqda...</> : 'Yaratish va qo\'shish'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ProductFormModal
+                    initialValues={productModalInitial}
+                    onSaved={handleProductCreated}
+                    onClose={() => { setShowProductModal(false); setProductModalInitial(null) }}
+                    hideStockSection={true}
+                />
             )}
 
             {/* ── Narx farqi modali ── */}
@@ -994,7 +1045,7 @@ export default function PurchaseNewPage() {
                                                     <span className="pnew-price-diff-label">Tannarx:</span>
                                                     <span className="pnew-price-diff-old">{fmt(d.oldCost)}</span>
                                                     <span className="pnew-price-diff-arrow">→</span>
-                                                    <span className="pnew-price-diff-new">{fmt(d.newCost)} UZS</span>
+                                                    <span className="pnew-price-diff-new">{fmt(d.newCost)} {d.costCurrency}</span>
                                                 </div>
                                             )}
                                             {d.saleChanged && (

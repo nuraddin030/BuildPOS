@@ -16,6 +16,7 @@ public interface PurchaseItemRepository extends JpaRepository<PurchaseItem, Long
             SELECT pi FROM PurchaseItem pi
             WHERE pi.productUnit.id = :productUnitId
               AND pi.purchase.supplier.id = :supplierId
+              AND pi.purchase.status <> com.buildpos.buildpos.entity.enums.PurchaseStatus.CANCELLED
             ORDER BY pi.createdAt DESC
             """)
     List<PurchaseItem> findLastBySupplierAndProductUnit(
@@ -27,6 +28,7 @@ public interface PurchaseItemRepository extends JpaRepository<PurchaseItem, Long
     @Query("""
             SELECT pi FROM PurchaseItem pi
             WHERE pi.productUnit.id = :productUnitId
+              AND pi.purchase.status <> com.buildpos.buildpos.entity.enums.PurchaseStatus.CANCELLED
             ORDER BY pi.createdAt DESC
             """)
     List<PurchaseItem> findLastByProductUnit(

@@ -3,7 +3,7 @@
  * CSV va PDF export uchun umumiy funksiyalar
  */
 import { jsPDF } from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 
 // ── CSV Export ────────────────────────────────────────────────────
 export function exportToCSV(filename, headers, rows) {
@@ -67,7 +67,7 @@ export async function exportToPDF({ filename, title, subtitle, headers, rows, su
         y += 9
     }
 
-    doc.autoTable({
+    autoTable(doc, {
         head: [safeHeaders], body: safeRows, startY: y + 2,
         styles: { fontSize: 8, cellPadding: 2.5, overflow: 'linebreak' },
         headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', fontSize: 8 },

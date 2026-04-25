@@ -91,6 +91,36 @@ public class PurchaseService {
     }
 
     // ─────────────────────────────────────────
+    // UPDATE (faqat PENDING) — supplier/warehouse o'zgarmaydi, faqat itemlar + izoh
+    // ─────────────────────────────────────────
+    @Transactional
+    public PurchaseResponse update(Long id, PurchaseRequest request) {
+        Purchase purchase = findById(id);
+        if (purchase.getStatus() != PurchaseStatus.PENDING) {
+            throw new BadRequestException("Faqat PENDING statusdagi xaridni tahrirlash mumkin");
+        }
+
+        // Eski itemlarni o'chirib yangidan yozamiz (PENDING da receivedQty har doim 0)
+        purchase.getItems().clear();
+        purchaseItemRepository.deleteAll(purchaseItemRepository.findAllByPurchaseId(id));
+
+        if (request.getNotes() != null) purchase.setNotes(request.getNotes());
+        if (request.getExpectedAt() != null) purchase.setExpectedAt(request.getExpectedAt());
+
+        purchaseRepository.save(purchase);
+
+        for (PurchaseRequest.PurchaseItemRequest itemReq : request.getItems()) {
+            buildAndSaveItem(purchase, itemReq);
+        }
+
+        recalculateTotals(purchase);
+        purchaseRepository.save(purchase);
+        updateSupplierDebt(purchase);
+        AuditDetailsHolder.setEntityName(purchase.getReferenceNo() + " — " + purchase.getSupplier().getName());
+        return toResponse(purchase);
+    }
+
+    // ─────────────────────────────────────────
     // ADD ITEM (faqat PENDING)
     // ─────────────────────────────────────────
     @Transactional
@@ -518,6 +548,7 @@ public class PurchaseService {
     private PurchaseResponse toResponse(Purchase purchase) {
         List<PurchaseItem> items = purchaseItemRepository.findAllByPurchaseId(purchase.getId());
         List<PurchasePayment> payments = purchasePaymentRepository.findAllByPurchaseId(purchase.getId());
+        List<SupplierDebt> debts = supplierDebtRepository.findAllByPurchaseId(purchase.getId());
 
         return PurchaseResponse.builder()
                 .id(purchase.getId())
@@ -565,6 +596,16 @@ public class PurchaseService {
                         .build()).toList())
                 .createdAt(purchase.getCreatedAt())
                 .createdBy(purchase.getCreatedBy() != null ? purchase.getCreatedBy().getUsername() : null)
+                .debts(debts.stream().map(d -> PurchaseResponse.SupplierDebtInfo.builder()
+                        .id(d.getId())
+                        .amount(d.getAmount())
+                        .paidAmount(d.getPaidAmount())
+                        .remainingAmount(d.getAmount().subtract(
+                                d.getPaidAmount() != null ? d.getPaidAmount() : BigDecimal.ZERO))
+                        .currency(d.getCurrency())
+                        .dueDate(d.getDueDate())
+                        .isPaid(d.getIsPaid())
+                        .build()).toList())
                 .build();
     }
 
@@ -624,15 +665,33 @@ public class PurchaseService {
 
         // Xarid tarixi yo'q — karta tannarxidan foydalanamiz (qo'lda kiritilgan mahsulotlar uchun)
         ProductUnit unit = productUnitRepository.findById(productUnitId).orElse(null);
-        if (unit == null || unit.getCostPrice() == null
-                || unit.getCostPrice().compareTo(BigDecimal.ZERO) == 0) {
+        if (unit == null) return null;
+
+        BigDecimal unitPrice;
+        String currency;
+        BigDecimal exchangeRate;
+
+        // USD da saqlangan bo'lsa — USD qaytaramiz
+        if (unit.getCostPriceUsd() != null
+                && unit.getCostPriceUsd().compareTo(BigDecimal.ZERO) > 0) {
+            unitPrice = unit.getCostPriceUsd();
+            currency = "USD";
+            exchangeRate = unit.getExchangeRateAtSave() != null
+                    ? unit.getExchangeRateAtSave()
+                    : BigDecimal.valueOf(12700);
+        } else if (unit.getCostPrice() != null
+                && unit.getCostPrice().compareTo(BigDecimal.ZERO) > 0) {
+            unitPrice = unit.getCostPrice();
+            currency = "UZS";
+            exchangeRate = BigDecimal.ONE;
+        } else {
             return null;
         }
 
         return LastPurchaseInfoResponse.builder()
-                .unitPrice(unit.getCostPrice())
-                .currency("UZS")
-                .exchangeRate(BigDecimal.ONE)
+                .unitPrice(unitPrice)
+                .currency(currency)
+                .exchangeRate(exchangeRate)
                 .supplierId(null)
                 .supplierName(null)
                 .purchaseDate(null)
