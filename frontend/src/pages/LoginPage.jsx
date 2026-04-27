@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { BeatLoader } from 'react-spinners'
 import '../styles/login.css'
 
 export default function LoginPage() {
@@ -178,7 +179,7 @@ export default function LoginPage() {
                             disabled={submitting}
                         >
                             {submitting ? (
-                                <span className="login-spinner"></span>
+                                <BeatLoader color="#ffffff" size={10} margin={3} />
                             ) : (
                                 t('login.submit')
                             )}
