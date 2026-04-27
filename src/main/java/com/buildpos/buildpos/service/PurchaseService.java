@@ -584,6 +584,8 @@ public class PurchaseService {
                         .unitPriceUzs(item.getUnitPriceUzs())
                         .receivedQty(item.getReceivedQty())
                         .remainingQty(item.getQuantity().subtract(item.getReceivedQty()))
+                        .salePrice(item.getProductUnit().getSalePrice())
+                        .minPrice(item.getProductUnit().getMinPrice())
                         .build()).toList())
                 .payments(payments.stream().map(p -> PurchaseResponse.PurchasePaymentResponse.builder()
                         .id(p.getId())

@@ -60,6 +60,8 @@ public class PurchaseResponse {
         private BigDecimal exchangeRate;
         private BigDecimal receivedQty;
         private BigDecimal remainingQty;
+        private BigDecimal salePrice;
+        private BigDecimal minPrice;
     }
 
     @Data

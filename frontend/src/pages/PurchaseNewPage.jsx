@@ -125,12 +125,12 @@ export default function PurchaseNewPage() {
                     unitPrice: String(it.unitPrice ?? ''),
                     currency: it.currency || 'UZS',
                     exchangeRate: it.exchangeRate ? String(it.exchangeRate) : '',
-                    salePrice: '',
-                    minPrice: '',
+                    salePrice: it.salePrice ? String(it.salePrice) : '',
+                    minPrice: it.minPrice ? String(it.minPrice) : '',
                     lastPurchase: null,
                     originalCostPrice: it.unitPriceUzs ? String(it.unitPriceUzs) : '',
-                    originalSalePrice: '',
-                    originalMinPrice: '',
+                    originalSalePrice: it.salePrice ? String(it.salePrice) : '',
+                    originalMinPrice: it.minPrice ? String(it.minPrice) : '',
                 }))
                 setItems(loadedItems)
             })
