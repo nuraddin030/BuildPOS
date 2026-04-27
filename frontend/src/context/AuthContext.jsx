@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 import { login as loginApi, logout as logoutApi, getMe } from '../api/Auth'
-import api, { setAccessToken, clearAccessToken, getAccessToken } from '../api/api'
+import api, { setAccessToken, clearAccessToken, getAccessToken, touchActivity } from '../api/api'
 
-const INACTIVITY_MS  = 30 * 60 * 1000 // 30 daqiqa
+const INACTIVITY_MS  = 15 * 60 * 1000 // 15 daqiqa
 const HEARTBEAT_MS   = 30 * 1000       // 30 soniyada bir session tekshirish
 
 const AuthContext = createContext(null)
@@ -33,8 +33,8 @@ export function AuthProvider({ children }) {
     const inactivityTimer = useRef(null)
     const heartbeatTimer  = useRef(null)
 
-    // F-09: Harakatsizlik timeout — 30 daqiqa
     const resetTimer = useCallback(() => {
+        touchActivity()
         if (inactivityTimer.current) clearTimeout(inactivityTimer.current)
         inactivityTimer.current = setTimeout(() => {
             logout()

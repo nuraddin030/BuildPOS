@@ -12,8 +12,15 @@ export const setAccessToken  = (token) => { _accessToken = token }
 export const getAccessToken  = ()      => _accessToken
 export const clearAccessToken = ()     => { _accessToken = null }
 
-// Har bir so'rovga access token qo'shish
+// ── Inactivity tracking ──
+const INACTIVITY_LIMIT = 15 * 60 * 1000
+let _lastActivity = Date.now()
+export const touchActivity = () => { _lastActivity = Date.now() }
+const isInactive = () => (Date.now() - _lastActivity) > INACTIVITY_LIMIT
+
+// Har bir so'rovga access token qo'shish + activity yangilash
 api.interceptors.request.use((config) => {
+    touchActivity()
     if (_accessToken) {
         config.headers.Authorization = `Bearer ${_accessToken}`
     }
@@ -39,6 +46,10 @@ api.interceptors.response.use(
 
         const status = error.response?.status
         if ((status === 401 || status === 403) && !originalRequest._retry) {
+            if (isInactive()) {
+                clearSession()
+                return Promise.reject(error)
+            }
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject })
