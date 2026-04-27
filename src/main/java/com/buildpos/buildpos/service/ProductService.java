@@ -80,6 +80,7 @@ public class ProductService {
                 .description(request.getDescription())
                 .sku(request.getSku())
                 .imageUrl(request.getImageUrl())
+                .thumbnailUrl(request.getThumbnailUrl())
                 .status(ProductStatus.ACTIVE)
                 .isDeleted(false)
                 .build();
@@ -296,6 +297,7 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setSku(request.getSku());
         product.setImageUrl(request.getImageUrl());
+        product.setThumbnailUrl(request.getThumbnailUrl());
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())

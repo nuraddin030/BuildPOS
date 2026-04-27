@@ -21,10 +21,9 @@ public class FileUploadController {
 
     @PostMapping("/image")
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'STOREKEEPER') or hasAnyAuthority('PRODUCTS_CREATE', 'PRODUCTS_EDIT')")
-    @Operation(summary = "Rasm yuklash (avtomatik siqiladi va WebP ga o'giriladi)")
+    @Operation(summary = "Rasm yuklash — ikki versiyada (1000x1000 + 200x200 thumbnail)")
     public ResponseEntity<Map<String, String>> uploadImage(
             @RequestParam("file") MultipartFile file) {
-        String url = fileUploadService.uploadImage(file);
-        return ResponseEntity.ok(Map.of("url", url));
+        return ResponseEntity.ok(fileUploadService.uploadImage(file));
     }
 }

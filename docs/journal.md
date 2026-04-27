@@ -1,5 +1,52 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-27 — Mahsulot rasmlari ikki versiya, Lightbox, PDF tuzatish
+
+### Bajarilgan ishlar
+
+#### 1. PurchaseDetailPage PDF — footer matn rangi
+- **Muammo:** PENDING xarid uchun yuklab olingan PDF footerida "Jami: N ta mahsulot" matni oq rangda ko'rinmas edi
+- **Sabab:** `foot` styles da faqat `fillColor` ko'rsatilgan, `textColor` esa `headStyles` dan oq (255) ni meros qilib olardi
+- **Yechim:** `PurchaseDetailPage.jsx:283` ga `textColor: 20` qo'shildi (qora)
+
+#### 2. Mahsulot rasmlari — ikki versiya tizimi
+- **Muammo:** Hozirgi tizim 800×800 bitta versiya saqlardi (~80 KB). Ko'p mahsulotli jadvalda brauzer 800×800 dan 38×38 ga CPU bilan kichkraytirardi → frontend lag xavfi
+- **Yechim:** Server tomonida bitta yuklashda **ikki versiya** generatsiya:
+  - `imageUrl` — 1000×1000 JPG, q=0.85 (~80-150 KB) — modal/katta ko'rinish
+  - `thumbnailUrl` — 200×200 JPG, q=0.80 (~10-15 KB) — jadval/card/POS
+  - Raw fayl tashlab yuboriladi (3 MB rasm ham → ~110 KB jami)
+
+**Backend o'zgarishlar:**
+- `V46__product_thumbnail_url.sql` — `thumbnail_url` ustuni + eski mahsulotlar uchun backfill (`thumbnail_url = image_url`)
+- `Product`, `ProductRequest`, `ProductResponse`, `ProductSummaryResponse` — `thumbnailUrl` maydoni
+- `ProductMapper`, `ProductService` — ikkala maydonni map qilish va saqlash
+- `FileUploadService` — `file.getBytes()` bir marta o'qib, `ByteArrayInputStream` orqali ikki marta `Thumbnails.of(...)` chaqiriladi
+- `FileUploadController` — javob `{url}` o'rniga `{imageUrl, thumbnailUrl}` qaytaradi
+
+**Frontend o'zgarishlar:**
+- `ProductForm.jsx` — yangi response shape (`res.data.imageUrl`, `res.data.thumbnailUrl`)
+- `ProductsPage.jsx` — jadval va card thumbnail ishlatadi + `loading="lazy"` + `decoding="async"`
+- `CashierPage.jsx` — POS qidiruv, favorit, savatcha thumbnail; `saveFav` localStorage da `thumbnailUrl` saqlaydi
+- Eski mahsulotlar uchun `thumbnailUrl || imageUrl` fallback pattern
+
+#### 3. ImageLightbox komponenti — original rasm modali
+- Yangi komponent: `components/ImageLightbox.jsx` + `styles/ImageLightbox.css`
+- Funksiyalar:
+  - Escape tugma yopadi
+  - Overlay click yopadi (rasm o'zini bosish — yopmaydi, `stopPropagation`)
+  - `body.style.overflow = hidden` modal ochilganda
+  - Fade animatsiya, max 90vw/90vh, responsive
+- ProductsPage jadval thumb va card image ga `onClick` qo'shildi → original ochiladi
+- `cursor: zoom-in` + jadval thumb hover scale animatsiya
+
+### Arxitektura qarorlari
+- **Raw fayl saqlanmaydi** — VPS xotirasi tejaladi: 5000 mahsulot uchun ~600 MB (raw saqlasa 15-25 GB bo'lardi)
+- **API breaking change** kelishildi: `/api/v1/upload/image` endi `Map<String, String>` qaytaradi (`{imageUrl, thumbnailUrl}`). Production hali yo'q, shuning uchun migration shart emas
+- **Eski mahsulotlar uchun Variant A** tanlandi: V46 da `UPDATE products SET thumbnail_url = image_url`. Sababi: hozir 2-3 ta rasmli mahsulot bor, alohida resize script yozish ortiqcha
+- **Lightbox alohida komponent** — kelajakda boshqa joylarda (CashierPage, ProductForm preview) ishlatish uchun
+
+---
+
 ## Session: 2026-04-20/21 — Chek, Scroll, AuditLog mobile, Model yangilash
 
 ### Bajarilgan ishlar

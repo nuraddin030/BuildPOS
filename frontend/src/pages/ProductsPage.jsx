@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext'
 import ProductImportModal from '../components/ProductImportModal'
 import PriceLabelModal from '../components/PriceLabelModal'
 import BulkPrintModal from '../components/BulkPrintModal'
+import ImageLightbox from '../components/ImageLightbox'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -28,6 +29,7 @@ export default function ProductsPage() {
     const [phLoading, setPhLoading] = useState(false)
     const [importModal, setImportModal] = useState(false)
     const [labelProduct, setLabelProduct] = useState(null)
+    const [lightboxSrc, setLightboxSrc] = useState(null)
     const [openMenuId, setOpenMenuId] = useState(null)
     const [menuAnchor, setMenuAnchor] = useState(null)
     const [selected, setSelected] = useState(new Set())
@@ -220,8 +222,15 @@ export default function ProductsPage() {
                                         <span className="cell-name">{p.name}</span>
                                     </td>
                                     <td>
-                                        {p.imageUrl ? (
-                                            <img src={p.imageUrl} alt="" className="product-thumb" />
+                                        {(p.thumbnailUrl || p.imageUrl) ? (
+                                            <img
+                                                src={p.thumbnailUrl || p.imageUrl}
+                                                alt=""
+                                                className="product-thumb"
+                                                loading="lazy"
+                                                decoding="async"
+                                                onClick={() => setLightboxSrc(p.imageUrl || p.thumbnailUrl)}
+                                            />
                                         ) : (
                                             <div className="product-thumb-empty">
                                                 <Package size={16} />
@@ -310,8 +319,15 @@ export default function ProductsPage() {
                                             }}
                                         />
                                     )}
-                                    {p.imageUrl ? (
-                                        <img src={p.imageUrl} alt="" className="product-card-img" />
+                                    {(p.thumbnailUrl || p.imageUrl) ? (
+                                        <img
+                                            src={p.thumbnailUrl || p.imageUrl}
+                                            alt=""
+                                            className="product-card-img"
+                                            loading="lazy"
+                                            decoding="async"
+                                            onClick={(e) => { e.stopPropagation(); setLightboxSrc(p.imageUrl || p.thumbnailUrl) }}
+                                        />
                                     ) : (
                                         <div className="product-card-img-empty"><Package size={18} /></div>
                                     )}
@@ -429,6 +445,11 @@ export default function ProductsPage() {
                     onClose={() => setImportModal(false)}
                     onSuccess={() => { setImportModal(false); load() }}
                 />
+            )}
+
+            {/* Image Lightbox — original 1000x1000 */}
+            {lightboxSrc && (
+                <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
             )}
 
             {/* Price History Modal */}

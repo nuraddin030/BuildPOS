@@ -17,6 +17,7 @@ public class ProductSummaryResponse {
     private String slug;
     private String sku;
     private String imageUrl;
+    private String thumbnailUrl;
 
     private Long categoryId;
     private String categoryName;

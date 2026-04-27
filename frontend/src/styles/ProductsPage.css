@@ -358,6 +358,12 @@ to   { opacity: 1; transform: translateY(0); }
     border-radius: 8px;
     object-fit: cover;
     border: 1px solid var(--border-color);
+    cursor: zoom-in;
+    transition: transform 0.15s ease;
+}
+
+.product-thumb:hover {
+    transform: scale(1.08);
 }
 
 .product-thumb-empty {
@@ -1694,6 +1700,7 @@ to   { opacity: 1; transform: translateX(0); }
   object-fit: cover;
   flex-shrink: 0;
   border: 0.5px solid var(--border-color);
+  cursor: zoom-in;
 }
 .product-card-img-empty {
   width: 44px;

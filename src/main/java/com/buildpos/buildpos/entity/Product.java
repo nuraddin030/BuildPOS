@@ -40,7 +40,8 @@ public class Product {
     @Column(unique = true)
     private String sku;            // ichki kod
 
-    private String imageUrl;
+    private String imageUrl;       // 1000x1000 — modal/katta ko'rinish
+    private String thumbnailUrl;   // 200x200 — jadval/card/POS
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")

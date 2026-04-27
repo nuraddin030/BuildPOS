@@ -39,7 +39,7 @@ const EMPTY_UNIT = {
 }
 
 const EMPTY_FORM = {
-    name: '', description: '', sku: '', imageUrl: '',
+    name: '', description: '', sku: '', imageUrl: '', thumbnailUrl: '',
     categoryId: '', units: [{ ...EMPTY_UNIT, isBaseUnit: true }], supplierIds: []
 }
 
@@ -76,7 +76,7 @@ const ProductForm = forwardRef(function ProductForm({
     const [warehouses, setWarehouses] = useState([])
     const [exchangeRate, setExchangeRate] = useState(12700)
     const [stockAdjustments, setStockAdjustments] = useState({})
-    const [imagePreview, setImagePreview] = useState(initialValues?.imageUrl || '')
+    const [imagePreview, setImagePreview] = useState(initialValues?.thumbnailUrl || initialValues?.imageUrl || '')
     const [imageUploading, setImageUploading] = useState(false)
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(isEdit)
@@ -124,6 +124,7 @@ const ProductForm = forwardRef(function ProductForm({
                     description: full.description || '',
                     sku: full.sku || '',
                     imageUrl: full.imageUrl || '',
+                    thumbnailUrl: full.thumbnailUrl || '',
                     categoryId: full.categoryId || '',
                     units: (full.units || []).map((u, i) => ({
                         id: u.id,
@@ -144,7 +145,7 @@ const ProductForm = forwardRef(function ProductForm({
                     })),
                     supplierIds: (full.suppliers || []).map(s => s.supplierId)
                 })
-                setImagePreview(full.imageUrl || '')
+                setImagePreview(full.thumbnailUrl || full.imageUrl || '')
             })
             .catch(() => showToast("Mahsulot ma'lumotlarini yuklashda xatolik"))
             .finally(() => setLoading(false))
@@ -170,7 +171,11 @@ const ProductForm = forwardRef(function ProductForm({
         setImageUploading(true)
         try {
             const res = await uploadImage(file)
-            setForm(f => ({ ...f, imageUrl: res.data.url }))
+            setForm(f => ({
+                ...f,
+                imageUrl: res.data.imageUrl,
+                thumbnailUrl: res.data.thumbnailUrl
+            }))
         } catch {
             showToast('Rasmni yuklashda xatolik')
         } finally {
@@ -314,7 +319,7 @@ const ProductForm = forwardRef(function ProductForm({
                             </div>
                             {form.imageUrl && (
                                 <button
-                                    onClick={() => { setForm(f => ({ ...f, imageUrl: '' })); setImagePreview('') }}
+                                    onClick={() => { setForm(f => ({ ...f, imageUrl: '', thumbnailUrl: '' })); setImagePreview('') }}
                                     style={{ marginTop: 4, width: '100%', fontSize: 11, color: 'var(--danger, #ef4444)', background: 'none', border: 'none', cursor: 'pointer' }}
                                 >
                                     O'chirish

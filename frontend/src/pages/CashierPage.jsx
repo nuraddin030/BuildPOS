@@ -22,13 +22,13 @@ const fmt = (n) => n == null ? '0' : Number(n).toLocaleString('ru-RU')
 // ─── Favorites (localStorage) ─────────────────────
 const FAV_KEY = 'pos_favorites'
 const getFavs = () => { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '{}') } catch { return {} } }
-const saveFav = (productId, name, price, imageUrl) => {
+const saveFav = (productId, name, price, thumbnailUrl) => {
     const favs = getFavs()
-    const existing = favs[productId] || { productId, name, price, imageUrl, count: 0 }
+    const existing = favs[productId] || { productId, name, price, thumbnailUrl, count: 0 }
     existing.count += 1
     existing.name = name
     existing.price = price
-    existing.imageUrl = imageUrl
+    existing.thumbnailUrl = thumbnailUrl
     favs[productId] = existing
     localStorage.setItem(FAV_KEY, JSON.stringify(favs))
 }
@@ -1431,7 +1431,7 @@ export default function CashierPage() {
             return
         }
         // Favorites tracking
-        saveFav(product.id, product.name, Math.round(Number(unit.salePrice || 0)), product.imageUrl || null)
+        saveFav(product.id, product.name, Math.round(Number(unit.salePrice || 0)), product.thumbnailUrl || product.imageUrl || null)
         setFavorites(getTopFavs())
         setCart(prev => {
             const ex = prev.find(c => c.productUnitId === unit.id)
@@ -1440,7 +1440,7 @@ export default function CashierPage() {
                 productUnitId: unit.id, productName: product.name,
                 unitSymbol: unit.unitSymbol, barcode: unit.barcode,
                 artikul: product.artikul || product.sku || '',
-                image: product.imageUrl || product.image || null,
+                image: product.thumbnailUrl || product.imageUrl || product.image || null,
                 salePrice: Math.round(Number(unit.salePrice || 0)),
                 originalPrice: Math.round(Number(unit.salePrice || 0)),
                 minPrice: Math.round(Number(unit.minPrice || 0)),
@@ -1661,7 +1661,7 @@ export default function CashierPage() {
                 unitSymbol: item.unitSymbol,
                 barcode: item.barcode || '',
                 artikul: item.artikul || '',
-                image: item.imageUrl || null,
+                image: item.thumbnailUrl || item.imageUrl || null,
                 salePrice: Math.round(Number(item.salePrice || 0)),
                 originalPrice: Math.round(Number(item.salePrice || 0)),
                 minPrice: Math.round(Number(item.minPrice || 0)),
@@ -1690,7 +1690,7 @@ export default function CashierPage() {
                 unitSymbol: item.unitSymbol,
                 barcode: item.barcode || '',
                 artikul: item.artikul || '',
-                image: item.imageUrl || null,
+                image: item.thumbnailUrl || item.imageUrl || null,
                 salePrice: Math.round(Number(item.salePrice || 0)),
                 originalPrice: Math.round(Number(item.salePrice || 0)),
                 minPrice: Math.round(Number(item.minPrice || 0)),
@@ -2096,8 +2096,8 @@ export default function CashierPage() {
                                                      className={`pos-search-item${dropIdx === idx ? ' pos-search-item--active' : ''}${oos ? ' pos-search-item--oos' : ''}`}
                                                      onMouseDown={() => selectProduct(p)}>
                                                     <div className="pos-search-img">
-                                                        {p.imageUrl
-                                                            ? <img src={p.imageUrl} alt="" className="pos-search-item-img" />
+                                                        {(p.thumbnailUrl || p.imageUrl)
+                                                            ? <img src={p.thumbnailUrl || p.imageUrl} alt="" className="pos-search-item-img" loading="lazy" decoding="async" />
                                                             : <Package size={18} style={{ color: '#d1d5db' }} />}
                                                     </div>
                                                     <div className="pos-search-item-info">
@@ -2196,9 +2196,9 @@ export default function CashierPage() {
                                 <div className="pos-favs-scroll">
                                     {favorites.map(f => (
                                         <button key={f.productId} className="pos-fav-chip"
-                                                onMouseDown={() => selectProduct({ id: f.productId, name: f.name, imageUrl: f.imageUrl })}>
-                                            {f.imageUrl
-                                                ? <img src={f.imageUrl} alt="" className="pos-fav-img" />
+                                                onMouseDown={() => selectProduct({ id: f.productId, name: f.name, thumbnailUrl: f.thumbnailUrl || f.imageUrl })}>
+                                            {(f.thumbnailUrl || f.imageUrl)
+                                                ? <img src={f.thumbnailUrl || f.imageUrl} alt="" className="pos-fav-img" loading="lazy" decoding="async" />
                                                 : <span className="pos-fav-dot" />}
                                             <span className="pos-fav-name">{f.name.length > 14 ? f.name.slice(0, 13) + '…' : f.name}</span>
                                             <span className="pos-fav-price">{fmt(f.price)}</span>

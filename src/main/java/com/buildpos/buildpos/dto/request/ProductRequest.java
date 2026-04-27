@@ -20,6 +20,7 @@ public class ProductRequest {
     private String description;
     private String sku;
     private String imageUrl;
+    private String thumbnailUrl;
     private Long categoryId;
 
     @NotEmpty(message = "Kamida bitta o'lchov birligi bo'lishi kerak")
