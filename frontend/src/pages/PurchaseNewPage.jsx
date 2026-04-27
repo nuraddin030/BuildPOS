@@ -16,9 +16,12 @@ const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace
 
 const fmtPrice = (val) => {
     if (val === '' || val === null || val === undefined) return ''
-    const num = String(val).replace(/[^\d]/g, '')
-    if (!num) return ''
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    const str = String(val).replace(/[^\d.]/g, '')
+    const parts = str.split('.')
+    const intPart = (parts[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    if (parts.length > 1) return intPart + '.' + parts[1].slice(0, 2)
+    if (str.endsWith('.')) return intPart + '.'
+    return intPart || ''
 }
 
 const EMPTY_FORM = {
@@ -720,7 +723,7 @@ export default function PurchaseNewPage() {
                                 <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
                                     Tannarx ({form.currency}) <span className="required">*</span>
                                 </label>
-                                <input className="form-input" type="text" inputMode="numeric"
+                                <input className="form-input" type="text" inputMode="decimal"
                                        value={fmtPrice(form.unitPrice)}
                                        onChange={e => setForm(f => ({ ...f, unitPrice: e.target.value.replace(/\s/g, '') }))}
                                        placeholder="0" />

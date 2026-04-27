@@ -17,9 +17,12 @@ const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/
 
 const fmtPrice = (val) => {
     if (val === '' || val === null || val === undefined) return ''
-    const num = String(val).replace(/[^\d]/g, '')
-    if (!num) return ''
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    const str = String(val).replace(/[^\d.]/g, '')
+    const parts = str.split('.')
+    const intPart = (parts[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    if (parts.length > 1) return intPart + '.' + parts[1].slice(0, 2)
+    if (str.endsWith('.')) return intPart + '.'
+    return intPart || ''
 }
 
 const parsePrice = (formatted) => {
@@ -481,7 +484,7 @@ const ProductForm = forwardRef(function ProductForm({
                                 </label>
                                 <div className="input-with-prefix">
                                     <span className="input-prefix">{u.currency || 'UZS'}</span>
-                                    <input type="text" inputMode="numeric" className="form-input form-input-sm"
+                                    <input type="text" inputMode="decimal" className="form-input form-input-sm"
                                            value={fmtPrice(u.costPrice)}
                                            onChange={e => setUnit(i, 'costPrice', parsePrice(e.target.value))} />
                                 </div>

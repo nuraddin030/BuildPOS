@@ -44,8 +44,12 @@ const fmtShiftDate = (iso) => {
 }
 const fmtPrice = (val) => {
     if (val === '' || val == null) return ''
-    const num = String(val).replace(/\D/g, '')
-    return num ? num.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
+    const str = String(val).replace(/[^\d.]/g, '')
+    const parts = str.split('.')
+    const intPart = (parts[0] || '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    if (parts.length > 1) return intPart + '.' + parts[1].slice(0, 2)
+    if (str.endsWith('.')) return intPart + '.'
+    return intPart || ''
 }
 const parseNum = (val) => Number(String(val).replace(/\s/g, '')) || 0
 
