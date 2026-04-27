@@ -96,6 +96,9 @@ export default function PurchaseNewPage() {
             }
         })
         getExchangeRate().then(r => setExchangeRate(Number(r.data?.rate) || 12700)).catch(() => {})
+        const onRateChanged = (e) => setExchangeRate(e.detail)
+        window.addEventListener('exchange-rate-changed', onRateChanged)
+        return () => window.removeEventListener('exchange-rate-changed', onRateChanged)
     }, [])
 
     // Edit rejimi: mavjud xaridni yuklash
@@ -537,7 +540,13 @@ export default function PurchaseNewPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <input className="form-input" type="text" inputMode="numeric" style={{ flex: 1 }}
                                    value={fmtPrice(exchangeRate)}
-                                   onChange={e => setExchangeRate(e.target.value.replace(/\s/g, ''))} />
+                                   onChange={e => setExchangeRate(e.target.value.replace(/\s/g, ''))}
+                                   onBlur={() => {
+                                       const rate = Number(exchangeRate)
+                                       if (!rate) return
+                                       window.dispatchEvent(new CustomEvent('exchange-rate-changed', { detail: rate }))
+                                       import('../api/api').then(m => m.default.post('/api/v1/exchange-rate', { rate })).catch(() => {})
+                                   }} />
                             <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>UZS</span>
                         </div>
                     </div>

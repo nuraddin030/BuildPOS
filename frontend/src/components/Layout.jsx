@@ -225,6 +225,9 @@ export default function Layout() {
                 .then(res => setExchangeRate(res.data.rate))
                 .catch(() => {})
         })
+        const onRateChanged = (e) => setExchangeRate(e.detail)
+        window.addEventListener('exchange-rate-changed', onRateChanged)
+        return () => window.removeEventListener('exchange-rate-changed', onRateChanged)
     }, [])
 
     const handleSaveRate = async () => {
@@ -234,6 +237,7 @@ export default function Layout() {
             const m = await import('../api/api')
             await m.default.post('/api/v1/exchange-rate', { rate: Number(newRate) })
             setExchangeRate(Number(newRate))
+            window.dispatchEvent(new CustomEvent('exchange-rate-changed', { detail: Number(newRate) }))
             setShowRateModal(false)
             setNewRate('')
         } catch (e) {

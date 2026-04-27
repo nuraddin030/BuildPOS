@@ -14,6 +14,7 @@ import ProductImportModal from '../components/ProductImportModal'
 import PriceLabelModal from '../components/PriceLabelModal'
 import BulkPrintModal from '../components/BulkPrintModal'
 import ImageLightbox from '../components/ImageLightbox'
+import ConfirmModal from '../components/ConfirmModal'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => {
@@ -47,6 +48,7 @@ export default function ProductsPage() {
     const [categoryId, setCategoryId] = useState('')
     const [loading, setLoading] = useState(false)
     const [categories, setCategories] = useState([])
+    const [deleteConfirm, setDeleteConfirm] = useState(null)
 
     const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()) }
 
@@ -66,8 +68,13 @@ export default function ProductsPage() {
     }, [])
 
     const handleDelete = async (id) => {
-        if (!window.confirm(t('common.confirm_delete'))) return
-        await deleteProduct(id)
+        setDeleteConfirm(id)
+    }
+
+    const confirmDeleteProduct = async () => {
+        if (!deleteConfirm) return
+        await deleteProduct(deleteConfirm)
+        setDeleteConfirm(null)
         load()
     }
 
@@ -455,6 +462,18 @@ export default function ProductsPage() {
             {/* Image Lightbox — original 1000x1000 */}
             {lightboxSrc && (
                 <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+            )}
+
+            {deleteConfirm && (
+                <ConfirmModal
+                    title={t('common.confirm_delete')}
+                    message="Mahsulot o'chirilsinmi?"
+                    confirmLabel="O'chirish"
+                    confirmClass="btn-save btn-danger"
+                    variant="danger"
+                    onConfirm={confirmDeleteProduct}
+                    onCancel={() => setDeleteConfirm(null)}
+                />
             )}
 
             {/* Price History Modal */}
