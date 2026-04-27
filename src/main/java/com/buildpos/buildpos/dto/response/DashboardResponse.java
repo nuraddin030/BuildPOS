@@ -128,6 +128,7 @@ public class DashboardResponse {
         private String entityName;      // mijoz yoki yetkazuvchi ismi
         private String entityPhone;
         private BigDecimal remainingAmount;
+        private String currency;        // "UZS" yoki "USD"
         private LocalDate dueDate;
         private String referenceNo;     // sotuv/xarid raqami
     }

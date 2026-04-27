@@ -190,6 +190,7 @@ public class DashboardService {
                         .entityName(cd.getCustomer().getName())
                         .entityPhone(cd.getCustomer().getPhone())
                         .remainingAmount(remaining)
+                        .currency("UZS")
                         .dueDate(cd.getDueDate())
                         .referenceNo(refNo)
                         .build());
@@ -210,6 +211,7 @@ public class DashboardService {
                         .entityName(sd.getSupplier().getName())
                         .entityPhone(sd.getSupplier().getPhone())
                         .remainingAmount(remaining)
+                        .currency(sd.getCurrency() != null ? sd.getCurrency() : "UZS")
                         .dueDate(sd.getDueDate())
                         .referenceNo(refNo)
                         .build());

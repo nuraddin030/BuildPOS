@@ -15,7 +15,15 @@ import { useAuth } from '../context/AuthContext'
 import '../styles/ProductsPage.css'
 import '../styles/DashboardPage.css'
 
-const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+const fmt = (num) => {
+    if (num == null) return '0'
+    const n = Number(num)
+    if (!Number.isFinite(n)) return '0'
+    const str = n % 1 === 0 ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
+    const [int, dec] = str.split('.')
+    const formatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    return dec ? formatted + '.' + dec : formatted
+}
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ru-RU') : '—'
 
@@ -234,7 +242,7 @@ function UpcomingDebtsPanel({ items, navigate }) {
                                             {it.referenceNo && <span className="upd-ref">{it.referenceNo}</span>}
                                         </div>
                                         <div className="upd-right">
-                                            <span className="upd-amount">{fmt(it.remainingAmount)} UZS</span>
+                                            <span className="upd-amount">{fmt(it.remainingAmount)} {it.currency || 'UZS'}</span>
                                             <span className={`upd-label ${cls}`}>{lbl || fmtDueDate(it.dueDate)}</span>
                                         </div>
                                     </div>
