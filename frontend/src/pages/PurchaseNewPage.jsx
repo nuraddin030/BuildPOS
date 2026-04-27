@@ -739,6 +739,9 @@ export default function PurchaseNewPage() {
                             <div className="purchase-price-row">
                                 <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 5 }}>
                                     Tannarx ({form.currency}) <span className="required">*</span>
+                                    {form.currency === 'USD' && form.unitPrice && (
+                                        <span className="usd-hint">≈{fmt(Number(form.unitPrice) * Number(exchangeRate))} UZS</span>
+                                    )}
                                 </label>
                                 <input className="form-input" type="text" inputMode="decimal"
                                        value={fmtPrice(form.unitPrice)}
