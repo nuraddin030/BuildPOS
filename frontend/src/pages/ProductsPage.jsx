@@ -16,7 +16,12 @@ import BulkPrintModal from '../components/BulkPrintModal'
 import ImageLightbox from '../components/ImageLightbox'
 import '../styles/ProductsPage.css'
 
-const fmt = (num) => String(Math.round(num || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+const fmt = (num) => {
+    const n = Number(num || 0)
+    const str = n % 1 === 0 ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
+    const [int, dec] = str.split('.')
+    return dec ? int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + '.' + dec : int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
 
 export default function ProductsPage() {
     const { t } = useTranslation()

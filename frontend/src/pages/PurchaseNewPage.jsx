@@ -12,7 +12,15 @@ import ProductFormModal from '../components/ProductFormModal'
 import '../styles/ProductsPage.css'
 import '../styles/PurchasesPage.css'
 
-const fmt = (num) => num == null ? '0' : String(Math.round(Number(num))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+const fmt = (num) => {
+    if (num == null) return '0'
+    const n = Number(num)
+    if (!Number.isFinite(n)) return '0'
+    const str = n % 1 === 0 ? String(n) : n.toFixed(2).replace(/\.?0+$/, '')
+    const [int, dec] = str.split('.')
+    const formatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+    return dec ? formatted + '.' + dec : formatted
+}
 
 const fmtPrice = (val) => {
     if (val === '' || val === null || val === undefined) return ''
