@@ -79,6 +79,7 @@ public class ProductMapper {
                 .defaultBarcode(defaultUnit != null ? defaultUnit.getBarcode() : null)
                 .defaultSalePrice(defaultUnit != null ? defaultUnit.getSalePrice() : null)
                 .defaultCostPrice(defaultUnit != null ? defaultUnit.getCostPrice() : null)
+                .defaultCostPriceUsd(defaultUnit != null ? defaultUnit.getCostPriceUsd() : null)
                 .totalStock(totalStock)
                 .isLowStock(isLowStock)
                 .createdAt(product.getCreatedAt())

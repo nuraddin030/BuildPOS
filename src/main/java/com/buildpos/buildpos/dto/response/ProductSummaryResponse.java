@@ -31,6 +31,7 @@ public class ProductSummaryResponse {
     private String defaultBarcode;
     private BigDecimal defaultSalePrice;
     private BigDecimal defaultCostPrice;
+    private BigDecimal defaultCostPriceUsd;
 
     // Umumiy stock (barcha omborlar yig'indisi)
     private BigDecimal totalStock;

@@ -27,7 +27,8 @@ const fmt = (num) => {
 export default function ProductsPage() {
     const { t } = useTranslation()
     const navigate = useNavigate()
-    const { hasPermission } = useAuth()
+    const { hasPermission, user } = useAuth()
+    const isOwnerOrAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN'
 
     const [products, setProducts] = useState([])
     const [phModal, setPhModal] = useState(null) // { product }
@@ -207,6 +208,7 @@ export default function ProductsPage() {
                                 <th>Rasm</th>
                                 <th>{t('products.category')}</th>
                                 <th>{t('products.barcode')}</th>
+                                {isOwnerOrAdmin && <th className="th-right">Tannarx</th>}
                                 <th className="th-right">{t('products.sale_price')}</th>
                                 <th className="th-center">{t('products.stock')}</th>
                                 <th className="th-center">{t('products.status')}</th>
@@ -253,6 +255,18 @@ export default function ProductsPage() {
                                     <td>
                                         <code className="cell-barcode">{p.defaultBarcode || '\u2014'}</code>
                                     </td>
+                                    {isOwnerOrAdmin && (
+                                        <td className="th-right">
+                                            {p.defaultCostPriceUsd ? (
+                                                <>
+                                                    <span className="cell-price">${fmt(p.defaultCostPriceUsd)}</span>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>≈{fmt(p.defaultCostPrice)}</div>
+                                                </>
+                                            ) : (
+                                                <span className="cell-price">{fmt(p.defaultCostPrice)}</span>
+                                            )}
+                                        </td>
+                                    )}
                                     <td className="th-right">
                                         <span className="cell-price">{fmt(p.defaultSalePrice)}</span>
                                     </td>
@@ -356,6 +370,14 @@ export default function ProductsPage() {
                                 </div>
                                 <div className="product-card-bottom">
                                     <div>
+                                        {isOwnerOrAdmin && (
+                                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
+                                                {p.defaultCostPriceUsd
+                                                    ? <>${fmt(p.defaultCostPriceUsd)} <span style={{ fontSize: 11 }}>≈{fmt(p.defaultCostPrice)}</span></>
+                                                    : fmt(p.defaultCostPrice)
+                                                }
+                                            </div>
+                                        )}
                                         <div className="product-card-price">{fmt(p.defaultSalePrice)} UZS</div>
                                         <div className={`product-card-stock${p.isLowStock ? ' low-stock' : ''}`}>
                                             Qoldiq: {fmt(p.totalStock)} {p.defaultUnitSymbol}
