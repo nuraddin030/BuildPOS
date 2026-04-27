@@ -6,13 +6,14 @@ import '../styles/login.css'
 
 export default function LoginPage() {
     const { t, i18n } = useTranslation()
-    const { login, loading } = useAuth()
+    const { login } = useAuth()
     const navigate = useNavigate()
 
     const [form, setForm] = useState({ username: '', password: '' })
     const [error, setError] = useState('')
     const [locked, setLocked] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
     const usernameRef = useRef(null)
 
     useEffect(() => {
@@ -23,13 +24,18 @@ export default function LoginPage() {
         e.preventDefault()
         setError('')
         setLocked(false)
-        const result = await login(form.username, form.password)
-
-        if (result.success) {
-            navigate('/')
-        } else {
-            setError(result.message || t('login.error'))
-            setLocked(!!result.locked)
+        setSubmitting(true)
+        try {
+            const result = await login(form.username, form.password)
+            if (result.success) {
+                navigate('/')
+            } else {
+                setError(result.message || t('login.error'))
+                setLocked(!!result.locked)
+                setSubmitting(false)
+            }
+        } catch {
+            setSubmitting(false)
         }
     }
 
@@ -169,13 +175,10 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             className="btn btn-primary login-submit-btn"
-                            disabled={loading}
+                            disabled={submitting}
                         >
-                            {loading ? (
-                                <>
-                                    <span className="login-spinner"></span>
-                                    {t('common.loading')}
-                                </>
+                            {submitting ? (
+                                <span className="login-spinner"></span>
                             ) : (
                                 t('login.submit')
                             )}

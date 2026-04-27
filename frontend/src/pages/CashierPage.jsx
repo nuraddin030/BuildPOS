@@ -57,6 +57,20 @@ const PAYMENT_METHODS = [
 ]
 const QUICK_DISCOUNTS = [10, 15, 20, 25]
 
+const playBeep = () => {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = 1200
+        gain.gain.value = 0.15
+        osc.start()
+        osc.stop(ctx.currentTime + 0.12)
+    } catch {}
+}
+
 // ─── SearchSelect komponenti ─────────────────
 function SearchSelect({ placeholder, value, search, onSearchChange, onSelect, onClear, items, getLabel, getSub, minChars = 4 }) {
     const [open, setOpen] = useState(false)
@@ -1137,6 +1151,7 @@ export default function CashierPage() {
     const [createModal, setCreateModal] = useState(null) // 'customer' | 'partner'
     const [currentSale, setCurrentSale] = useState(null)
     const currentSaleRef = useRef(null) // stale closure dan himoya
+    const cartBodyRef = useRef(null)
     const [lastSale, setLastSale] = useState(null)
     const [showPayment, setShowPayment] = useState(false)
     const [completedSale, setCompletedSale] = useState(null)
@@ -1206,16 +1221,16 @@ export default function CashierPage() {
     // ── Barcode/QR qidiruv (scanner + kamera uchun umumiy) ──────
     const searchByBarcode = (code) => {
         api.get('/api/v1/products/barcode/' + encodeURIComponent(code))
-            .then(r => { if (r.data) selectProduct(r.data) })
+            .then(r => { if (r.data) selectProduct(r.data, true) })
             .catch(() => {
                 api.get('/api/v1/products', { params: { search: code, size: 5, active: true } })
                     .then(r => {
                         const list = r.data.content || r.data || []
-                        if (list.length === 1) selectProduct(list[0])
+                        if (list.length === 1) selectProduct(list[0], true)
                         else if (list.length > 1) {
                             const exact = list.find(p =>
                                 p.units?.some(u => u.barcode === code) || p.defaultBarcode === code)
-                            if (exact) selectProduct(exact)
+                            if (exact) selectProduct(exact, true)
                             else { setSearchResults(list); setSearch(code); setShowDrop(true) }
                         } else showToast('Barcode topilmadi: ' + code, 'error')
                     })
@@ -1411,19 +1426,19 @@ export default function CashierPage() {
     }, [dropIdx])
 
     // ── Mahsulot tanlash ────────────
-    const selectProduct = async (product) => {
+    const selectProduct = async (product, fromScanner = false) => {
         setSearch(''); setShowDrop(false); setDropIdx(-1)
         try {
             const r = await api.get(`/api/v1/products/${product.id}`)
             const full = r.data
             const units = full.units || []
             if (!units.length) return showToast('Mahsulotda birlik yo\'q', 'error')
-            if (units.length === 1) addUnitToCart(full, units[0])
+            if (units.length === 1) addUnitToCart(full, units[0], fromScanner)
             else setUnitModal({ product: full, productName: full.name, units })
         } catch { showToast('Xatolik', 'error') }
     }
 
-    const addUnitToCart = (product, unit) => {
+    const addUnitToCart = (product, unit, fromScanner = false) => {
         const allUnits = product.units || []
         const stock = resolveUnitStock(unit, allUnits, shift?.warehouseId) ?? 0
         if (stock <= 0) {
@@ -1451,6 +1466,9 @@ export default function CashierPage() {
             return next
         })
         setUnitModal(null)
+        if (fromScanner) playBeep()
+        showToast(`${product.name} (${unit.unitSymbol}) qo'shildi`)
+        setTimeout(() => cartBodyRef.current?.scrollTo({ top: cartBodyRef.current.scrollHeight, behavior: 'smooth' }), 50)
     }
 
     const updateQty = (id, delta) => {
@@ -2231,7 +2249,7 @@ export default function CashierPage() {
                             <span className="pos-ref">{refNo}</span>
                         </div>
 
-                        <div className="pos-cart-body">
+                        <div className="pos-cart-body" ref={cartBodyRef}>
                             {!cart.length ? (
                                 <div className="pos-cart-empty">
                                     <div className="pos-cart-empty-icon"><ShoppingCart size={30} style={{ color: '#d1d5db' }} /></div>
