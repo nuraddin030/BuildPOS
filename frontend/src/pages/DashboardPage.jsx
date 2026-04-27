@@ -106,9 +106,26 @@ function fmtDueDate(d) {
     return `${day}.${m}.${y}`
 }
 
+function groupBySupplier(items) {
+    const map = {}
+    for (const it of items) {
+        const key = `${it.entityName}||${it.currency || 'UZS'}`
+        if (!map[key]) {
+            map[key] = { ...it, remainingAmount: 0, count: 0 }
+        }
+        map[key].remainingAmount += Number(it.remainingAmount) || 0
+        map[key].count += 1
+        if (it.dueDate && (!map[key].dueDate || it.dueDate < map[key].dueDate)) {
+            map[key].dueDate = it.dueDate
+        }
+    }
+    return Object.values(map)
+}
+
 function UpcomingDebtsPanel({ items, navigate }) {
     const customerItems = items.filter(it => it.type === 'CUSTOMER')
-    const supplierItems = items.filter(it => it.type === 'SUPPLIER')
+    const supplierRaw = items.filter(it => it.type === 'SUPPLIER')
+    const supplierItems = groupBySupplier(supplierRaw)
     const overdueCustomer = customerItems.filter(it => it.dueDate < today).length
     const overdueSupplier = supplierItems.filter(it => it.dueDate < today).length
 
@@ -231,7 +248,7 @@ function UpcomingDebtsPanel({ items, navigate }) {
                                 const lbl = urgencyLabel(it.dueDate)
                                 const isCustomer = it.type === 'CUSTOMER'
                                 return (
-                                    <div key={`${it.type}-${it.id}`}
+                                    <div key={`${it.type}-${it.id}-${it.entityName}-${it.currency}`}
                                          className={`upd-row ${cls}`}
                                          onClick={() => navigate(isCustomer ? '/debts' : '/debts?tab=supplier')}>
                                         <div className={`upd-type-icon ${isCustomer ? 'upd-type-customer' : 'upd-type-supplier'}`}>
@@ -239,7 +256,10 @@ function UpcomingDebtsPanel({ items, navigate }) {
                                         </div>
                                         <div className="upd-main">
                                             <span className="upd-name">{it.entityName}</span>
-                                            {it.referenceNo && <span className="upd-ref">{it.referenceNo}</span>}
+                                            {it.count > 1
+                                                ? <span className="upd-ref">{it.count} ta qarz</span>
+                                                : it.referenceNo && <span className="upd-ref">{it.referenceNo}</span>
+                                            }
                                         </div>
                                         <div className="upd-right">
                                             <span className="upd-amount">{fmt(it.remainingAmount)} {it.currency || 'UZS'}</span>
