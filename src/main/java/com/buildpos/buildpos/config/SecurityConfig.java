@@ -1,5 +1,6 @@
 package com.buildpos.buildpos.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import com.buildpos.buildpos.security.AuditLogFilter;
 import com.buildpos.buildpos.security.JwtFilter;
 import com.buildpos.buildpos.security.RateLimitFilter;
@@ -55,6 +56,13 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000))
                         .referrerPolicy(referrer -> referrer
                                 .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, authEx) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"message\":\"Unauthorized\"}");
+                        })
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
