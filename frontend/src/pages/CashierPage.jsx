@@ -1363,8 +1363,8 @@ export default function CashierPage() {
             if (!showDrop) {
                 if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(0, i - 1)) }
                 if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(cart.length - 1, i + 1)) }
-                if (e.key === 'ArrowRight') setCart(prev => prev.map((c, i) => i === activeIdx ? { ...c, quantity: c.quantity + 1 } : c))
-                if (e.key === 'ArrowLeft') setCart(prev => prev.map((c, i) => i === activeIdx ? { ...c, quantity: Math.max(0.001, c.quantity - 1) } : c).filter(c => c.quantity > 0))
+                if (e.key === 'ArrowRight') updateQty(cart[activeIdx]?.productUnitId, 1)
+                if (e.key === 'ArrowLeft') updateQty(cart[activeIdx]?.productUnitId, -1)
             }
 
             // Har qanday harf/raqam — search inputga focus
