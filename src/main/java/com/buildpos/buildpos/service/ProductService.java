@@ -5,7 +5,6 @@ import com.buildpos.buildpos.dto.response.PriceHistoryResponse;
 import com.buildpos.buildpos.dto.response.ProductResponse;
 import com.buildpos.buildpos.dto.request.StockAdjustmentRequest;
 import com.buildpos.buildpos.dto.request.StockTransferRequest;
-import com.buildpos.buildpos.dto.response.ProductResponse;
 import com.buildpos.buildpos.dto.response.ProductSummaryResponse;
 import com.buildpos.buildpos.entity.*;
 import com.buildpos.buildpos.entity.enums.ProductStatus;

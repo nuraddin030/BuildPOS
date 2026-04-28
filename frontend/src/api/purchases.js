@@ -8,10 +8,7 @@ export const receivePurchase = (id, data) => api.post(`/api/v1/purchases/${id}/r
 export const addPayment = (id, data) => api.post(`/api/v1/purchases/${id}/payments`, data)
 export const cancelPurchase = (id) => api.patch(`/api/v1/purchases/${id}/cancel`)
 
-// ✅ PENDING xaridga yangi item qo'shish
-export const addItemToPurchase = (id, data) => api.post(`/api/v1/purchases/${id}/items`, data)
-
-// ✅ Mahsulot birligi uchun oxirgi xarid ma'lumoti (autofill)
+// Mahsulot birligi uchun oxirgi xarid ma'lumoti (autofill)
 export const getLastPurchaseInfo = (productUnitId, supplierId) =>
     api.get(`/api/v1/purchases/last-by-product-unit/${productUnitId}`, {
         params: supplierId ? { supplierId } : {}

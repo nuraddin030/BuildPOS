@@ -10,7 +10,6 @@ export const grantPermission = (id, data) => api.post(`/api/v1/employees/${id}/p
 export const revokePermission = (id, permissionId) => api.delete(`/api/v1/employees/${id}/permissions/${permissionId}`)
 
 export const getPermissionGroups = () => api.get('/api/v1/permissions/groups')
-export const getPermissions = () => api.get('/api/v1/permissions')
 export const createPermissionGroup = (data) => api.post('/api/v1/permissions/groups', data)
 export const createPermission = (data) => api.post('/api/v1/permissions', data)
 export const deletePermission = (id) => api.delete(`/api/v1/permissions/${id}`)
