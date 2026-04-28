@@ -76,7 +76,7 @@ export default function StockMovementsPage() {
     const [page, setPage]           = useState(0)
     const [totalPages, setTotalPages] = useState(0)
     const [totalElements, setTotalElements] = useState(0)
-    const PAGE_SIZE = 20
+    const [pageSize, setPageSize] = useState(20)
 
     // Stats (hisoblangan)
     const [stats, setStats] = useState({ totalIn: 0, totalOut: 0 })
@@ -96,7 +96,7 @@ export default function StockMovementsPage() {
     const load = useCallback(async (p = 0) => {
         setLoading(true)
         try {
-            const params = { page: p, size: PAGE_SIZE }
+            const params = { page: p, size: pageSize }
             if (movementType)  params.movementType = movementType
             if (warehouseId)   params.warehouseId  = Number(warehouseId)
             if (dateFrom)      params.from = dateFrom + 'T00:00:00'
@@ -357,7 +357,7 @@ export default function StockMovementsPage() {
                                 return (
                                     <tr key={m.id}>
                                         <td className="th-center" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                                            {page * PAGE_SIZE + idx + 1}
+                                            {page * pageSize + idx + 1}
                                         </td>
                                         {/* Mahsulot */}
                                         <td>
@@ -491,31 +491,17 @@ export default function StockMovementsPage() {
                     </>
                 )}
 
-                {/* ── Pagination ── */}
-                {totalPages > 1 && (
-                    <div className="pagination">
-                        <button className="page-btn" disabled={page === 0} onClick={() => load(page - 1)}>
-                            <ChevronLeft size={16} />
-                        </button>
-                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                            let p
-                            if (totalPages <= 7) p = i
-                            else if (page < 4) p = i
-                            else if (page > totalPages - 5) p = totalPages - 7 + i
-                            else p = page - 3 + i
-                            return (
-                                <button key={p} className={`page-btn${page === p ? ' active' : ''}`}
-                                        onClick={() => load(p)}>
-                                    {p + 1}
-                                </button>
-                            )
-                        })}
-                        <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => load(page + 1)}>
-                            <ChevronRight size={16} />
-                        </button>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 8 }}>
-                            {page + 1} / {totalPages}
-                        </span>
+                {totalElements > pageSize && (
+                    <div className="table-footer">
+                        <select className="al-size-select" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); load(0) }}>
+                            {[20, 50, 100].map(s => <option key={s} value={s}>{s} ta</option>)}
+                        </select>
+                        <div className="pagination-group">
+                            <button className="page-btn" disabled={page === 0} onClick={() => load(page - 1)}>← Oldingi</button>
+                            <span className="page-info">{page + 1} / {Math.max(1, totalPages)}</span>
+                            <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => load(page + 1)}>Keyingi →</button>
+                        </div>
+                        <span className="table-footer-info">Jami: {totalElements} ta</span>
                     </div>
                 )}
             </div>

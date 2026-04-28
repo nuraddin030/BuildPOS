@@ -235,12 +235,6 @@ function PaymentModal({ sale, onClose, onCompleted, onCustomerSet }) {
     const [limitChecking, setLimitChecking] = useState(false)
     const [debtInfo, setDebtInfo] = useState(null) // { currentDebt, debtLimit, remaining, ... }
 
-    useEffect(() => {
-        const h = (e) => { if (e.key === 'Escape') onClose() }
-        window.addEventListener('keydown', h)
-        return () => window.removeEventListener('keydown', h)
-    }, [onClose])
-
     const totalPaid = payments.reduce((s, p) => s + parseNum(p.amount), 0)
     const change = totalPaid - total
     const upd = (i, k, v) => setPayments(p => p.map((item, idx) => idx === i ? { ...item, [k]: v } : item))
@@ -1182,6 +1176,25 @@ export default function CashierPage() {
             document.body.style.paddingRight = ''
         }
     }, [showPayment, completedSale, confirmCancel, warehouseModal])
+
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key !== 'Escape') return
+            if (completedSale) { setCompletedSale(null); return }
+            if (showPayment) { setShowPayment(false); return }
+            if (unitModal) { setUnitModal(null); return }
+            if (createModal) { setCreateModal(null); return }
+            if (confirmCancel) { setConfirmCancel(null); return }
+            if (confirmCancelPending) { setConfirmCancelPending(null); return }
+            if (rejectModal) { setRejectModal(null); return }
+            if (showSubmitModal) { setShowSubmitModal(false); return }
+            if (warehouseModal) { setWarehouseModal(null); return }
+            if (showCloseShift) { setShowCloseShift(false); return }
+            if (showCamera) { setShowCamera(false); return }
+        }
+        window.addEventListener('keydown', handleEsc)
+        return () => window.removeEventListener('keydown', handleEsc)
+    }, [completedSale, showPayment, unitModal, createModal, confirmCancel, confirmCancelPending, rejectModal, showSubmitModal, warehouseModal, showCloseShift, showCamera])
 
     useEffect(() => {
         loadShift()

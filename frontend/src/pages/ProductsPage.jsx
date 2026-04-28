@@ -44,7 +44,7 @@ export default function ProductsPage() {
     const [bulkPrint, setBulkPrint] = useState(false)
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
-    const [size] = useState(20)
+    const [size, setSize] = useState(20)
     const [search, setSearch] = useState('')
     const [categoryId, setCategoryId] = useState('')
     const [loading, setLoading] = useState(false)
@@ -414,27 +414,17 @@ export default function ProductsPage() {
                     </>
                 )}
 
-                {/* Pagination */}
-                {totalPages > 1 && (
+                {total > size && (
                     <div className="table-footer">
-                        <span className="table-footer-info">Jami: {total} ta</span>
+                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                            {[20, 50, 100].map(s => <option key={s} value={s}>{s} ta</option>)}
+                        </select>
                         <div className="pagination-group">
-                            <button
-                                className="page-btn"
-                                disabled={page === 0}
-                                onClick={() => setPage(p => p - 1)}
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <span className="page-info">{page + 1} / {totalPages}</span>
-                            <button
-                                className="page-btn"
-                                disabled={page >= totalPages - 1}
-                                onClick={() => setPage(p => p + 1)}
-                            >
-                                <ChevronRight size={16} />
-                            </button>
+                            <button className="page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="page-info">{page + 1} / {Math.max(1, totalPages)}</span>
+                            <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
                         </div>
+                        <span className="table-footer-info">Jami: {total} ta</span>
                     </div>
                 )}
             </div>

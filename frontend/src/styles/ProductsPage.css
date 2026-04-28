@@ -536,33 +536,43 @@ to   { opacity: 1; transform: translateY(0); }
 /* ---- Table footer / Pagination ---- */
 .table-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    gap: 16px;
     padding: 12px 16px;
     border-top: 1px solid var(--border-color);
 }
 
 .table-footer-info {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.al-size-select {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg, var(--surface));
+    color: var(--text-primary);
     font-size: 13px;
-    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
 }
 
 .pagination-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
 }
 
 .page-btn {
-    width: 32px;
-    height: 32px;
+    padding: 6px 14px;
     border: 1px solid var(--border-color);
     background: var(--surface);
     color: var(--text-secondary);
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 13px;
+    white-space: nowrap;
     cursor: pointer;
     transition: all 0.15s ease;
 }

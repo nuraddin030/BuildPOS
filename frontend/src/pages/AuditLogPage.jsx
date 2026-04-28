@@ -200,15 +200,17 @@ function AuditTab() {
                             )
                         })}
                     </div>
-                    <div className="al-pagination">
-                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
-                            {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
-                        </select>
-                        <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
-                        <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
-                        <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
-                        <span className="al-page-total">Jami: {total} ta</span>
-                    </div>
+                    {total > size && (
+                        <div className="al-pagination">
+                            <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                                {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
+                            </select>
+                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
+                            <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                            <span className="al-page-total">Jami: {total} ta</span>
+                        </div>
+                    )}
                 </div>
             )}
         </>
@@ -444,15 +446,17 @@ function SessionsTab() {
                             )
                         })}
                     </div>
-                    <div className="al-pagination">
-                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
-                            {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
-                        </select>
-                        <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
-                        <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
-                        <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
-                        <span className="al-page-total">Jami: {total} ta</span>
-                    </div>
+                    {total > size && (
+                        <div className="al-pagination">
+                            <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                                {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
+                            </select>
+                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
+                            <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                            <span className="al-page-total">Jami: {total} ta</span>
+                        </div>
+                    )}
                 </div>
             )}
 

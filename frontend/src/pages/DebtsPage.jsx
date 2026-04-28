@@ -1492,7 +1492,7 @@ export default function DebtsPage() {
     // ── Umumiy filter state ──────────────────────────────────────
     const [search, setSearch]         = useState('')
     const [filterStatus, setFilterStatus] = useState('') // '' | 'open' | 'paid' | 'overdue'
-    const [size]                      = useState(20)
+    const [size, setSize]             = useState(20)
 
     // URL dan customerId / supplierId kelsa — mos tab + tree da ajratib ko'rsatish
     const highlightCustomerId = urlCustomerId ? Number(urlCustomerId) : null
@@ -1991,7 +1991,9 @@ export default function DebtsPage() {
                         page={cPage}
                         size={size}
                         totalPages={cTotalPages}
+                        total={cTotal}
                         onPageChange={setCPage}
+                        onSizeChange={setSize}
                         onView={(d) => setSelectedDebt({ ...d, type: 'customer' })}
                         onPay={(d) => setPayDebt(d)}
                         hasPermission={hasPermission}
@@ -2003,7 +2005,9 @@ export default function DebtsPage() {
                         page={sPage}
                         size={size}
                         totalPages={sTotalPages}
+                        total={sTotal}
                         onPageChange={setSPage}
+                        onSizeChange={setSize}
                         onView={(d) => setSelectedDebt({ ...d, type: 'supplier' })}
                         onPay={(d) => setPaySupplierDebt(d)}
                         onExtend={(d) => setExtendDebt({ ...d, type: 'supplier' })}
@@ -2663,7 +2667,7 @@ function DebtTreeView({ grouped, loading, type, expandedIds, onToggle, onView, o
 }
 
 // ── DebtTable komponenti ─────────────────────────────────────────
-function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange, onView, onPay, onExtend, hasPermission }) {
+function DebtTable({ debts, loading, type, page, size, totalPages, total, onPageChange, onSizeChange, onView, onPay, onExtend, hasPermission }) {
     const isCustomer = type === 'customer'
     const [openMenuId, setOpenMenuId] = useState(null)
     const [menuAnchor, setMenuAnchor] = useState(null)
@@ -2856,17 +2860,17 @@ function DebtTable({ debts, loading, type, page, size, totalPages, onPageChange,
                 </>
             )}
 
-            {totalPages > 1 && (
-                <div className="pagination">
-                    <button className="page-btn" disabled={page === 0}
-                            onClick={() => onPageChange(p => p - 1)}>
-                        <ChevronLeft size={16} />
-                    </button>
-                    <span className="page-info">{page + 1} / {totalPages}</span>
-                    <button className="page-btn" disabled={page >= totalPages - 1}
-                            onClick={() => onPageChange(p => p + 1)}>
-                        <ChevronRight size={16} />
-                    </button>
+            {(total || 0) > size && (
+                <div className="table-footer">
+                    <select className="al-size-select" value={size} onChange={e => { onSizeChange(Number(e.target.value)); onPageChange(0) }}>
+                        {[20, 50, 100].map(s => <option key={s} value={s}>{s} ta</option>)}
+                    </select>
+                    <div className="pagination-group">
+                        <button className="page-btn" disabled={page === 0} onClick={() => onPageChange(p => p - 1)}>← Oldingi</button>
+                        <span className="page-info">{page + 1} / {Math.max(1, totalPages)}</span>
+                        <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => onPageChange(p => p + 1)}>Keyingi →</button>
+                    </div>
+                    <span className="table-footer-info">Jami: {total || 0} ta</span>
                 </div>
             )}
         </div>
