@@ -85,6 +85,10 @@ api.interceptors.response.use(
 )
 
 function clearSession() {
+    axios.post('/api/auth/logout', null, {
+        withCredentials: true,
+        headers: _accessToken ? { Authorization: `Bearer ${_accessToken}` } : {}
+    }).catch(() => {})
     clearAccessToken()
     sessionStorage.removeItem('buildpos_user')
     sessionStorage.removeItem('buildpos_permissions')

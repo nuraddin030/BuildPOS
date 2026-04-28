@@ -254,9 +254,13 @@ public class AuthController {
             try { username = jwtUtil.getUsername(token); } catch (Exception ignored) {}
             jwtUtil.invalidate(token);
         }
-        // Refresh tokenni cookie dan o'qib bekor qilish
+        // Refresh tokenni cookie dan o'qib bekor qilish + username olish
         String refreshTokenStr = extractRefreshCookie(request);
         if (refreshTokenStr != null) {
+            if (username == null) {
+                refreshTokenService.validate(refreshTokenStr)
+                        .ifPresent(rt -> userSessionService.closeSession(rt.getUser().getUsername(), "INACTIVITY"));
+            }
             refreshTokenService.revoke(refreshTokenStr);
         }
         // Cookie ni tozalash
