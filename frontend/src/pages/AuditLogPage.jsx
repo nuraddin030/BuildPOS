@@ -47,10 +47,13 @@ function fmtDuration(sec) {
 }
 
 // ── Audit log tab ─────────────────────────────────────────────
+const SIZE_OPTIONS = [20, 50, 100]
+
 function AuditTab() {
     const [logs,    setLogs]    = useState([])
     const [total,   setTotal]   = useState(0)
     const [page,    setPage]    = useState(0)
+    const [size,    setSize]    = useState(20)
     const [loading, setLoading] = useState(true)
     const [error,   setError]   = useState('')
     const [username, setUsername] = useState('')
@@ -61,7 +64,7 @@ function AuditTab() {
     useEffect(() => {
         let alive = true
         setLoading(true)
-        const params = new URLSearchParams({ page, size: 50 })
+        const params = new URLSearchParams({ page, size })
         if (username) params.set('username', username)
         if (action)   params.set('action', action)
         if (from)     params.set('from', from)
@@ -71,7 +74,7 @@ function AuditTab() {
             .then(r => { if (alive) { setLogs(r.data.content); setTotal(r.data.totalElements); setError(''); setLoading(false) } })
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
         return () => { alive = false }
-    }, [page, username, action, from, to])
+    }, [page, size, username, action, from, to])
 
     return (
         <>
@@ -104,6 +107,7 @@ function AuditTab() {
                         <table className="ptable">
                             <thead>
                                 <tr>
+                                    <th className="th-num">#</th>
                                     <th>Amal</th>
                                     <th>Foydalanuvchi</th>
                                     <th>Ob'ekt</th>
@@ -114,12 +118,13 @@ function AuditTab() {
                             </thead>
                             <tbody>
                                 {logs.length === 0 ? (
-                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
-                                ) : logs.map(log => {
+                                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
+                                ) : logs.map((log, idx) => {
                                     const ac  = ACTION_COLORS[log.action] || { bg: 'var(--border-color)', color: 'var(--text-muted)', label: log.action }
                                     const dev = parseDevice(log.userAgent)
                                     return (
                                         <tr key={log.id}>
+                                            <td className="cell-num">{page * size + idx + 1}</td>
                                             <td>
                                                 <span className="al-badge" style={{ background: ac.bg, color: ac.color }}>{ac.label}</span>
                                             </td>
@@ -195,13 +200,15 @@ function AuditTab() {
                             )
                         })}
                     </div>
-                    {total > 50 && (
-                        <div className="al-pagination">
-                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
-                            <span className="al-page-info">{page + 1} / {Math.ceil(total / 50)}</span>
-                            <button className="al-page-btn" disabled={(page + 1) * 50 >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
-                        </div>
-                    )}
+                    <div className="al-pagination">
+                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                            {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
+                        </select>
+                        <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                        <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
+                        <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                        <span className="al-page-total">Jami: {total} ta</span>
+                    </div>
                 </div>
             )}
         </>
@@ -221,6 +228,7 @@ function SessionsTab() {
     const [sessions,      setSessions]      = useState([])
     const [total,         setTotal]         = useState(0)
     const [page,          setPage]          = useState(0)
+    const [size,          setSize]          = useState(20)
     const [loading,       setLoading]       = useState(true)
     const [error,         setError]         = useState('')
     const [username,      setUsername]      = useState('')
@@ -232,7 +240,7 @@ function SessionsTab() {
     useEffect(() => {
         let alive = true
         setLoading(true)
-        const params = new URLSearchParams({ page, size: 50 })
+        const params = new URLSearchParams({ page, size })
         if (username) params.set('username', username)
         if (from)     params.set('from', from)
         if (to)       params.set('to', to)
@@ -251,7 +259,7 @@ function SessionsTab() {
             })
             .catch(() => { if (alive) { setError("Ma'lumot yuklanmadi"); setLoading(false) } })
         return () => { alive = false }
-    }, [page, username, from, to])
+    }, [page, size, username, from, to])
 
     const forceClose = async (id) => {
         if (closingIds.has(id)) return
@@ -292,6 +300,7 @@ function SessionsTab() {
                         <table className="ptable">
                             <thead>
                                 <tr>
+                                    <th className="th-num">#</th>
                                     <th>Foydalanuvchi</th>
                                     <th>Kirish</th>
                                     <th>Chiqish</th>
@@ -303,13 +312,14 @@ function SessionsTab() {
                             </thead>
                             <tbody>
                                 {sessions.length === 0 ? (
-                                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
-                                ) : sessions.map(s => {
+                                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>Ma'lumot yo'q</td></tr>
+                                ) : sessions.map((s, idx) => {
                                     const duration = fmtDuration(s.durationSec)
                                     const isActive = s.logoutAt == null
                                     const ltInfo   = LOGOUT_TYPE_LABEL[s.logoutType] || LOGOUT_TYPE_LABEL.TIMEOUT
                                     return (
                                         <tr key={s.id}>
+                                            <td className="cell-num">{page * size + idx + 1}</td>
                                             <td><div className="cell-name">{s.username}</div></td>
                                             <td>
                                                 <span style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
@@ -434,13 +444,15 @@ function SessionsTab() {
                             )
                         })}
                     </div>
-                    {total > 50 && (
-                        <div className="al-pagination">
-                            <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
-                            <span className="al-page-info">{page + 1} / {Math.ceil(total / 50)}</span>
-                            <button className="al-page-btn" disabled={(page + 1) * 50 >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
-                        </div>
-                    )}
+                    <div className="al-pagination">
+                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                            {SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} ta</option>)}
+                        </select>
+                        <button className="al-page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                        <span className="al-page-info">{page + 1} / {Math.max(1, Math.ceil(total / size))}</span>
+                        <button className="al-page-btn" disabled={(page + 1) * size >= total} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                        <span className="al-page-total">Jami: {total} ta</span>
+                    </div>
                 </div>
             )}
 
@@ -455,6 +467,7 @@ function SessionsTab() {
                         <table className="ptable">
                             <thead>
                                 <tr>
+                                    <th className="th-num">#</th>
                                     <th>Foydalanuvchi</th>
                                     <th>Hodisa</th>
                                     <th>IP manzil</th>
@@ -463,10 +476,11 @@ function SessionsTab() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {failed.map(f => {
+                                {failed.map((f, idx) => {
                                     const dev = parseDevice(f.userAgent)
                                     return (
                                         <tr key={f.id}>
+                                            <td className="cell-num">{idx + 1}</td>
                                             <td><div className="cell-name">{f.username || '—'}</div></td>
                                             <td>
                                                 <span className="al-badge" style={
