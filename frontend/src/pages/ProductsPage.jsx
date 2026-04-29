@@ -7,14 +7,17 @@ import {
 } from '../api/products'
 import {
     Package, Plus, Search, Filter, RotateCcw, Pencil, Lock,
-    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp, Upload, Printer, MoreVertical
+    Unlock, Trash2, ChevronLeft, ChevronRight, Loader2, TrendingUp, TrendingDown,
+    Upload, Printer, MoreVertical, Download, FileSpreadsheet, History, X
 } from 'lucide-react'
+import api from '../api/api'
 import { useAuth } from '../context/AuthContext'
 import ProductImportModal from '../components/ProductImportModal'
 import PriceLabelModal from '../components/PriceLabelModal'
 import BulkPrintModal from '../components/BulkPrintModal'
 import ImageLightbox from '../components/ImageLightbox'
 import ConfirmModal from '../components/ConfirmModal'
+import { exportToExcel } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 
 const fmt = (num) => {
@@ -50,6 +53,13 @@ export default function ProductsPage() {
     const [loading, setLoading] = useState(false)
     const [categories, setCategories] = useState([])
     const [deleteConfirm, setDeleteConfirm] = useState(null)
+    const [exportLoading, setExportLoading] = useState(false)
+    const [historyModal, setHistoryModal] = useState(null)
+    const [historyData, setHistoryData] = useState([])
+    const [historyLoading, setHistoryLoading] = useState(false)
+    const [historyType, setHistoryType] = useState('')
+    const [historyFrom, setHistoryFrom] = useState('')
+    const [historyTo, setHistoryTo] = useState('')
 
     const exitSelectMode = () => { setSelectMode(false); setSelected(new Set()) }
 
@@ -99,7 +109,58 @@ export default function ProductsPage() {
         }
     }
 
+    const loadHistory = useCallback(async (productId, type, from, to) => {
+        setHistoryLoading(true)
+        try {
+            const params = { productId, size: 200 }
+            if (type) params.movementType = type
+            if (from) params.from = from + 'T00:00:00'
+            if (to) params.to = to + 'T23:59:59'
+            const res = await api.get('/api/v1/stock-movements', { params })
+            setHistoryData(res.data.content || [])
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setHistoryLoading(false)
+        }
+    }, [])
+
+    const openHistory = (product) => {
+        setHistoryModal(product)
+        setHistoryData([])
+        setHistoryType('')
+        setHistoryFrom('')
+        setHistoryTo('')
+        loadHistory(product.id, '', '', '')
+    }
+
     const fieldLabel = (f) => f === 'costPrice' ? 'Tannarx' : f === 'salePrice' ? 'Sotuv narx' : f === 'minPrice' ? 'Min narx' : f
+
+    const handleExport = async () => {
+        setExportLoading(true)
+        try {
+            const res = await getProducts({ page: 0, size: 10000, search: search || undefined, categoryId: categoryId || undefined })
+            const rows = res.data.content || []
+            const headers = ['#', 'Nomi', 'Kategoriya', 'Shtrix kod', 'Birlik', 'Tannarx', 'Sotuv narx', 'Min narx', 'Qoldiq', 'Status']
+            const data = rows.map((p, i) => [
+                i + 1,
+                p.name || '',
+                p.categoryName || '',
+                p.defaultBarcode || '',
+                p.defaultUnitSymbol || '',
+                p.defaultCostPriceUsd ? `$${p.defaultCostPriceUsd}` : (p.defaultCostPrice || 0),
+                p.defaultSalePrice || 0,
+                p.defaultMinPrice || 0,
+                `${p.totalStock || 0} ${p.defaultUnitSymbol || ''}`,
+                p.status === 'ACTIVE' ? 'Faol' : p.status === 'INACTIVE' ? 'Noaktiv' : "O'chirilgan"
+            ])
+            exportToExcel('mahsulotlar', headers, data)
+        } catch {
+            alert('Export xatosi')
+        } finally {
+            setExportLoading(false)
+        }
+    }
 
     const totalPages = Math.ceil(total / size)
 
@@ -120,6 +181,10 @@ export default function ProductsPage() {
                     </div>
                 </div>
                 <div className="products-header-actions">
+                    <button className="btn-export" onClick={handleExport} disabled={exportLoading}>
+                        {exportLoading ? <Loader2 size={16} className="spin" /> : <FileSpreadsheet size={16} />}
+                        <span>Excel</span>
+                    </button>
                     <button
                         className={`btn-bulk-print${selectMode ? ' active' : ''}`}
                         onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true) }}
@@ -302,16 +367,19 @@ export default function ProductsPage() {
                                             </button>
                                             {openMenuId === p.id && (
                                                 <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
-                                                    {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
-                                                        <button className="act-dd-item" onClick={() => { openPriceHistory(p); setOpenMenuId(null) }}>
-                                                            <TrendingUp size={14} /> Narx tarixi
-                                                        </button>
-                                                    )}
                                                     {hasPermission('PRODUCTS_EDIT') && (
                                                         <button className="act-dd-item" onClick={() => { navigate(`/products/${p.id}/edit`); setOpenMenuId(null) }}>
                                                             <Pencil size={14} /> Tahrirlash
                                                         </button>
                                                     )}
+                                                    {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
+                                                        <button className="act-dd-item" onClick={() => { openPriceHistory(p); setOpenMenuId(null) }}>
+                                                            <TrendingUp size={14} /> Narx tarixi
+                                                        </button>
+                                                    )}
+                                                    <button className="act-dd-item" onClick={() => { openHistory(p); setOpenMenuId(null) }}>
+                                                        <History size={14} /> Tovar tarixi
+                                                    </button>
                                                     {hasPermission('PRODUCTS_EDIT') && (
                                                         <button className="act-dd-item" onClick={() => { handleToggle(p.id); setOpenMenuId(null) }}>
                                                             {p.status === 'ACTIVE' ? <><Lock size={14} /> Noaktiv qilish</> : <><Unlock size={14} /> Faollashtirish</>}
@@ -388,23 +456,42 @@ export default function ProductsPage() {
                                                 onClick={() => setLabelProduct(p)}>
                                             <Printer size={15} />
                                         </button>
-                                        {hasPermission('PRODUCTS_EDIT') && (
-                                            <button className="act-btn act-edit" title="Tahrirlash"
-                                                    onClick={() => navigate(`/products/${p.id}/edit`)}>
-                                                <Pencil size={14} />
-                                            </button>
-                                        )}
-                                        {hasPermission('PRODUCTS_EDIT') && (
-                                            <button className="act-btn" title={p.status === 'ACTIVE' ? 'Noaktiv' : 'Faollashtirish'}
-                                                    onClick={() => handleToggle(p.id)}>
-                                                {p.status === 'ACTIVE' ? <Lock size={14} /> : <Unlock size={14} />}
-                                            </button>
-                                        )}
-                                        {hasPermission('PRODUCTS_DELETE') && (
-                                            <button className="act-btn act-delete" title="O'chirish"
-                                                    onClick={() => handleDelete(p.id)}>
-                                                <Trash2 size={14} />
-                                            </button>
+                                        <button
+                                            className="act-btn act-more"
+                                            onClick={(e) => {
+                                                const key = 'card-' + p.id
+                                                if (openMenuId === key) { setOpenMenuId(null); setMenuAnchor(null) }
+                                                else { setOpenMenuId(key); setMenuAnchor(e.currentTarget) }
+                                            }}
+                                        >
+                                            <MoreVertical size={15} />
+                                        </button>
+                                        {openMenuId === 'card-' + p.id && (
+                                            <DropdownPortal anchorEl={menuAnchor} onClose={() => { setOpenMenuId(null); setMenuAnchor(null) }}>
+                                                {hasPermission('PRODUCTS_EDIT') && (
+                                                    <button className="act-dd-item" onClick={() => { navigate(`/products/${p.id}/edit`); setOpenMenuId(null) }}>
+                                                        <Pencil size={14} /> Tahrirlash
+                                                    </button>
+                                                )}
+                                                {hasPermission('PRICE_HISTORY_VIEW') && p.defaultUnitId && (
+                                                    <button className="act-dd-item" onClick={() => { openPriceHistory(p); setOpenMenuId(null) }}>
+                                                        <TrendingUp size={14} /> Narx tarixi
+                                                    </button>
+                                                )}
+                                                <button className="act-dd-item" onClick={() => { openHistory(p); setOpenMenuId(null) }}>
+                                                    <History size={14} /> Tovar tarixi
+                                                </button>
+                                                {hasPermission('PRODUCTS_EDIT') && (
+                                                    <button className="act-dd-item" onClick={() => { handleToggle(p.id); setOpenMenuId(null) }}>
+                                                        {p.status === 'ACTIVE' ? <><Lock size={14} /> Noaktiv qilish</> : <><Unlock size={14} /> Faollashtirish</>}
+                                                    </button>
+                                                )}
+                                                {hasPermission('PRODUCTS_DELETE') && (
+                                                    <button className="act-dd-item act-dd-danger" onClick={() => { handleDelete(p.id); setOpenMenuId(null) }}>
+                                                        <Trash2 size={14} /> O'chirish
+                                                    </button>
+                                                )}
+                                            </DropdownPortal>
                                         )}
                                     </div>
                                 </div>
@@ -502,7 +589,8 @@ export default function ProductsPage() {
                             ) : phData.length === 0 ? (
                                 <div className="ph-empty">Narx o'zgartirish tarixi yo'q</div>
                             ) : (
-                                <table className="ph-table">
+                                <>
+                                <table className="ph-table ph-desktop">
                                     <thead>
                                     <tr>
                                         <th>Sana</th>
@@ -524,11 +612,211 @@ export default function ProductsPage() {
                                     ))}
                                     </tbody>
                                 </table>
+                                <div className="ph-cards">
+                                    {phData.map(h => (
+                                        <div key={h.id} className="smh-card">
+                                            <div className="smh-card-top">
+                                                <span className="smh-badge" style={{ background: '#3b82f618', color: '#3b82f6' }}>{fieldLabel(h.fieldName)}</span>
+                                                <span className="cell-muted">{new Date(h.changedAt).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+                                            </div>
+                                            <div className="smh-card-rows">
+                                                <div className="smh-card-row">
+                                                    <span className="smh-card-label">Eski narx</span>
+                                                    <span className="ph-old">{fmt(h.oldValue)}</span>
+                                                </div>
+                                                <div className="smh-card-row">
+                                                    <span className="smh-card-label">Yangi narx</span>
+                                                    <span className="ph-new">{fmt(h.newValue)}</span>
+                                                </div>
+                                                {h.changedByName && (
+                                                    <div className="smh-card-row">
+                                                        <span className="smh-card-label">Kim</span>
+                                                        <span>{h.changedByName}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Movement History Modal */}
+            {historyModal && (
+                <div className="ph-overlay" onClick={() => setHistoryModal(null)}>
+                    <div className="ph-modal smh-modal" onClick={e => e.stopPropagation()}>
+                        <div className="ph-modal-header">
+                            <span>Tovar tarixi — {historyModal.name}</span>
+                            <button className="ph-close" onClick={() => setHistoryModal(null)}><X size={16} /></button>
+                        </div>
+                        <div className="smh-filters">
+                            <select
+                                className="smh-filter-select"
+                                value={historyType}
+                                onChange={e => { setHistoryType(e.target.value); loadHistory(historyModal.id, e.target.value, historyFrom, historyTo) }}
+                            >
+                                <option value="">Barcha harakatlar</option>
+                                <option value="PURCHASE_IN">Kirim</option>
+                                <option value="SALE_OUT">Sotildi</option>
+                                <option value="ADJUSTMENT_IN">Tuzatish +</option>
+                                <option value="ADJUSTMENT_OUT">Tuzatish -</option>
+                                <option value="TRANSFER_IN">Transfer +</option>
+                                <option value="TRANSFER_OUT">Transfer -</option>
+                                <option value="RETURN_IN">Qaytarish</option>
+                            </select>
+                            <input
+                                type="date"
+                                className="smh-filter-date"
+                                value={historyFrom}
+                                onChange={e => { setHistoryFrom(e.target.value); loadHistory(historyModal.id, historyType, e.target.value, historyTo) }}
+                            />
+                            <span className="smh-filter-sep">—</span>
+                            <input
+                                type="date"
+                                className="smh-filter-date"
+                                value={historyTo}
+                                onChange={e => { setHistoryTo(e.target.value); loadHistory(historyModal.id, historyType, historyFrom, e.target.value) }}
+                            />
+                            {(historyType || historyFrom || historyTo) && (
+                                <button className="smh-filter-reset" onClick={() => { setHistoryType(''); setHistoryFrom(''); setHistoryTo(''); loadHistory(historyModal.id, '', '', '') }}>
+                                    <RotateCcw size={13} /> Tozalash
+                                </button>
+                            )}
+                        </div>
+                        <div className="smh-body">
+                            {historyLoading ? (
+                                <div className="ph-empty"><Loader2 size={20} className="spin" /> Yuklanmoqda...</div>
+                            ) : historyData.length === 0 ? (
+                                <div className="ph-empty">Harakat tarixi yo'q</div>
+                            ) : (
+                                <>
+                                <table className="ph-table smh-table smh-desktop">
+                                    <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Sana</th>
+                                        <th>Harakat</th>
+                                        <th>Birlik</th>
+                                        <th>Ombor</th>
+                                        <th className="th-right">Miqdor</th>
+                                        <th className="th-right">Narx</th>
+                                        <th>Manba</th>
+                                        <th>Kim</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {historyData.map((m, idx) => {
+                                        const isIn = ['PURCHASE_IN','ADJUSTMENT_IN','TRANSFER_IN','RETURN_IN'].includes(m.movementType)
+                                        const warehouse = m.fromWarehouseName && m.toWarehouseName
+                                            ? `${m.fromWarehouseName} → ${m.toWarehouseName}`
+                                            : (m.toWarehouseName || m.fromWarehouseName || '—')
+                                        return (
+                                            <tr key={m.id}>
+                                                <td className="cell-num">{idx + 1}</td>
+                                                <td className="cell-muted">{m.movedAt ? new Date(m.movedAt).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'}</td>
+                                                <td><SmhBadge type={m.movementType} /></td>
+                                                <td>{m.unitSymbol || ''}</td>
+                                                <td className="cell-muted">{warehouse}</td>
+                                                <td className={`th-right ${isIn ? 'smh-qty-in' : 'smh-qty-out'}`}>
+                                                    {isIn ? '+' : '-'}{fmt(m.quantity)}
+                                                </td>
+                                                <td className="th-right">{m.unitPrice ? fmt(m.unitPrice) : '—'}</td>
+                                                <td>
+                                                    {m.referenceType === 'PURCHASE' ? (
+                                                        <span className="smh-ref smh-ref-purchase" onClick={() => navigate(`/purchases/${m.referenceId}`)}>Xarid #{m.referenceId}</span>
+                                                    ) : m.referenceType === 'SALE' ? (
+                                                        <span className="smh-ref smh-ref-sale" onClick={() => navigate(`/sales/${m.referenceId}`)}>Sotuv #{m.referenceId}</span>
+                                                    ) : m.referenceType || '—'}
+                                                </td>
+                                                <td className="cell-muted">{m.movedBy || '—'}</td>
+                                            </tr>
+                                        )
+                                    })}
+                                    </tbody>
+                                </table>
+
+                                {/* Mobile cards */}
+                                <div className="smh-cards">
+                                    {historyData.map((m, idx) => {
+                                        const isIn = ['PURCHASE_IN','ADJUSTMENT_IN','TRANSFER_IN','RETURN_IN'].includes(m.movementType)
+                                        const warehouse = m.fromWarehouseName && m.toWarehouseName
+                                            ? `${m.fromWarehouseName} → ${m.toWarehouseName}`
+                                            : (m.toWarehouseName || m.fromWarehouseName || '—')
+                                        return (
+                                            <div key={m.id} className="smh-card">1
+                                                <div className="smh-card-top">
+                                                    <SmhBadge type={m.movementType} />
+                                                    <span className={isIn ? 'smh-qty-in' : 'smh-qty-out'}>
+                                                        {isIn ? '+' : '-'}{fmt(m.quantity)} {m.unitSymbol || ''}
+                                                    </span>
+                                                </div>
+                                                <div className="smh-card-rows">
+                                                    <div className="smh-card-row">
+                                                        <span className="smh-card-label">Sana</span>
+                                                        <span>{m.movedAt ? new Date(m.movedAt).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'}</span>
+                                                    </div>
+                                                    <div className="smh-card-row">
+                                                        <span className="smh-card-label">Ombor</span>
+                                                        <span>{warehouse}</span>
+                                                    </div>
+                                                    {m.unitPrice && (
+                                                        <div className="smh-card-row">
+                                                            <span className="smh-card-label">Narx</span>
+                                                            <span>{fmt(m.unitPrice)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="smh-card-row">
+                                                        <span className="smh-card-label">Manba</span>
+                                                        <span>
+                                                            {m.referenceType === 'PURCHASE' ? (
+                                                                <span className="smh-ref smh-ref-purchase" onClick={() => navigate(`/purchases/${m.referenceId}`)}>Xarid #{m.referenceId}</span>
+                                                            ) : m.referenceType === 'SALE' ? (
+                                                                <span className="smh-ref smh-ref-sale" onClick={() => navigate(`/sales/${m.referenceId}`)}>Sotuv #{m.referenceId}</span>
+                                                            ) : m.referenceType || '—'}
+                                                        </span>
+                                                    </div>
+                                                    {m.movedBy && (
+                                                        <div className="smh-card-row">
+                                                            <span className="smh-card-label">Kim</span>
+                                                            <span>{m.movedBy}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
             )}
         </div>
+    )
+}
+
+const SMH_TYPES = {
+    PURCHASE_IN:    { label: 'Kirim',          color: '#10b981', icon: 'in' },
+    SALE_OUT:       { label: 'Sotildi',        color: '#ef4444', icon: 'out' },
+    ADJUSTMENT_IN:  { label: 'Tuzatish +',     color: '#3b82f6', icon: 'in' },
+    ADJUSTMENT_OUT: { label: 'Tuzatish -',     color: '#f97316', icon: 'out' },
+    TRANSFER_IN:    { label: 'Transfer +',     color: '#8b5cf6', icon: 'in' },
+    TRANSFER_OUT:   { label: 'Transfer -',     color: '#ec4899', icon: 'out' },
+    RETURN_IN:      { label: 'Qaytarish',      color: '#06b6d4', icon: 'in' },
+}
+
+function SmhBadge({ type }) {
+    const info = SMH_TYPES[type]
+    if (!info) return <span className="cell-muted">{type}</span>
+    return (
+        <span className="smh-badge" style={{ background: info.color + '18', color: info.color }}>
+            {info.icon === 'in' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {info.label}
+        </span>
     )
 }

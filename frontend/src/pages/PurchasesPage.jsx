@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { getPurchases, cancelPurchase } from '../api/purchases'
 import { useAuth } from '../context/AuthContext'
-import { exportToCSV, exportToPDF, fmtNum, fmtDate as fmtDateExport } from '../utils/exportUtils'
+import { exportToExcel, exportToPDF, fmtNum, fmtDate as fmtDateExport } from '../utils/exportUtils'
 import DropdownPortal from '../components/DropdownPortal'
 import '../styles/ProductsPage.css'
 import '../styles/PurchasesPage.css'
@@ -70,7 +70,7 @@ export default function PurchasesPage() {
     const [openMenuId, setOpenMenuId] = useState(null)
     const [menuAnchor, setMenuAnchor] = useState(null)
 
-    const handleExport = async (format = 'csv') => {
+    const handleExport = async (format = 'excel') => {
         setExportLoading(true)
         try {
             const res = await getPurchases({ page: 0, size: 1000, status: filterStatus || undefined, supplierId: filterSupplierId || undefined })
@@ -100,7 +100,7 @@ export default function PurchasesPage() {
                     ]
                 })
             } else {
-                exportToCSV(filename, headers, data)
+                exportToExcel(filename, headers, data)
             }
         } catch (e) {
             alert('Export xatosi')
@@ -147,7 +147,7 @@ export default function PurchasesPage() {
                             <Plus size={16} /> Yangi xarid
                         </button>
                     )}
-                    <button className="btn-reset" onClick={() => handleExport('csv')} disabled={exportLoading}
+                    <button className="btn-reset" onClick={() => handleExport('excel')} disabled={exportLoading}
                             style={{ color: '#16a34a', borderColor: '#16a34a' }}>
                         {exportLoading ? <Loader2 size={14} className="spin" /> : <FileDown size={14} />} Excel
                     </button>

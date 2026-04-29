@@ -25,6 +25,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
         JOIN product_units pu ON pu.id = sm.product_unit_id
         JOIN products p ON p.id = pu.product_id
         WHERE (:productUnitId IS NULL OR sm.product_unit_id = :productUnitId)
+          AND (:productId IS NULL OR pu.product_id = :productId)
           AND (:warehouseId   IS NULL OR sm.from_warehouse_id = :warehouseId
                                      OR sm.to_warehouse_id   = :warehouseId)
           AND (CAST(:movementType AS VARCHAR) IS NULL OR sm.movement_type = CAST(:movementType AS VARCHAR))
@@ -37,6 +38,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
         JOIN product_units pu ON pu.id = sm.product_unit_id
         JOIN products p ON p.id = pu.product_id
         WHERE (:productUnitId IS NULL OR sm.product_unit_id = :productUnitId)
+          AND (:productId IS NULL OR pu.product_id = :productId)
           AND (:warehouseId   IS NULL OR sm.from_warehouse_id = :warehouseId
                                      OR sm.to_warehouse_id   = :warehouseId)
           AND (CAST(:movementType AS VARCHAR) IS NULL OR sm.movement_type = CAST(:movementType AS VARCHAR))
@@ -46,6 +48,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
     """, nativeQuery = true)
     Page<StockMovement> findAllFiltered(
             @Param("productUnitId") Long productUnitId,
+            @Param("productId")     Long productId,
             @Param("warehouseId")   Long warehouseId,
             @Param("movementType")  String movementType,
             @Param("from")          String from,

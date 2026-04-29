@@ -10,7 +10,7 @@ import {
 import { salesApi } from '../api/sales'
 import api from '../api/api'
 import { useAuth } from '../context/AuthContext'
-import { exportToCSV, exportToPDF, fmtNum, fmtDateTime as fmtDT } from '../utils/exportUtils'
+import { exportToExcel, exportToPDF, fmtNum, fmtDateTime as fmtDT } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 import '../styles/SalesPage.css'
 
@@ -702,7 +702,7 @@ export default function SalesPage() {
     }
 
     // ── Excel export ─────────────────────────────────────────────
-    const handleExport = async (format = 'csv') => {
+    const handleExport = async (format = 'excel') => {
         setExportLoading(true)
         try {
             const res = await salesApi.getHistory({
@@ -739,7 +739,7 @@ export default function SalesPage() {
                     ]
                 })
             } else {
-                exportToCSV(filename, headers, data)
+                exportToExcel(filename, headers, data)
             }
         } catch (e) {
             showToast('Export xatosi', 'error')
@@ -947,7 +947,7 @@ export default function SalesPage() {
                 </button>
 
                 {/* Export */}
-                <button className="btn-reset" onClick={() => handleExport('csv')} disabled={exportLoading}
+                <button className="btn-reset" onClick={() => handleExport('excel')} disabled={exportLoading}
                         style={{ color: '#16a34a', borderColor: '#16a34a' }}>
                     {exportLoading
                         ? <><Loader2 size={14} className="spin" /> ...</>

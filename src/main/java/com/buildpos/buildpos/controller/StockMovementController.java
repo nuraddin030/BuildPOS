@@ -31,6 +31,7 @@ public class StockMovementController {
     @Operation(summary = "Stock harakatlari tarixi (filter + pagination)")
     public ResponseEntity<Page<StockMovementResponse>> getAll(
             @RequestParam(required = false) Long productUnitId,
+            @RequestParam(required = false) Long productId,
             @RequestParam(required = false) Long warehouseId,
             @RequestParam(required = false) StockMovementType movementType,
             @RequestParam(required = false) String productName,
@@ -41,7 +42,7 @@ public class StockMovementController {
             @PageableDefault(size = 20, sort = "moved_at", direction = Sort.Direction.DESC) Pageable pageable) {
 
         return ResponseEntity.ok(
-                stockMovementService.getAll(productUnitId, warehouseId, movementType, from, to, productName, pageable)
+                stockMovementService.getAll(productUnitId, productId, warehouseId, movementType, from, to, productName, pageable)
         );
     }
 

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
-import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
+import { exportToExcel, exportToPDF, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 import '../styles/ShiftReportPage.css'
 
@@ -114,7 +114,7 @@ function ShiftDetailModal({ shiftId, onClose }) {
             if (format === 'pdf') {
                 await exportToPDF({ filename, title, subtitle, headers, rows })
             } else {
-                exportToCSV(filename, headers, rows)
+                exportToExcel(filename, headers, rows)
             }
         } finally {
             setExportLoading(false)
@@ -143,7 +143,7 @@ function ShiftDetailModal({ shiftId, onClose }) {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         {!loading && summary && (
                             <>
-                                <button className="btn-reset" onClick={() => handleExport('csv')}
+                                <button className="btn-reset" onClick={() => handleExport('excel')}
                                         disabled={exportLoading}
                                         style={{ color: '#16a34a', borderColor: '#16a34a', fontSize: 12 }}>
                                     <FileSpreadsheet size={13} /> Excel

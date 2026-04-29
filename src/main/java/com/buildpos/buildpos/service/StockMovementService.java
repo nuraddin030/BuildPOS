@@ -26,6 +26,7 @@ public class StockMovementService {
     // ─────────────────────────────────────────
     public Page<StockMovementResponse> getAll(
             Long productUnitId,
+            Long productId,
             Long warehouseId,
             StockMovementType movementType,
             LocalDateTime from,
@@ -38,7 +39,7 @@ public class StockMovementService {
         String toStr   = to   != null ? to.toString()   : null;
         String productNameStr = (productName != null && !productName.isBlank()) ? productName : null;
         return stockMovementRepository
-                .findAllFiltered(productUnitId, warehouseId, movementTypeStr, fromStr, toStr, productNameStr, pageable)
+                .findAllFiltered(productUnitId, productId, warehouseId, movementTypeStr, fromStr, toStr, productNameStr, pageable)
                 .map(this::toResponse);
     }
 

@@ -1,30 +1,32 @@
 /**
  * BuildPOS — Export Utilities
- * CSV va PDF export uchun umumiy funksiyalar
  */
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 
-// ── CSV Export ────────────────────────────────────────────────────
-export function exportToCSV(filename, headers, rows) {
-    const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
-    const lines = [
-        headers.map(escape).join(','),
-        ...rows.map(row => row.map(escape).join(','))
-    ]
-    const csv = '\uFEFF' + lines.join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${filename}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+// ── Excel Export ─────────────────────────────────────────────────
+export function exportToExcel(filename, headers, rows) {
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+
+    const colWidths = headers.map((h, ci) => {
+        let max = String(h).length
+        for (const row of rows) {
+            const len = String(row[ci] ?? '').length
+            if (len > max) max = len
+        }
+        return { wch: Math.min(max + 2, 40) }
+    })
+    ws['!cols'] = colWidths
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Hisobot')
+    XLSX.writeFile(wb, `${filename}.xlsx`)
 }
 
 // O'zbek apostroflarini PDF uchun xavfsiz belgiga aylantiradi
 function sanitize(val) {
-    return String(val ?? '').replace(/[''`]/g, "'")
+    return String(val ?? '').replace(/['‘’`]/g, "'")
 }
 
 function sanitizeArr(arr) {

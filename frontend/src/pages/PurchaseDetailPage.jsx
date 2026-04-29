@@ -11,7 +11,7 @@ import { getPurchaseById, receivePurchase, addPayment, cancelPurchase } from '..
 import { getExchangeRate } from '../api/products'
 import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
-import { exportToPDF, exportToCSV, fmtNum } from '../utils/exportUtils'
+import { exportToPDF, exportToExcel, fmtNum } from '../utils/exportUtils'
 import { supplierDebtsApi } from '../api/debts'
 import ConfirmModal from '../components/ConfirmModal'
 import '../styles/ProductsPage.css'

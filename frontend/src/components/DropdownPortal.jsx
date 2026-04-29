@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom'
  * Dropdown ni document.body ga render qiladi (portal).
  * overflow:hidden, table — hech narsa clip qilmaydi.
  * anchorEl — trigger tugma DOM elementi (e.currentTarget)
+ * Pastda joy yetmasa yuqoriga ochiladi.
  */
 export default function DropdownPortal({ anchorEl, onClose, children }) {
     const ref = useRef(null)
@@ -22,6 +23,8 @@ export default function DropdownPortal({ anchorEl, onClose, children }) {
 
     if (!anchorEl) return null
     const rect = anchorEl.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openUp = spaceBelow < 220
 
     return ReactDOM.createPortal(
         <div
@@ -29,7 +32,8 @@ export default function DropdownPortal({ anchorEl, onClose, children }) {
             className="act-dropdown"
             style={{
                 position: 'fixed',
-                top: rect.bottom + 4,
+                top: openUp ? 'auto' : rect.bottom + 4,
+                bottom: openUp ? (window.innerHeight - rect.top + 4) : 'auto',
                 right: window.innerWidth - rect.right,
                 zIndex: 9999,
             }}

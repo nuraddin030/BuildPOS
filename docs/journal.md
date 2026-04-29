@@ -1,5 +1,42 @@
 # BuildPOS — Project Journal
 
+## Session: 2026-04-29 — Excel eksport, Tovar tarixi modali, DropdownPortal tuzatish
+
+### Bajarilgan ishlar
+
+#### 1. Excel eksport (CSV → XLSX)
+- **Muammo:** Barcha sahifalarda "Excel" tugmasi bosilganda CSV yuklanardi — ustunlar ajralmagan, Excel da noqulay
+- **Yechim:** `xlsx` (SheetJS) kutubxonasi o'rnatildi, `exportToCSV` → `exportToExcel` ga almashtirildi
+- **Fayl:** `exportUtils.js` — yangi `exportToExcel()` funksiya (ustun kengliklari avtomatik)
+- **Sahifalar:** PurchasesPage, SalesPage, StockMovementsPage, ShiftReportPage, DebtsPage, PurchaseDetailPage
+- **Yangi:** ProductsPage ga Excel eksport tugmasi qo'shildi (yashil, FileSpreadsheet ikonka)
+  - Nomi, kategoriya, shtrix kod, birlik, tannarx, sotuv narx, min narx, qoldiq, status
+
+#### 2. Tovar tarixi modali (Stock Movement History)
+- **Backend:** `StockMovementController/Service/Repository` ga `productId` filter qo'shildi
+  - Avval faqat `productUnitId` bo'yicha filter bor edi, endi mahsulotning barcha birliklari bo'yicha
+- **Frontend:** ProductsPage dropdown menusiga "Tovar tarixi" tugmasi (History ikonka)
+- **Modal:** Jadvalda sana, harakat turi (rangli badge), birlik, ombor, miqdor (+/- rangli), narx, manba, kim
+  - Xarid/Sotuv havolalari bosilganda tegishli sahifaga o'tish
+- **Filtrlar:** Harakat turi (select) + Sana oralig'i (dan/gacha) + Tozalash tugmasi
+- **Mobil:** Card view (jadval o'rniga), modal 94vw/85vh, border-radius 12px
+
+#### 3. Narx tarixi modali — mobil moslashtirish
+- **Desktop:** Jadval avvalgidek
+- **Mobil:** Card view — maydon nomi badge, eski/yangi narx qatorlarda
+
+#### 4. Dropdown menyu — mobil + pastdan ochilish
+- **Muammo 1:** Mobil kartadagi dropdown bosilganda hech narsa bo'lmadi
+  - **Sabab:** Desktop va mobil bir xil `openMenuId` ishlatgani uchun ikki DropdownPortal ochilardi
+  - **Yechim:** Mobil `'card-' + p.id` prefiksi, desktop `p.id` — faqat bitta portal ochiladi
+- **Muammo 2:** Ekran pastidagi dropdown pastga ochilardi, elementlarga bosib bo'lmadi
+  - **Yechim:** `DropdownPortal.jsx` — `spaceBelow < 220` bo'lsa yuqoriga ochiladi (`bottom` pozitsiya)
+
+#### 5. ProductsPage dropdown tartib
+- Mobil va desktopda bir xil: Tahrirlash → Narx tarixi → Tovar tarixi → Noaktiv qilish → O'chirish
+
+---
+
 ## Session: 2026-04-27 — Mahsulot rasmlari ikki versiya, Lightbox, PDF tuzatish
 
 ### Bajarilgan ishlar

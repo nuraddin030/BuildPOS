@@ -7,7 +7,7 @@ import {
     Search, FileSpreadsheet, Download, RotateCcw, Loader2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
+import { exportToExcel, exportToPDF, fmtNum } from '../utils/exportUtils'
 import '../styles/ProductsPage.css'
 import "../styles/dashboard.css"
 import '../styles/StockMovementsPage.css'
@@ -176,7 +176,7 @@ export default function StockMovementsPage() {
                     summary: [{ label: 'Jami harakatlar', value: rows.length + ' ta' }]
                 })
             } else {
-                exportToCSV('sklad_harakatlari', headers, data)
+                exportToExcel('sklad_harakatlari', headers, data)
             }
         } catch (e) {
             console.error(e)
@@ -202,7 +202,7 @@ export default function StockMovementsPage() {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <button className="btn-reset" onClick={() => handleExport('csv')} disabled={exportLoading}
+                    <button className="btn-reset" onClick={() => handleExport('excel')} disabled={exportLoading}
                             style={{ color: '#16a34a', borderColor: '#16a34a' }}>
                         {exportLoading ? <Loader2 size={14} className="spin" /> : <FileSpreadsheet size={14} />} Excel
                     </button>

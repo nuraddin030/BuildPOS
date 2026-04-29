@@ -13,7 +13,7 @@ import { customerDebtsApi, supplierDebtsApi, installmentApi, agingApi } from '..
 import { salesApi } from '../api/sales'
 import { shiftsApi } from '../api/shifts'
 import { useAuth } from '../context/AuthContext'
-import { exportToCSV, exportToPDF, fmtNum } from '../utils/exportUtils'
+import { exportToExcel, exportToPDF, fmtNum } from '../utils/exportUtils'
 import DropdownPortal from '../components/DropdownPortal'
 import '../styles/ProductsPage.css'
 import '../styles/DebtsPage.css'
@@ -1572,7 +1572,7 @@ export default function DebtsPage() {
                         ]
                     })
                 } else {
-                    exportToCSV(filename, headers, data)
+                    exportToExcel(filename, headers, data)
                 }
             } else {
                 const params = { page: 0, size: 1000, isPaid: false }
@@ -1610,7 +1610,7 @@ export default function DebtsPage() {
                         ]
                     })
                 } else {
-                    exportToCSV(filename, headers, data)
+                    exportToExcel(filename, headers, data)
                 }
             }
         } catch (e) {
@@ -1827,7 +1827,7 @@ export default function DebtsPage() {
                         </button>
                     </div>
                     <button className="btn-reset" disabled={exportLoading}
-                            onClick={() => handleExport('csv')}
+                            onClick={() => handleExport('excel')}
                             style={{ color: '#16a34a', borderColor: '#16a34a' }}>
                         {exportLoading ? <Loader2 size={14} className="spin" /> : <FileSpreadsheet size={14} />} Excel
                     </button>
