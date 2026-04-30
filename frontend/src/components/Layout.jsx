@@ -20,6 +20,7 @@ import SaleDetailPage from '../pages/SaleDetailPage'
 import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
 import InventoryPage from '../pages/InventoryPage'
+import TransferPage from '../pages/TransferPage'
 import ReportsPage from '../pages/ReportsPage'
 import ExpensesPage from '../pages/ExpensesPage'
 import SettingsPage from '../pages/SettingsPage'
@@ -553,6 +554,9 @@ export default function Layout() {
                         } />
                         <Route path="/inventory" element={
                             <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>
+                        } />
+                        <Route path="/inventory/transfer" element={
+                            <ProtectedRoute permission="INVENTORY_MANAGE"><TransferPage /></ProtectedRoute>
                         } />
                         <Route path="/inventory/:id" element={
                             <ProtectedRoute permission="INVENTORY_VIEW"><InventoryPage /></ProtectedRoute>

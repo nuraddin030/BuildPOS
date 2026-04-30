@@ -498,3 +498,136 @@
   margin-top: 6px;
   font-style: italic;
 }
+
+/* ── Tablar ─────────────────────────────────────────────────────── */
+.inv-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-secondary);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+.inv-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.inv-tab:hover {
+  color: var(--text-primary);
+  background: rgba(139, 92, 246, 0.06);
+}
+.inv-tab.active {
+  background: var(--surface);
+  color: #8b5cf6;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Transfer tarix jadvali ────────────────────────────────────── */
+.inv-transfer-cards { display: none; }
+
+.inv-transfer-group-row:hover {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+.inv-transfer-count-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.inv-transfer-detail-row td {
+  background: var(--surface-secondary);
+}
+
+.inv-transfer-detail-items {
+  padding: 8px 16px 8px 36px;
+}
+
+.inv-transfer-sub-table {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.inv-transfer-sub-table thead th {
+  font-size: 11px;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inv-transfer-sub-table tbody td {
+  padding: 7px 8px;
+  font-size: 13px;
+}
+
+/* ── Transfer kartochkalar (mobile) ──────────────────────────── */
+.inv-transfer-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.inv-transfer-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.inv-transfer-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.inv-transfer-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 3px 0;
+}
+.inv-transfer-card-row span:first-child {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.inv-transfer-card-items {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inv-transfer-card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+@media (max-width: 768px) {
+  .inv-transfer-table-wrap { display: none; }
+  .inv-transfer-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}

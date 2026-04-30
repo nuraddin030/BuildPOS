@@ -1,0 +1,175 @@
+/* ── TransferPage ── */
+.transfer-settings {
+    padding: 16px 20px;
+    margin-bottom: 14px;
+}
+
+.transfer-warehouses {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.transfer-wh-block {
+    flex: 1;
+}
+
+.transfer-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    padding-bottom: 6px;
+    flex-shrink: 0;
+}
+
+.transfer-notes {
+    max-width: 500px;
+}
+
+/* Qidiruv */
+.transfer-search-wrap {
+    position: relative;
+    margin-bottom: 14px;
+}
+
+.transfer-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.transfer-search-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.1s;
+}
+
+.transfer-search-item:last-child {
+    border-bottom: none;
+}
+
+.transfer-search-item:hover,
+.transfer-search-item.active {
+    background: rgba(139, 92, 246, 0.06);
+}
+
+.transfer-search-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.transfer-search-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Jadval */
+.transfer-table-wrap {
+    margin-top: 4px;
+}
+
+/* Mobil kartochkalar */
+.transfer-items-cards {
+    display: none;
+}
+
+.transfer-item-card {
+    background: var(--surface-secondary);
+    border: 0.5px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.transfer-item-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.transfer-item-card-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.transfer-item-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+
+.transfer-item-card-row span:first-child {
+    color: var(--text-muted);
+}
+
+/* Pastki bar (mobil) */
+.transfer-bottom-bar {
+    display: none;
+}
+
+.transfer-bottom-info {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .transfer-warehouses {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .transfer-arrow {
+        transform: rotate(90deg);
+        padding: 0;
+    }
+
+    .transfer-notes {
+        max-width: 100%;
+    }
+
+    .transfer-table-wrap {
+        display: none;
+    }
+
+    .transfer-items-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .transfer-bottom-bar {
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border-color);
+        padding: 12px 16px;
+        z-index: 50;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    }
+}

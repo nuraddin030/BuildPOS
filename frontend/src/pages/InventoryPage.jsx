@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { inventoryApi } from '../api/inventory'
 import { getWarehouses } from '../api/products'
+import api from '../api/api'
 import {
     ClipboardList, Plus, ArrowLeft, CheckCircle, Trash2,
-    Loader2, ChevronLeft, ChevronRight, Search
+    Loader2, ChevronLeft, ChevronRight, Search, ArrowLeftRight,
+    ChevronDown, Package
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import '../styles/InventoryPage.css'
@@ -438,6 +440,241 @@ function SessionDetail({ sessionId }) {
     )
 }
 
+// Harakatlarni "transfer sessiya" ga guruhlash — bir xil ombor, foydalanuvchi, izoh va 2 minut ichida
+function groupTransfers(movements) {
+    const groups = []
+    const used = new Set()
+    for (let i = 0; i < movements.length; i++) {
+        if (used.has(i)) continue
+        const m = movements[i]
+        const t = new Date(m.movedAt).getTime()
+        const items = [m]
+        used.add(i)
+        for (let j = i + 1; j < movements.length; j++) {
+            if (used.has(j)) continue
+            const n = movements[j]
+            if (n.fromWarehouseName === m.fromWarehouseName &&
+                n.toWarehouseName === m.toWarehouseName &&
+                n.movedBy === m.movedBy &&
+                (n.notes || '') === (m.notes || '') &&
+                Math.abs(new Date(n.movedAt).getTime() - t) < 120000) {
+                items.push(n)
+                used.add(j)
+            }
+        }
+        groups.push({
+            key: m.id,
+            fromWarehouseName: m.fromWarehouseName,
+            toWarehouseName: m.toWarehouseName,
+            movedBy: m.movedBy,
+            movedAt: m.movedAt,
+            notes: m.notes,
+            items,
+            itemCount: items.length,
+        })
+    }
+    return groups
+}
+
+// ── Transfer tarixi ──────────────────────────────────────────────
+function TransferHistory({ hasPermission, user, navigate }) {
+    const [movements, setMovements] = useState([])
+    const [total, setTotal] = useState(0)
+    const [page, setPage] = useState(0)
+    const [size, setSize] = useState(100)
+    const [loading, setLoading] = useState(false)
+    const [expandedKey, setExpandedKey] = useState(null)
+
+    const canManage = hasPermission('INVENTORY_MANAGE') ||
+        user?.role === 'ADMIN' || user?.role === 'OWNER' ||
+        user?.role === 'ROLE_ADMIN' || user?.role === 'ROLE_OWNER' ||
+        user?.role === 'STOREKEEPER'
+
+    const load = useCallback(async () => {
+        setLoading(true)
+        try {
+            const res = await api.get('/api/v1/stock-movements', {
+                params: { movementType: 'TRANSFER_OUT', page, size }
+            })
+            const data = res.data
+            setMovements(data?.content || [])
+            setTotal(data?.totalElements || 0)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }, [page, size])
+
+    useEffect(() => { load() }, [load])
+
+    const groups = groupTransfers(movements)
+    const totalPages = Math.ceil(total / size)
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                {canManage && (
+                    <button className="btn-add" onClick={() => navigate('/inventory/transfer')}>
+                        <ArrowLeftRight size={16} />
+                        <span>Yangi ko'chirish</span>
+                    </button>
+                )}
+            </div>
+
+            <div className="table-card">
+                {loading ? (
+                    <div className="table-loading"><Loader2 size={24} className="spin" /><span>Yuklanmoqda...</span></div>
+                ) : groups.length === 0 ? (
+                    <div className="table-empty">
+                        <ArrowLeftRight size={40} strokeWidth={1.2} />
+                        <p>Transfer tarixi yo'q</p>
+                    </div>
+                ) : (
+                    <>
+                    <div className="inv-transfer-table-wrap table-responsive">
+                        <table className="ptable">
+                            <thead>
+                            <tr>
+                                <th style={{ width: 36 }}></th>
+                                <th className="th-num">#</th>
+                                <th>Qayerdan</th>
+                                <th>Qayerga</th>
+                                <th className="th-center">Mahsulotlar</th>
+                                <th>Izoh</th>
+                                <th>Sana</th>
+                                <th>Kim</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {groups.map((g, i) => {
+                                const isOpen = expandedKey === g.key
+                                return (
+                                    <React.Fragment key={g.key}>
+                                        <tr className="inv-transfer-group-row"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => setExpandedKey(isOpen ? null : g.key)}>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <ChevronDown size={14}
+                                                    style={{ transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+                                            </td>
+                                            <td className="cell-num">{page * (size / 1) + i + 1}</td>
+                                            <td><span style={{ fontWeight: 500, fontSize: 13 }}>{g.fromWarehouseName || '—'}</span></td>
+                                            <td><span style={{ fontWeight: 500, fontSize: 13 }}>{g.toWarehouseName || '—'}</span></td>
+                                            <td className="th-center">
+                                                <span className="inv-transfer-count-badge">{g.itemCount} ta</span>
+                                            </td>
+                                            <td>
+                                                <span className="cell-muted" style={{ fontSize: 12 }} title={g.notes}>
+                                                    {g.notes ? (g.notes.length > 30 ? g.notes.slice(0, 30) + '…' : g.notes) : '—'}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDT(g.movedAt)}</td>
+                                            <td style={{ fontSize: 12 }}>{g.movedBy || '—'}</td>
+                                        </tr>
+                                        {isOpen && (
+                                            <tr className="inv-transfer-detail-row">
+                                                <td colSpan={8} style={{ padding: 0 }}>
+                                                    <div className="inv-transfer-detail-items">
+                                                        <table className="ptable inv-transfer-sub-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th style={{ width: 36 }}></th>
+                                                                <th>Mahsulot</th>
+                                                                <th>Birlik</th>
+                                                                <th className="th-center">Miqdor</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {g.items.map(item => (
+                                                                <tr key={item.id}>
+                                                                    <td style={{ textAlign: 'center' }}>
+                                                                        <Package size={13} style={{ color: 'var(--text-muted)' }} />
+                                                                    </td>
+                                                                    <td><span className="cell-name">{item.productName || '—'}</span></td>
+                                                                    <td><span className="cell-muted" style={{ fontSize: 12 }}>{item.unitSymbol || '—'}</span></td>
+                                                                    <td className="th-center">
+                                                                        <span style={{ fontWeight: 700, fontSize: 14 }}>{fmt(item.quantity)}</span>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                )
+                            })}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="inv-transfer-cards">
+                        {groups.map((g, i) => {
+                            const isOpen = expandedKey === g.key
+                            return (
+                                <div key={g.key} className="inv-transfer-card"
+                                     onClick={() => setExpandedKey(isOpen ? null : g.key)}>
+                                    <div className="inv-transfer-card-top">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <ChevronDown size={14}
+                                                style={{ transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', color: 'var(--text-muted)' }} />
+                                            <span className="inv-transfer-card-name">
+                                                {g.fromWarehouseName} → {g.toWarehouseName}
+                                            </span>
+                                        </div>
+                                        <span className="inv-transfer-count-badge">{g.itemCount} ta</span>
+                                    </div>
+                                    <div className="inv-transfer-card-row">
+                                        <span>Sana</span>
+                                        <span>{fmtDT(g.movedAt)}</span>
+                                    </div>
+                                    {g.movedBy && (
+                                        <div className="inv-transfer-card-row">
+                                            <span>Kim</span>
+                                            <span>{g.movedBy}</span>
+                                        </div>
+                                    )}
+                                    {g.notes && <div className="inv-card-notes">{g.notes}</div>}
+                                    {isOpen && (
+                                        <div className="inv-transfer-card-items" onClick={e => e.stopPropagation()}>
+                                            {g.items.map(item => (
+                                                <div key={item.id} className="inv-transfer-card-item">
+                                                    <span>
+                                                        {item.productName}
+                                                        {item.unitSymbol && <span className="cell-muted" style={{ fontSize: 11, marginLeft: 4 }}>{item.unitSymbol}</span>}
+                                                    </span>
+                                                    <span style={{ fontWeight: 700 }}>{fmt(item.quantity)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                    </>
+                )}
+
+                {total > size && (
+                    <div className="table-footer">
+                        <select className="al-size-select" value={size} onChange={e => { setSize(Number(e.target.value)); setPage(0) }}>
+                            {[100, 200, 500].map(s => <option key={s} value={s}>{s} ta</option>)}
+                        </select>
+                        <div className="pagination-group">
+                            <button className="page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Oldingi</button>
+                            <span className="page-info">{page + 1} / {Math.max(1, totalPages)}</span>
+                            <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Keyingi →</button>
+                        </div>
+                        <span className="table-footer-info">Jami: {total} ta</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 // ══════════════════════════════════════════════════════════════════
 // InventoryPage — asosiy komponent
 // ══════════════════════════════════════════════════════════════════
@@ -445,16 +682,51 @@ export default function InventoryPage() {
     const { hasPermission, user } = useAuth()
     const navigate = useNavigate()
     const { id } = useParams()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const tab = searchParams.get('tab') || 'inventory'
 
-    // Detail view — URL da id bo'lsa
     if (id) {
         return <SessionDetail sessionId={Number(id)} />
     }
 
-    return <InventoryList hasPermission={hasPermission} user={user} navigate={navigate} />
+    const setTab = (t) => setSearchParams(t === 'inventory' ? {} : { tab: t })
+
+    return (
+        <div className="products-wrapper">
+            <div className="products-header">
+                <div className="products-header-left">
+                    <div className="page-icon-wrap" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
+                        <ClipboardList size={20} />
+                    </div>
+                    <div>
+                        <h1 className="page-title">Inventarizatsiya</h1>
+                        <p className="page-subtitle">Omborlardagi mahsulotlarni sanab tekshirish va transfer</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="inv-tabs">
+                <button className={`inv-tab${tab === 'inventory' ? ' active' : ''}`}
+                        onClick={() => setTab('inventory')}>
+                    <ClipboardList size={15} />
+                    Inventarizatsiya
+                </button>
+                <button className={`inv-tab${tab === 'transfer' ? ' active' : ''}`}
+                        onClick={() => setTab('transfer')}>
+                    <ArrowLeftRight size={15} />
+                    Transfer
+                </button>
+            </div>
+
+            {tab === 'inventory'
+                ? <InventoryListContent hasPermission={hasPermission} user={user} navigate={navigate} />
+                : <TransferHistory hasPermission={hasPermission} user={user} navigate={navigate} />
+            }
+        </div>
+    )
 }
 
-function InventoryList({ hasPermission, user, navigate }) {
+function InventoryListContent({ hasPermission, user, navigate }) {
     const [sessions, setSessions] = useState([])
     const [total, setTotal] = useState(0)
     const [page, setPage] = useState(0)
@@ -480,21 +752,9 @@ function InventoryList({ hasPermission, user, navigate }) {
     const totalPages = Math.ceil(total / size)
 
     return (
-        <div className="products-wrapper">
-            {/* Header */}
-            <div className="products-header">
-                <div className="products-header-left">
-                    <div className="page-icon-wrap" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
-                        <ClipboardList size={20} />
-                    </div>
-                    <div>
-                        <h1 className="page-title">
-                            Inventarizatsiya
-                            <span className="page-count">({total} ta)</span>
-                        </h1>
-                        <p className="page-subtitle">Omborlardagi mahsulotlarni sanab tekshirish</p>
-                    </div>
-                </div>
+        <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{total} ta sessiya</span>
                 {canManage && (
                     <button className="btn-add" onClick={() => setCreateOpen(true)}>
                         <Plus size={18} />
@@ -503,7 +763,6 @@ function InventoryList({ hasPermission, user, navigate }) {
                 )}
             </div>
 
-            {/* Jadval */}
             <div className="table-card">
                 {loading ? (
                     <div className="table-loading"><Loader2 size={24} className="spin" /><span>Yuklanmoqda...</span></div>
@@ -616,6 +875,6 @@ function InventoryList({ hasPermission, user, navigate }) {
                     }}
                 />
             )}
-        </div>
+        </>
     )
 }
