@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ReactDOM from 'react-dom'
 import {
     ShoppingBag, Search, Filter, RotateCcw, Eye, CornerUpLeft,
     XCircle, Loader2, ChevronLeft, ChevronRight,
     TrendingUp, CreditCard, Banknote, Smartphone, Clock,
     CheckCircle, AlertCircle, Download, X,
-    User, Package, Printer, ReceiptText, FileSpreadsheet
+    User, Package, FileSpreadsheet
 } from 'lucide-react'
 import { salesApi } from '../api/sales'
 import api from '../api/api'
@@ -108,362 +109,6 @@ const PaymentBadges = ({ payments }) => {
                 )
             })}
         </div>
-    )
-}
-
-// ════════════════════════════════════════════════════════════════
-// SaleDetailModal
-// ════════════════════════════════════════════════════════════════
-function SaleDetailModal({ sale, onClose, onReturn, onCancel, onPrev, onNext, hasPermission }) {
-    const returnedItems = (sale.items || []).filter(i => Number(i.returnedQuantity || 0) > 0)
-    const totalReturnedAmount = returnedItems.reduce(
-        (s, i) => s + Math.round(Number(i.salePrice) * Number(i.returnedQuantity || 0)), 0
-    )
-    const hasReturnableItems = (sale.items || []).some(
-        i => Number(i.returnedQuantity || 0) < Number(i.quantity)
-    )
-    const canReturn = sale.status === 'COMPLETED' && hasReturnableItems && hasPermission('SALES_RETURN')
-    const canCancel = (sale.status === 'DRAFT' || sale.status === 'HOLD') && hasPermission('SALES_CANCEL')
-
-    // PDF chek (jsPDF CDN orqali)
-    const printReceipt = () => {
-        const win = window.open('', '_blank', 'width=400,height=700')
-        const dp = (sale.payments || []).find(p => p.paymentMethod === 'DEBT')
-        win.document.write(`<!DOCTYPE html><html><head><title>Chek - ${sale.referenceNo}</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #000; background: #fff; padding: 4mm; width: 72mm; }
-            .center { text-align: center; }
-            .bold { font-weight: 700; }
-            .store { text-align: center; font-size: 16px; font-weight: 900; letter-spacing: 2px; margin-bottom: 2px; }
-            .subtitle { text-align: center; font-size: 10px; letter-spacing: 1px; margin-bottom: 6px; }
-            .divider { border-top: 1px dashed #000; margin: 6px 0; }
-            .divider-double { border-top: 2px solid #000; margin: 7px 0; }
-            .meta { font-size: 11px; margin-bottom: 4px; }
-            .meta-row { display: flex; justify-content: space-between; padding: 1px 0; }
-            .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 4px 0 5px; }
-            .item { margin-bottom: 6px; }
-            .item-name { font-weight: 600; font-size: 12px; }
-            .item-row { display: flex; justify-content: space-between; font-size: 11px; }
-            .total-row { display: flex; justify-content: space-between; font-size: 17px; font-weight: 900; margin: 2px 0; }
-            .payment-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
-            .discount-row { display: flex; justify-content: space-between; font-size: 12px; }
-            .debt-block { margin: 7px 0; padding: 8px 10px; border: 1.5px solid #000; }
-            .debt-title { text-align: center; font-weight: 800; font-size: 13px; letter-spacing: 1px; margin-bottom: 5px; }
-            .debt-row { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
-            .thanks { text-align: center; font-size: 11px; margin-top: 4px; }
-            @page { size: 80mm auto; margin: 0; }
-        </style></head><body>
-        <div class="store">PrimeStroy</div>
-        <div class="subtitle">SOTUV CHEKI</div>
-        <div class="divider-double"></div>
-        <div class="meta">
-            <div class="meta-row"><span>Chek</span><b>${sale.referenceNo}</b></div>
-            <div class="meta-row"><span>Sana</span><span>${new Date(sale.completedAt || sale.createdAt).toLocaleString('ru-RU')}</span></div>
-            <div class="meta-row"><span>Kassir</span><span>${sale.cashierName || sale.sellerName || '—'}</span></div>
-            ${sale.customerName ? `<div class="meta-row"><span>Mijoz</span><b>${sale.customerName}</b></div>` : ''}
-        </div>
-        <div class="divider"></div>
-        <div class="section-label">TOVARLAR</div>
-        ${(sale.items || []).map(item => `
-            <div class="item">
-                <div class="item-name">${item.productName} (${item.unitSymbol})</div>
-                <div class="item-row"><span>${item.quantity} × ${fmt(item.salePrice)} so'm</span><b>${fmt(item.totalPrice)} so'm</b></div>
-            </div>
-        `).join('')}
-        ${sale.discountAmount > 0 ? `<div class="divider"></div><div class="discount-row"><span>Chegirma</span><span>−${fmt(sale.discountAmount)} so'm</span></div>` : ''}
-        <div class="divider-double"></div>
-        <div class="total-row"><span>JAMI</span><span>${fmt(sale.totalAmount)} so'm</span></div>
-        <div class="divider-double"></div>
-        <div class="section-label">TO'LOV</div>
-        ${(sale.payments || []).map(p => `
-            <div class="payment-row"><span>${PAYMENT_MAP[p.paymentMethod]?.label || p.paymentMethod}</span><b>${fmt(p.amount)} so'm</b></div>
-        `).join('')}
-        ${sale.changeAmount > 0 ? `<div class="payment-row"><span>Qaytim</span><span>${fmt(sale.changeAmount)} so'm</span></div>` : ''}
-        ${sale.debtAmount > 0 ? `
-            <div class="divider"></div>
-            <div class="debt-block">
-                <div class="debt-title">⚠ NASIYA YOZUVI</div>
-                ${sale.customerName ? `<div class="debt-row"><span>Mijoz</span><b>${sale.customerName}</b></div>` : ''}
-                <div class="debt-row"><span>Summa</span><b>${fmt(sale.debtAmount)} so'm</b></div>
-                ${dp?.dueDate ? `<div class="debt-row"><span>Muddat</span><b>${new Date(dp.dueDate + 'T00:00:00').toLocaleDateString('ru-RU')}</b></div>` : ''}
-            </div>
-        ` : ''}
-        <div class="divider-double"></div>
-        <div class="thanks">Xaridingiz uchun rahmat!</div>
-        </body></html>`)
-        win.document.close()
-        win.focus()
-        setTimeout(() => { win.print(); win.close() }, 300)
-    }
-
-    return ReactDOM.createPortal(
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box sale-detail-modal" style={{ maxWidth: 720 }}>
-                {/* Header */}
-                <div className="modal-header">
-                    <div className="modal-header-left">
-                        <div style={{
-                            width: 40, height: 40, borderRadius: 12,
-                            background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#2563eb'
-                        }}>
-                            <ReceiptText size={20} />
-                        </div>
-                        <div>
-                            <h3 className="modal-title">Sotuv #{sale.referenceNo}</h3>
-                            <p className="modal-subtitle">{fmtDate(sale.completedAt || sale.createdAt)}</p>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <StatusBadge status={sale.status} />
-                        {onPrev && (
-                            <button className="modal-close-btn" onClick={onPrev} title="Oldingi sotuv"
-                                    style={{ fontSize: 18, fontWeight: 700 }}>‹</button>
-                        )}
-                        {onNext && (
-                            <button className="modal-close-btn" onClick={onNext} title="Keyingi sotuv"
-                                    style={{ fontSize: 18, fontWeight: 700 }}>›</button>
-                        )}
-                        <button className="modal-close-btn" onClick={onClose}><X size={18} /></button>
-                    </div>
-                </div>
-
-                <div className="modal-body" style={{ gap: 16 }}>
-
-                    {/* Meta ma'lumotlar */}
-                    <div className="sale-meta-grid">
-                        <div className="sale-meta-item">
-                            <span className="sale-meta-label">Kassir</span>
-                            <span className="sale-meta-value">{sale.cashierName || sale.sellerName || '—'}</span>
-                        </div>
-                        <div className="sale-meta-item">
-                            <span className="sale-meta-label">Mijoz</span>
-                            <span className="sale-meta-value">{sale.customerName || '—'}</span>
-                        </div>
-                        <div className="sale-meta-item">
-                            <span className="sale-meta-label">Hamkor</span>
-                            <span className="sale-meta-value">{sale.partnerName || '—'}</span>
-                        </div>
-                        <div className="sale-meta-item">
-                            <span className="sale-meta-label">Ombor</span>
-                            <span className="sale-meta-value">{sale.warehouseName || '—'}</span>
-                        </div>
-                        {sale.shiftId && (
-                            <div className="sale-meta-item">
-                                <span className="sale-meta-label">Smena</span>
-                                <span className="sale-meta-value">#{sale.shiftId}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Mahsulotlar jadvali */}
-                    <div className="sale-section">
-                        <div className="sale-section-title">
-                            <Package size={14} /> Mahsulotlar ({sale.items?.length || 0} ta)
-                        </div>
-                        <div className="sale-items-table-wrapper table-responsive">
-                            <table className="ptable" style={{ fontSize: 13 }}>
-                                <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Mahsulot</th>
-                                    <th className="th-right">Narx</th>
-                                    <th className="th-center">Miqdor</th>
-                                    <th className="th-right">Chegirma</th>
-                                    <th className="th-right">Jami</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {(sale.items || []).map((item, i) => (
-                                    <tr key={item.id}>
-                                        <td className="cell-num">{i + 1}</td>
-                                        <td>
-                                            <div className="cell-name">{item.productName}</div>
-                                            <div className="cell-muted" style={{ fontSize: 11 }}>{item.warehouseName}</div>
-                                        </td>
-                                        <td className="th-right cell-price">{fmt(item.salePrice)} UZS</td>
-                                        <td className="th-center">
-                                            {item.quantity} <span className="cell-muted">{item.unitSymbol}</span>
-                                            {Number(item.returnedQuantity || 0) > 0 && (
-                                                <div className="sale-item-returned">
-                                                    -{item.returnedQuantity} qaytarildi
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="th-right">
-                                            {item.discountAmount > 0
-                                                ? <span style={{ color: '#dc2626' }}>-{fmt(item.discountAmount)}</span>
-                                                : <span className="cell-muted">—</span>
-                                            }
-                                        </td>
-                                        <td className="th-right cell-price" style={{ fontWeight: 700 }}>
-                                            {fmt(item.totalPrice)} UZS
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="sale-items-cards">
-                            {(sale.items || []).map((item, i) => (
-                                <div key={item.id} className="sale-item-card">
-                                    <div className="sale-item-card-left">
-                                        <div className="sale-item-card-name">{item.productName}</div>
-                                        <div className="sale-item-card-meta">
-                                            {item.quantity} {item.unitSymbol} × {fmt(item.salePrice)} UZS
-                                            {item.discountAmount > 0 && <span style={{ color: '#dc2626' }}> · -{fmt(item.discountAmount)}</span>}
-                                            {Number(item.returnedQuantity || 0) > 0 && (
-                                                <span className="sale-item-returned" style={{ display: 'inline', marginLeft: 6 }}>-{item.returnedQuantity} qaytarildi</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="sale-item-card-right">
-                                        <div className="sale-item-card-total">{fmt(item.totalPrice)} UZS</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* To'lov breakdown */}
-                    <div className="sale-payment-breakdown">
-                        <div className="sale-totals">
-                            <div className="sale-total-row">
-                                <span>Subtotal</span>
-                                <span>{fmt(sale.subtotal)} UZS</span>
-                            </div>
-                            {sale.discountAmount > 0 && (
-                                <div className="sale-total-row" style={{ color: '#dc2626' }}>
-                                    <span>Chegirma</span>
-                                    <span>-{fmt(sale.discountAmount)} UZS</span>
-                                </div>
-                            )}
-                            <div className="sale-total-row sale-total-main">
-                                <span>JAMI</span>
-                                <span>{fmt(sale.totalAmount)} UZS</span>
-                            </div>
-                        </div>
-
-                        <div className="sale-payments">
-                            <div className="sale-section-title" style={{ marginBottom: 10 }}>
-                                <CreditCard size={14} /> To'lov usullari
-                            </div>
-                            {(sale.payments || []).map((p, i) => {
-                                const pm = PAYMENT_MAP[p.paymentMethod] || {}
-                                return (
-                                    <div key={i} className="sale-payment-row">
-                                        <span style={{ color: pm.color, fontWeight: 600 }}>
-                                            {pm.label || p.paymentMethod}
-                                        </span>
-                                        <span style={{ fontWeight: 700 }}>{fmt(p.amount)} UZS</span>
-                                    </div>
-                                )
-                            })}
-                            {sale.changeAmount > 0 && (
-                                <div className="sale-payment-row" style={{ color: '#16a34a' }}>
-                                    <span>Qaytim</span>
-                                    <span style={{ fontWeight: 700 }}>{fmt(sale.changeAmount)} UZS</span>
-                                </div>
-                            )}
-                            {/* Nasiya holati */}
-                            {sale.debtAmount > 0 && (
-                                <div className="sale-debt-info">
-                                    <AlertCircle size={14} color="#f59e0b" />
-                                    <span>Nasiya: <strong>{fmt(sale.debtAmount)} UZS</strong></span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Qaytarishlar bloki */}
-                    {returnedItems.length > 0 && (
-                        <div className="sale-return-block">
-                            <div className="sale-section-title">
-                                <CornerUpLeft size={14} /> Qaytarilgan mahsulotlar
-                            </div>
-                            <div className="sale-return-list">
-                                {returnedItems.map(item => (
-                                    <div key={item.id} className="sale-return-row">
-                                        <span className="sale-return-name">{item.productName}</span>
-                                        <span className="sale-return-qty">
-                                            {item.returnedQuantity} {item.unitSymbol}
-                                        </span>
-                                        <span className="sale-return-sum">
-                                            -{fmt(Math.round(Number(item.salePrice) * Number(item.returnedQuantity)))} UZS
-                                        </span>
-                                    </div>
-                                ))}
-                                <div className="sale-return-total">
-                                    <span>Jami qaytarildi</span>
-                                    <span>-{fmt(totalReturnedAmount)} UZS</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Izohlar (sale_notes jadvalidan) */}
-                    {sale.saleNotes?.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {sale.saleNotes.map(n => {
-                                const isReject = n.message.startsWith('↩')
-                                return (
-                                    <div key={n.id} style={{
-                                        padding: '10px 14px',
-                                        background: isReject ? '#fef2f2' : 'var(--surface-secondary)',
-                                        borderRadius: 8, fontSize: 13,
-                                        border: isReject ? '1px solid #fecaca' : 'none',
-                                        display: 'flex', flexDirection: 'column', gap: 4
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span>{isReject ? '↩' : '📝'}</span>
-                                            <span style={{ fontWeight: 600, color: isReject ? '#dc2626' : 'var(--text-primary)' }}>
-                                                {n.senderName}
-                                            </span>
-                                            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
-                                                {n.createdAt && new Date(n.createdAt).toLocaleString('ru-RU')}
-                                            </span>
-                                        </div>
-                                        <div style={{ paddingLeft: 22, color: isReject ? '#dc2626' : 'var(--text-secondary)' }}>
-                                            {n.message.replace('↩ Rad etildi: ', '').replace('↩ Rad etildi', '').trim() || n.message}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer */}
-                <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn-cancel" style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                                onClick={printReceipt}>
-                            <Printer size={15} /> Chek
-                        </button>
-                        {canReturn && (
-                            <button className="btn-cancel" style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                color: '#7c3aed', borderColor: '#7c3aed'
-                            }} onClick={() => onReturn(sale)}>
-                                <CornerUpLeft size={15} /> Qaytarish
-                            </button>
-                        )}
-                        {canCancel && (
-                            <button className="btn-cancel" style={{
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                color: '#dc2626', borderColor: '#dc2626'
-                            }} onClick={() => onCancel(sale.id)}>
-                                <XCircle size={15} /> Bekor qilish
-                            </button>
-                        )}
-                    </div>
-                    <button className="btn-cancel" onClick={onClose}>Yopish</button>
-                </div>
-            </div>
-        </div>,
-        document.body
     )
 }
 
@@ -608,6 +253,7 @@ function ReturnModal({ sale, onClose, onDone }) {
 // SalesPage — Asosiy komponent
 // ════════════════════════════════════════════════════════════════
 export default function SalesPage() {
+    const navigate = useNavigate()
     const { hasPermission, user } = useAuth()
     const isAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN'
 
@@ -631,8 +277,6 @@ export default function SalesPage() {
     const [employees, setEmployees]       = useState([])
     const [exportLoading, setExportLoading] = useState(false)
 
-    const [selectedSale, setSelectedSale]   = useState(null)
-    const [detailLoading, setDetailLoading] = useState(false)
     const [returnSale, setReturnSale]       = useState(null)
 
     const [toast, setToast] = useState(null)
@@ -759,25 +403,11 @@ export default function SalesPage() {
 
     const totalPages = Math.ceil(total / size)
 
-    // ── Detail ko'rish ───────────────────────────────────────────
-    const openDetail = async (id) => {
-        setDetailLoading(true)
-        try {
-            const res = await salesApi.getById(id)
-            setSelectedSale(res.data)
-        } catch (e) {
-            showToast('Sotuv ma\'lumotlarini yuklashda xatolik', 'error')
-        } finally {
-            setDetailLoading(false)
-        }
-    }
-
     // ── Bekor qilish ─────────────────────────────────────────────
     const handleCancel = async (id) => {
         if (!confirm('Bu sotuvni bekor qilishni tasdiqlaysizmi?')) return
         try {
             await salesApi.cancel(id)
-            setSelectedSale(null)
             load(); loadStats()
             showToast('Sotuv bekor qilindi')
         } catch (e) {
@@ -999,7 +629,7 @@ export default function SalesPage() {
                                                 : ''
                                 return (
                                     <tr key={s.id} className={rowClass} style={{ cursor: 'pointer' }}
-                                        onClick={() => openDetail(s.id)}>
+                                        onClick={() => navigate(`/sales/${s.id}`)}>
                                         <td className="cell-num">{page * size + i + 1}</td>
                                         <td>
                                             <span className="cell-barcode">{s.referenceNo}</span>
@@ -1048,13 +678,9 @@ export default function SalesPage() {
                                                 <button
                                                     className="act-btn act-edit"
                                                     title="Ko'rish"
-                                                    disabled={detailLoading}
-                                                    onClick={() => openDetail(s.id)}
+                                                    onClick={() => navigate(`/sales/${s.id}`)}
                                                 >
-                                                    {detailLoading
-                                                        ? <Loader2 size={14} className="spin" />
-                                                        : <Eye size={14} />
-                                                    }
+                                                    <Eye size={14} />
                                                 </button>
                                             </div>
                                         </td>
@@ -1069,7 +695,7 @@ export default function SalesPage() {
                         {filtered.map((s) => {
                             const st = STATUS_MAP[s.status] || {}
                             return (
-                                <div key={s.id} className="sale-card" onClick={() => openDetail(s.id)}>
+                                <div key={s.id} className="sale-card" onClick={() => navigate(`/sales/${s.id}`)}>
                                     <div className="sale-card-top">
                                         <span className="sale-card-ref">{s.referenceNo}</span>
                                         <span className="sale-card-date">{fmtDate(s.completedAt || s.createdAt)}</span>
@@ -1112,24 +738,6 @@ export default function SalesPage() {
             </div>
 
             {/* ── Modallar ────────────────────────────────────── */}
-            {selectedSale && !returnSale && (
-                <SaleDetailModal
-                    sale={selectedSale}
-                    onClose={() => setSelectedSale(null)}
-                    onReturn={(s) => { setReturnSale(s); setSelectedSale(null) }}
-                    onCancel={handleCancel}
-                    hasPermission={hasPermission}
-                    onPrev={() => {
-                        const idx = sales.findIndex(s => s.id === selectedSale.id)
-                        if (idx > 0) openDetail(sales[idx - 1].id)
-                    }}
-                    onNext={() => {
-                        const idx = sales.findIndex(s => s.id === selectedSale.id)
-                        if (idx < sales.length - 1) openDetail(sales[idx + 1].id)
-                    }}
-                />
-            )}
-
             {returnSale && (
                 <ReturnModal
                     sale={returnSale}

@@ -660,13 +660,13 @@ export default function ProductsPage() {
                                 onChange={e => { setHistoryType(e.target.value); loadHistory(historyModal.id, e.target.value, historyFrom, historyTo) }}
                             >
                                 <option value="">Barcha harakatlar</option>
-                                <option value="PURCHASE_IN">Kirim</option>
-                                <option value="SALE_OUT">Sotildi</option>
-                                <option value="ADJUSTMENT_IN">Tuzatish +</option>
-                                <option value="ADJUSTMENT_OUT">Tuzatish -</option>
-                                <option value="TRANSFER_IN">Transfer +</option>
-                                <option value="TRANSFER_OUT">Transfer -</option>
-                                <option value="RETURN_IN">Qaytarish</option>
+                                <option value="PURCHASE_IN">Yetkazuvchidan kirim</option>
+                                <option value="SALE_OUT">Sotuvdan chiqim</option>
+                                <option value="ADJUSTMENT_IN">Qo'lda kirim</option>
+                                <option value="ADJUSTMENT_OUT">Qo'lda chiqim</option>
+                                <option value="TRANSFER_IN">Transfer kirim</option>
+                                <option value="TRANSFER_OUT">Transfer chiqim</option>
+                                <option value="RETURN_IN">Qaytarib olish</option>
                             </select>
                             <input
                                 type="date"
@@ -726,11 +726,7 @@ export default function ProductsPage() {
                                                 </td>
                                                 <td className="th-right">{m.unitPrice ? fmt(m.unitPrice) : '—'}</td>
                                                 <td>
-                                                    {m.referenceType === 'PURCHASE' ? (
-                                                        <span className="smh-ref smh-ref-purchase" onClick={() => navigate(`/purchases/${m.referenceId}`)}>Xarid #{m.referenceId}</span>
-                                                    ) : m.referenceType === 'SALE' ? (
-                                                        <span className="smh-ref smh-ref-sale" onClick={() => navigate(`/sales/${m.referenceId}`)}>Sotuv #{m.referenceId}</span>
-                                                    ) : m.referenceType || '—'}
+                                                    <SmhRef m={m} navigate={navigate} />
                                                 </td>
                                                 <td className="cell-muted">{m.movedBy || '—'}</td>
                                             </tr>
@@ -771,13 +767,7 @@ export default function ProductsPage() {
                                                     )}
                                                     <div className="smh-card-row">
                                                         <span className="smh-card-label">Manba</span>
-                                                        <span>
-                                                            {m.referenceType === 'PURCHASE' ? (
-                                                                <span className="smh-ref smh-ref-purchase" onClick={() => navigate(`/purchases/${m.referenceId}`)}>Xarid #{m.referenceId}</span>
-                                                            ) : m.referenceType === 'SALE' ? (
-                                                                <span className="smh-ref smh-ref-sale" onClick={() => navigate(`/sales/${m.referenceId}`)}>Sotuv #{m.referenceId}</span>
-                                                            ) : m.referenceType || '—'}
-                                                        </span>
+                                                        <span><SmhRef m={m} navigate={navigate} /></span>
                                                     </div>
                                                     {m.movedBy && (
                                                         <div className="smh-card-row">
@@ -801,13 +791,25 @@ export default function ProductsPage() {
 }
 
 const SMH_TYPES = {
-    PURCHASE_IN:    { label: 'Kirim',          color: '#10b981', icon: 'in' },
-    SALE_OUT:       { label: 'Sotildi',        color: '#ef4444', icon: 'out' },
-    ADJUSTMENT_IN:  { label: 'Tuzatish +',     color: '#3b82f6', icon: 'in' },
-    ADJUSTMENT_OUT: { label: 'Tuzatish -',     color: '#f97316', icon: 'out' },
-    TRANSFER_IN:    { label: 'Transfer +',     color: '#8b5cf6', icon: 'in' },
-    TRANSFER_OUT:   { label: 'Transfer -',     color: '#ec4899', icon: 'out' },
-    RETURN_IN:      { label: 'Qaytarish',      color: '#06b6d4', icon: 'in' },
+    PURCHASE_IN:    { label: 'Yetkazuvchidan kirim', color: '#10b981', icon: 'in' },
+    SALE_OUT:       { label: 'Sotuvdan chiqim',      color: '#ef4444', icon: 'out' },
+    ADJUSTMENT_IN:  { label: 'Qo\'lda kirim',        color: '#3b82f6', icon: 'in' },
+    ADJUSTMENT_OUT: { label: 'Qo\'lda chiqim',       color: '#f97316', icon: 'out' },
+    TRANSFER_IN:    { label: 'Transfer kirim',       color: '#8b5cf6', icon: 'in' },
+    TRANSFER_OUT:   { label: 'Transfer chiqim',      color: '#ec4899', icon: 'out' },
+    RETURN_IN:      { label: 'Qaytarib olish',       color: '#06b6d4', icon: 'in' },
+}
+
+const REF_TYPE_MAP = {
+    PURCHASE: 'Xarid',
+    SALE: 'Sotuv',
+    RETURN: 'Qaytarish',
+    ADJUSTMENT: 'Tuzatish',
+    TRANSFER: 'Ko\'chirish',
+    INVENTORY: 'Inventarizatsiya',
+    DRAFT: 'Qoralama',
+    CANCEL: 'Bekor qilish',
+    UNHOLD: 'Qayta tiklash',
 }
 
 function SmhBadge({ type }) {
@@ -819,4 +821,16 @@ function SmhBadge({ type }) {
             {info.label}
         </span>
     )
+}
+
+function SmhRef({ m, navigate }) {
+    const label = REF_TYPE_MAP[m.referenceType] || m.referenceType || '—'
+    const refLabel = m.referenceNo || (m.referenceId ? `#${m.referenceId}` : '')
+    if (m.referenceType === 'PURCHASE' && m.referenceId) {
+        return <span className="smh-ref smh-ref-purchase" onClick={() => navigate(`/purchases/${m.referenceId}`)}>{label} {refLabel}</span>
+    }
+    if (m.referenceType === 'SALE' && m.referenceId) {
+        return <span className="smh-ref smh-ref-sale" onClick={() => navigate(`/sales/${m.referenceId}`)}>{label} {refLabel}</span>
+    }
+    return <span>{label}{refLabel ? ` ${refLabel}` : ''}</span>
 }

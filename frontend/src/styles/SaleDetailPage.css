@@ -1,0 +1,40 @@
+/* ── SaleDetailPage ── */
+.sale-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.sale-detail-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Desktop table / mobile cards toggle */
+@media (min-width: 769px) {
+    .sale-items-cards-detail { display: none; }
+    .sale-pay-cards-detail { display: none; }
+}
+
+@media (max-width: 768px) {
+    .sale-detail-grid { grid-template-columns: 1fr; }
+
+    .sale-items-table-wrap { display: none; }
+    .sale-items-cards-detail { display: flex; flex-direction: column; gap: 10px; }
+
+    .sale-pay-table-wrap { display: none; }
+    .sale-pay-cards-detail { display: flex; flex-direction: column; gap: 8px; }
+
+    .sale-detail-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .sale-detail-actions button {
+        flex: 1;
+        min-width: 100px;
+        justify-content: center;
+    }
+}

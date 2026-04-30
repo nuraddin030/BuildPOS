@@ -16,6 +16,7 @@ import PurchaseDetailPage from '../pages/PurchaseDetailPage'
 import StockMovementsPage from '../pages/StockMovementsPage'
 import ProductFormPage from '../pages/ProductFormPage'
 import SalesPage from "../pages/SalesPage.jsx";
+import SaleDetailPage from '../pages/SaleDetailPage'
 import ShiftReportPage from '../pages/ShiftReportPage'
 import DebtsPage from '../pages/DebtsPage'
 import InventoryPage from '../pages/InventoryPage'
@@ -529,6 +530,9 @@ export default function Layout() {
                         <Route path="/sales" element={
                             <ProtectedRoute permission="SALES_VIEW"> <SalesPage /></ProtectedRoute>
                         }/>
+                        <Route path="/sales/:id" element={
+                            <ProtectedRoute permission="SALES_VIEW"><SaleDetailPage /></ProtectedRoute>
+                        } />
                         <Route path="/debts" element={
                             <ProtectedRoute permission='CUSTOMERS_DEBT_VIEW'> <DebtsPage/></ProtectedRoute>
                         }/>

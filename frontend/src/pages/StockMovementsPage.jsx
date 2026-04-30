@@ -161,7 +161,7 @@ export default function StockMovementsPage() {
                     (isIn ? '+' : '-') + fmtNum(m.quantity),
                     m.unitPrice ? fmtNum(m.unitPrice) : '',
                     m.totalPrice ? fmtNum(m.totalPrice) : '',
-                    m.referenceType ? `${m.referenceType} #${m.referenceId || ''}` : '',
+                    m.referenceType ? `${m.referenceType}${m.referenceNo ? ' ' + m.referenceNo : (m.referenceId ? ' #' + m.referenceId : '')}` : '',
                     m.movedAt ? new Date(m.movedAt).toLocaleDateString('ru-RU') : '',
                     m.movedBy || ''
                 ]
@@ -409,13 +409,14 @@ export default function StockMovementsPage() {
                                                         background: 'var(--primary-light, rgba(37,99,235,0.08))',
                                                         color: 'var(--primary)', borderRadius: 20, fontWeight: 700,
                                                         whiteSpace: 'nowrap', display: 'inline-block',
-                                                        cursor: refPath ? 'pointer' : 'default'
+                                                        cursor: refPath ? 'pointer' : 'default',
+                                                        textDecoration: refPath ? 'none' : 'none'
                                                     }}>
                                                     {m.referenceType === 'PURCHASE' ? 'Xarid' :
                                                         m.referenceType === 'SALE' ? 'Sotuv' :
                                                             m.referenceType === 'INITIAL_STOCK' ? 'Boshl.' :
                                                                 m.referenceType}
-                                                    {m.referenceId && ` #${m.referenceId}`}
+                                                    {m.referenceNo ? ` ${m.referenceNo}` : (m.referenceId ? ` #${m.referenceId}` : '')}
                                                 </span>
                                             ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                                         </td>

@@ -36,6 +36,7 @@ public class StockMovementResponse {
     // Manba
     private String referenceType;
     private Long referenceId;
+    private String referenceNo;
 
     private String notes;
     private LocalDateTime movedAt;
